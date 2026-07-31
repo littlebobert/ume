@@ -2,7 +2,7 @@
 
 Ume is a private form filler for Safari on iPhone, iPad, and Mac. Complete a form once, choose **Remember my answers**, then use **Fill this form** on similar forms later.
 
-*Ume* (埋め) is the imperative—and stem form—of *umeru* (埋める), “to fill in.” It also echoes *ume* (梅), the plum blossom.
+*Ume* (埋め) is the imperative—and stem form—of *umeru* (埋める), “to fill in.”
 
 ## How it works
 
@@ -63,13 +63,6 @@ Open [http://localhost:8000](http://localhost:8000) in Safari. The fixture inclu
 Ume collects no analytics. It reads eligible controls only when you ask it to remember or fill a form, and it does not inspect unrelated page text. Website access is required to read and populate form controls.
 
 Saved answers may contain sensitive information. Encryption protects data at rest, but Ume does not yet require Face ID or Touch ID. Anyone with access to the unlocked device and Ume app may be able to view saved answers; do not use it on a shared device.
-
-## Project layout
-
-- `Extension/` — Safari Web Extension resources
-- `Safari/Ume/Ume.xcodeproj` — iOS and macOS app and extension targets
-- `test/` — deterministic matcher tests
-- `test-form/` — local form fixture
 
 ## Roadmap
 

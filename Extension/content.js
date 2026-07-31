@@ -4,19 +4,118 @@
   const api = browser;
   const BLOCKED_TYPES = new Set(["button", "file", "hidden", "image", "password", "reset", "submit"]);
   const SENSITIVE_HINT = /\b(card(?:holder)?|credit card|cvc|cvv|password|passcode|security code|secret|social security|ssn|token)\b/i;
+  const HEADING_SELECTOR = "h1, h2, h3, h4, h5, h6, [role='heading']";
+  const MAX_CONTEXT_LENGTH = 160;
+
+  function compactText(value, maximum = MAX_CONTEXT_LENGTH) {
+    const text = String(value || "").replace(/\s+/g, " ").trim();
+    return text.length > maximum ? `${text.slice(0, maximum - 1).trimEnd()}…` : text;
+  }
 
   function textOf(element) {
-    return (element?.innerText || element?.textContent || "").replace(/\s+/g, " ").trim();
+    return compactText(element?.innerText || element?.textContent || "");
+  }
+
+  function referencedText(element, attribute) {
+    return compactText((element.getAttribute(attribute) || "")
+      .split(/\s+/)
+      .map((id) => textOf(document.getElementById(id)))
+      .filter(Boolean)
+      .join(" "));
   }
 
   function labelFor(element) {
-    if (element.labels?.length) return [...element.labels].map(textOf).filter(Boolean).join(" ");
-    const labelledBy = element.getAttribute("aria-labelledby");
-    if (labelledBy) {
-      const value = labelledBy.split(/\s+/).map((id) => textOf(document.getElementById(id))).filter(Boolean).join(" ");
-      if (value) return value;
+    if (element.labels?.length) return compactText([...element.labels].map(textOf).filter(Boolean).join(" "));
+    return referencedText(element, "aria-labelledby")
+      || compactText(element.getAttribute("aria-label"))
+      || textOf(element.closest("label"));
+  }
+
+  function descriptionFor(element) {
+    const description = referencedText(element, "aria-describedby") || compactText(element.getAttribute("title"));
+    const currentValue = typeof element.value === "string" ? element.value.trim() : "";
+    return currentValue && description.includes(currentValue)
+      ? compactText(description.replaceAll(currentValue, ""))
+      : description;
+  }
+
+  function accessibleNameFor(element) {
+    return referencedText(element, "aria-labelledby")
+      || compactText(element.getAttribute("aria-label"))
+      || labelFor(element)
+      || compactText(element.placeholder);
+  }
+
+  function namedContainer(element, selector) {
+    const container = element.closest(selector);
+    if (!container) return "";
+    return referencedText(container, "aria-labelledby")
+      || compactText(container.getAttribute("aria-label"));
+  }
+
+  function groupFor(element) {
+    const fieldset = element.closest("fieldset");
+    const legend = fieldset?.querySelector(":scope > legend");
+    if (legend) return textOf(legend);
+    return namedContainer(element, "[role='group'], [role='radiogroup']");
+  }
+
+  function headingFor(element) {
+    let child = element;
+    let ancestor = element.parentElement;
+    for (let depth = 0; ancestor && depth < 5; depth += 1) {
+      if (ancestor.matches("section, article, form, fieldset, li, [role='group'], [role='region']")) {
+        const labelled = referencedText(ancestor, "aria-labelledby") || compactText(ancestor.getAttribute("aria-label"));
+        if (labelled && labelled !== groupFor(element)) return labelled;
+        const directHeading = [...ancestor.children].find((candidate) => candidate.matches?.(HEADING_SELECTOR));
+        if (directHeading && directHeading !== child) return textOf(directHeading);
+      }
+
+      let sibling = child.previousElementSibling;
+      while (sibling) {
+        if (sibling.matches?.(HEADING_SELECTOR)) return textOf(sibling);
+        sibling = sibling.previousElementSibling;
+      }
+      child = ancestor;
+      ancestor = ancestor.parentElement;
     }
-    return element.getAttribute("aria-label") || textOf(element.closest("label"));
+    return "";
+  }
+
+  function formFor(element) {
+    const form = element.form || element.closest("form");
+    if (!form) return "";
+    const named = referencedText(form, "aria-labelledby") || compactText(form.getAttribute("aria-label"));
+    if (named) return named;
+    const heading = form.querySelector(HEADING_SELECTOR);
+    return heading ? textOf(heading) : "";
+  }
+
+  function tableHeadersFor(element) {
+    const cell = element.closest("td, th");
+    const table = cell?.closest("table");
+    if (!cell || !table) return [];
+
+    const headers = [];
+    const explicit = (cell.getAttribute("headers") || "").split(/\s+/).filter(Boolean);
+    headers.push(...explicit.map((id) => textOf(document.getElementById(id))));
+
+    const row = cell.closest("tr");
+    if (row) {
+      for (const header of row.querySelectorAll(":scope > th")) {
+        if (header !== cell) headers.push(textOf(header));
+      }
+    }
+
+    const columnIndex = cell.cellIndex;
+    if (columnIndex >= 0) {
+      for (const tableRow of table.rows) {
+        const header = tableRow.cells[columnIndex];
+        if (header?.tagName === "TH") headers.push(textOf(header));
+      }
+    }
+
+    return [...new Set(headers.filter(Boolean))].slice(0, 4);
   }
 
   function kindOf(element) {
@@ -29,7 +128,7 @@
   function isEligible(element) {
     if (!(element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement)) return false;
     const type = (element.type || "").toLowerCase();
-    const hints = [element.name, element.id, element.autocomplete, element.placeholder, labelFor(element)]
+    const hints = [element.name, element.id, element.autocomplete, element.placeholder, labelFor(element), groupFor(element)]
       .filter(Boolean)
       .join(" ")
       .replace(/([a-z])([A-Z])/g, "$1 $2")
@@ -39,12 +138,20 @@
 
   function describe(element) {
     return {
+      accessibleDescription: descriptionFor(element),
+      accessibleName: accessibleNameFor(element),
       autocomplete: element.autocomplete || "",
+      form: formFor(element),
+      group: groupFor(element),
       id: element.id || "",
+      inputType: (element.type || "").toLowerCase(),
       kind: kindOf(element),
       label: labelFor(element),
       name: element.name || "",
-      placeholder: element.placeholder || ""
+      placeholder: compactText(element.placeholder),
+      required: Boolean(element.required || element.getAttribute("aria-required") === "true"),
+      section: headingFor(element),
+      tableHeaders: tableHeadersFor(element)
     };
   }
 
@@ -111,11 +218,12 @@
 
   function unmatchedSchemas(savedEntries) {
     return eligibleElements().flatMap((element, index) => {
-      if (UmeMatcher.bestMatch(savedEntries, describe(element))) return [];
+      const descriptor = describe(element);
+      if (UmeMatcher.bestMatch(savedEntries, descriptor)) return [];
       const options = element instanceof HTMLSelectElement
-        ? [...element.options].map((option) => option.text.trim()).filter(Boolean).slice(0, 50)
+        ? [...element.options].map((option) => compactText(option.text)).filter(Boolean).slice(0, 50)
         : [];
-      return [{ field: `field-${index}`, ...describe(element), options }];
+      return [{ field: `field-${index}`, ...descriptor, options }];
     });
   }
 

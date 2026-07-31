@@ -1,20 +1,27 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { bestMatch, mergeEntries, normalize, score } = require("../Extension/lib/matcher.js");
+const { bestMatch, looksGenerated, mergeEntries, normalize, score } = require("../Extension/lib/matcher.js");
 
 const entry = (overrides = {}) => ({
+  accessibleDescription: "",
+  accessibleName: "",
   autocomplete: "",
+  form: "",
+  group: "",
   id: "",
+  inputType: "text",
   kind: "text",
   label: "",
   name: "",
   placeholder: "",
+  section: "",
+  tableHeaders: [],
   value: "saved",
   ...overrides
 });
 
-test("normalizes punctuation and diacritics", () => {
-  assert.equal(normalize("  E-mail Áddress  "), "e mail address");
+test("normalizes punctuation, camel case, and diacritics", () => {
+  assert.equal(normalize("EmergencyContact E-mail Áddress"), "emergency contact e mail address");
 });
 
 test("autocomplete creates a strong match", () => {
@@ -33,10 +40,38 @@ test("different field kinds never match", () => {
   assert.equal(bestMatch([saved], field), null);
 });
 
+test("incompatible input types never match", () => {
+  const saved = entry({ accessibleName: "Birthday", inputType: "date" });
+  const field = entry({ accessibleName: "Birthday", inputType: "number" });
+  assert.equal(bestMatch([saved], field), null);
+});
+
 test("ambiguous equal matches are rejected", () => {
   const first = entry({ label: "Phone number", value: "one" });
   const second = entry({ label: "Phone number", value: "two" });
   assert.equal(bestMatch([first, second], entry({ label: "Phone number" })), null);
+});
+
+test("group context distinguishes repeated labels", () => {
+  const patient = entry({ accessibleName: "First name", group: "Patient", value: "Justin" });
+  const emergency = entry({ accessibleName: "First name", group: "Emergency contact", value: "Jane" });
+  const field = entry({ accessibleName: "First name", section: "Emergency contact" });
+  assert.equal(bestMatch([patient, emergency], field), emergency);
+});
+
+test("conflicting context penalizes otherwise identical fields", () => {
+  const saved = entry({ accessibleName: "Phone", group: "Patient" });
+  const sameContext = entry({ accessibleName: "Phone", section: "Patient information" });
+  const conflictingContext = entry({ accessibleName: "Phone", section: "Emergency contact" });
+  assert.ok(score(saved, sameContext) > score(saved, conflictingContext));
+});
+
+test("generated identifiers are detected and weakly weighted", () => {
+  assert.equal(looksGenerated("input_839102"), true);
+  assert.equal(looksGenerated("emergencyContactPhone"), false);
+  const generatedOnly = score(entry({ id: "input_839102" }), entry({ id: "input_839102" }));
+  const semantic = score(entry({ id: "emergencyContactPhone" }), entry({ id: "emergencyContactPhone" }));
+  assert.ok(semantic > generatedOnly);
 });
 
 test("merge updates a strongly matching saved answer", () => {

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Ume — Private Form Filler",
+  "name": "Ume",
   "version": "0.1.0",
-  "description": "Save answers locally and reuse them on similar forms.",
+  "description": "Remember answers securely and fill similar forms in seconds.",
   "permissions": ["storage", "activeTab", "nativeMessaging"],
   "action": {
     "default_title": "Ume",

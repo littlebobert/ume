@@ -41,6 +41,12 @@
 		D0A1D33B301B98AE0082FD16 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32F301B98AE0082FD16 /* lib */; };
 		D0A1D33C301B98AE0082FD16 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D330301B98AE0082FD16 /* popup.css */; };
 		D0A1D33D301B98AE0082FD16 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D331301B98AE0082FD16 /* content.js */; };
+		A10000010000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
+		A10000020000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
+		A10000030000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
+		A10000040000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
+		A10000050000000000000001 /* SettingsViewControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000110000000000000001 /* SettingsViewControllers.swift */; };
+		A10000060000000000000001 /* AboutPrivacyWindowControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000120000000000000001 /* AboutPrivacyWindowControllers.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -109,6 +115,9 @@
 		D0A1D32F301B98AE0082FD16 /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = ../../../Extension/lib; sourceTree = "<group>"; };
 		D0A1D330301B98AE0082FD16 /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; name = popup.css; path = ../../../Extension/popup.css; sourceTree = "<group>"; };
 		D0A1D331301B98AE0082FD16 /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = content.js; path = ../../../Extension/content.js; sourceTree = "<group>"; };
+		A10000100000000000000001 /* Stores.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stores.swift; sourceTree = "<group>"; };
+		A10000110000000000000001 /* SettingsViewControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewControllers.swift; sourceTree = "<group>"; };
+		A10000120000000000000001 /* AboutPrivacyWindowControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutPrivacyWindowControllers.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -152,6 +161,7 @@
 			isa = PBXGroup;
 			children = (
 				D0A1D2D7301B98AD0082FD16 /* ViewController.swift */,
+				A10000100000000000000001 /* Stores.swift */,
 				D0A1D2D8301B98AE0082FD16 /* Assets.xcassets */,
 				D0A1D2D1301B98AD0082FD16 /* Resources */,
 			);
@@ -205,6 +215,8 @@
 			isa = PBXGroup;
 			children = (
 				D0A1D2F3301B98AE0082FD16 /* AppDelegate.swift */,
+				A10000110000000000000001 /* SettingsViewControllers.swift */,
+				A10000120000000000000001 /* AboutPrivacyWindowControllers.swift */,
 				D0A1D2F5301B98AE0082FD16 /* Main.storyboard */,
 				D0A1D2F8301B98AE0082FD16 /* Info.plist */,
 			);
@@ -375,11 +387,8 @@
 			isa = PBXResourcesBuildPhase;
 			files = (
 				D0A1D310301B98AE0082FD16 /* Icon.png in Resources */,
-				D0A1D312301B98AE0082FD16 /* Style.css in Resources */,
 				D0A1D2F7301B98AE0082FD16 /* Main.storyboard in Resources */,
-				D0A1D314301B98AE0082FD16 /* Script.js in Resources */,
 				D0A1D318301B98AE0082FD16 /* Assets.xcassets in Resources */,
-				D0A1D30E301B98AE0082FD16 /* Main.html in Resources */,
 			);
 		};
 		D0A1D2FB301B98AE0082FD16 /* Resources */ = {
@@ -411,6 +420,7 @@
 			isa = PBXSourcesBuildPhase;
 			files = (
 				D0A1D315301B98AE0082FD16 /* ViewController.swift in Sources */,
+				A10000010000000000000001 /* Stores.swift in Sources */,
 				D0A1D2E3301B98AE0082FD16 /* AppDelegate.swift in Sources */,
 				D0A1D2E5301B98AE0082FD16 /* SceneDelegate.swift in Sources */,
 			);
@@ -418,7 +428,9 @@
 		D0A1D2ED301B98AE0082FD16 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
-				D0A1D316301B98AE0082FD16 /* ViewController.swift in Sources */,
+				A10000020000000000000001 /* Stores.swift in Sources */,
+				A10000050000000000000001 /* SettingsViewControllers.swift in Sources */,
+				A10000060000000000000001 /* AboutPrivacyWindowControllers.swift in Sources */,
 				D0A1D2F4301B98AE0082FD16 /* AppDelegate.swift in Sources */,
 			);
 		};
@@ -426,12 +438,14 @@
 			isa = PBXSourcesBuildPhase;
 			files = (
 				D0A1D319301B98AE0082FD16 /* SafariWebExtensionHandler.swift in Sources */,
+				A10000030000000000000001 /* Stores.swift in Sources */,
 			);
 		};
 		D0A1D303301B98AE0082FD16 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
 				D0A1D31A301B98AE0082FD16 /* SafariWebExtensionHandler.swift in Sources */,
+				A10000040000000000000001 /* Stores.swift in Sources */,
 			);
 		};
 /* End PBXSourcesBuildPhase section */

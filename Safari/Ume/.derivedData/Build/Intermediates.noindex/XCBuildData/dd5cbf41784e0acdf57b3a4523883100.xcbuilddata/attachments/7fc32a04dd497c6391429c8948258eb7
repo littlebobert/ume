@@ -1,0 +1,29 @@
+{
+  "" : {
+    "diagnostics" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Ume Extension (macOS)-primary.dia",
+    "emit-module-dependencies" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Ume Extension (macOS)-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Ume Extension (macOS)-primary-emit-module.dia",
+    "pch" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Ume Extension (macOS)-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Ume Extension (macOS)-primary.swiftdeps"
+  },
+  "/Users/justin/dev/ume/Safari/Ume/Shared (App)/Stores.swift" : {
+    "const-values" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Stores.swiftconstvalues",
+    "dependencies" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Stores.d",
+    "diagnostics" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Stores.dia",
+    "index-unit-output-path" : "/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Stores.o",
+    "llvm-bc" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Stores.bc",
+    "object" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Stores.o",
+    "swift-dependencies" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Stores.swiftdeps",
+    "swiftmodule" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/Stores~partial.swiftmodule"
+  },
+  "/Users/justin/dev/ume/Safari/Ume/Shared (Extension)/SafariWebExtensionHandler.swift" : {
+    "const-values" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/SafariWebExtensionHandler.swiftconstvalues",
+    "dependencies" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/SafariWebExtensionHandler.d",
+    "diagnostics" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/SafariWebExtensionHandler.dia",
+    "index-unit-output-path" : "/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/SafariWebExtensionHandler.o",
+    "llvm-bc" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/SafariWebExtensionHandler.bc",
+    "object" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/SafariWebExtensionHandler.o",
+    "swift-dependencies" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/SafariWebExtensionHandler.swiftdeps",
+    "swiftmodule" : "/Users/justin/dev/ume/Safari/Ume/.derivedData/Build/Intermediates.noindex/Ume.build/Debug/Ume Extension (macOS).build/Objects-normal/arm64/SafariWebExtensionHandler~partial.swiftmodule"
+  }
+}

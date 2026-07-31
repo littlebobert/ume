@@ -9,61 +9,146 @@
 </head>
 <body>
     <main>
-        <div class="mark" aria-hidden="true">梅</div>
-        <h1>Ume</h1>
-        <p class="lede">Manage AI mapping and the answers Ume keeps securely on this device.</p>
-
-        <section>
-            <h2>AI mapping</h2>
-            <p class="section-copy">Used automatically when local matching cannot confidently fill a field.</p>
-            <label>Provider
-                <select id="provider">
-                    <option value="openai">OpenAI</option>
-                    <option value="anthropic">Anthropic</option>
-                </select>
-            </label>
-            <label>Model
-                <input id="model" autocomplete="off" placeholder="Provider model name">
-            </label>
-            <label>API key
-                <input id="api-key" type="password" autocomplete="off" placeholder="Paste a new key">
-            </label>
-            <p id="key-state" class="hint">No key saved.</p>
-            <button id="save" class="primary" type="button">Save settings</button>
-            <button id="delete-key" class="secondary" type="button">Delete saved key</button>
-        </section>
-
-        <section>
-            <div class="section-heading">
-                <div>
-                    <h2>Stored answers</h2>
-                    <p id="answer-summary" class="section-copy">No saved answers.</p>
-                </div>
-                <button id="toggle-answers" class="compact secondary" type="button" aria-expanded="false">View</button>
+        <header class="app-header">
+            <div class="mark" aria-hidden="true">梅</div>
+            <div>
+                <h1>Ume Settings</h1>
+                <p class="lede">Manage form filling, AI mapping, and data stored on this device.</p>
             </div>
-            <div id="answer-list" class="answer-list" hidden></div>
-        </section>
+        </header>
 
-        <section class="danger-zone">
-            <h2>Forget everything</h2>
-            <p class="section-copy">Permanently deletes every saved answer, your provider key, and AI settings.</p>
-            <button id="forget-everything" class="danger" type="button">Forget everything</button>
-        </section>
+        <nav class="tab-bar" role="tablist" aria-label="Settings sections">
+            <button class="tab active" id="general-tab" type="button" role="tab" aria-selected="true" aria-controls="general-panel" data-tab="general">
+                <span class="tab-icon" aria-hidden="true">●</span>
+                General
+            </button>
+            <button class="tab" id="ai-tab" type="button" role="tab" aria-selected="false" aria-controls="ai-panel" data-tab="ai" tabindex="-1">
+                <span class="tab-icon" aria-hidden="true">✦</span>
+                AI Mapping
+            </button>
+            <button class="tab" id="data-tab" type="button" role="tab" aria-selected="false" aria-controls="data-panel" data-tab="data" tabindex="-1">
+                <span class="tab-icon" aria-hidden="true">▤</span>
+                Saved Data
+            </button>
+            <button class="tab" id="privacy-tab" type="button" role="tab" aria-selected="false" aria-controls="privacy-panel" data-tab="privacy" tabindex="-1">
+                <span class="tab-icon" aria-hidden="true">◆</span>
+                Privacy
+            </button>
+        </nav>
+
+        <div class="panels">
+            <section class="tab-panel active" id="general-panel" role="tabpanel" aria-labelledby="general-tab" data-panel="general">
+                <div class="pane-heading">
+                    <h2>Safari Extension</h2>
+                    <p>Ume fills forms through its Safari extension.</p>
+                </div>
+                <div class="settings-group extension-card">
+                    <div class="setting-row platform-ios">
+                        <div>
+                            <strong>Enable Ume in Safari</strong>
+                            <span>Open Settings → Apps → Safari → Extensions.</span>
+                        </div>
+                    </div>
+                    <div class="setting-row platform-mac">
+                        <div>
+                            <strong class="state-unknown">Enable Ume in Safari</strong>
+                            <strong class="state-on">Ume is enabled</strong>
+                            <strong class="state-off">Ume is disabled</strong>
+                            <span class="state-unknown">Open Safari’s extension settings to finish setup.</span>
+                            <span class="state-on">The extension is ready to remember and fill answers.</span>
+                            <span class="state-off">Enable the extension before using Ume in Safari.</span>
+                        </div>
+                        <button class="open-preferences secondary inline-button" type="button">Open Safari Settings…</button>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <div class="setting-row">
+                        <div>
+                            <strong>How Ume fills forms</strong>
+                            <span>Ume tries private, on-device matching first. AI mapping is used only when local matching is not confident.</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tab-panel" id="ai-panel" role="tabpanel" aria-labelledby="ai-tab" data-panel="ai" hidden>
+                <div class="pane-heading">
+                    <h2>AI Mapping</h2>
+                    <p>Choose the provider Ume uses for difficult field matches.</p>
+                </div>
+                <div class="settings-group form-group">
+                    <label class="form-row">
+                        <span>Provider</span>
+                        <select id="provider">
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                        </select>
+                    </label>
+                    <label class="form-row">
+                        <span>Model</span>
+                        <input id="model" autocomplete="off" placeholder="Provider model name">
+                    </label>
+                    <label class="form-row">
+                        <span>API key</span>
+                        <input id="api-key" type="password" autocomplete="off" placeholder="Paste a new key">
+                    </label>
+                    <div class="form-row status-row">
+                        <span></span>
+                        <p id="key-state" class="hint">No key saved.</p>
+                    </div>
+                </div>
+                <div class="button-row">
+                    <button id="delete-key" class="secondary" type="button">Delete Saved Key</button>
+                    <button id="save" class="primary" type="button">Save Settings</button>
+                </div>
+            </section>
+
+            <section class="tab-panel" id="data-panel" role="tabpanel" aria-labelledby="data-tab" data-panel="data" hidden>
+                <div class="pane-heading">
+                    <h2>Saved Data</h2>
+                    <p id="answer-summary">No saved answers.</p>
+                </div>
+                <div class="settings-group answer-group">
+                    <div id="answer-list" class="answer-list"></div>
+                </div>
+                <div class="danger-section">
+                    <div>
+                        <strong>Clear all answers</strong>
+                        <span>Permanently delete every saved answer while keeping your provider, model, and API key.</span>
+                    </div>
+                    <button id="forget-everything" class="danger inline-button" type="button">Clear All Answers…</button>
+                </div>
+            </section>
+
+            <section class="tab-panel" id="privacy-panel" role="tabpanel" aria-labelledby="privacy-tab" data-panel="privacy" hidden>
+                <div class="pane-heading">
+                    <h2>Privacy</h2>
+                    <p>What stays on your device and what your AI provider receives.</p>
+                </div>
+                <div class="settings-group privacy-list">
+                    <div class="setting-row">
+                        <div>
+                            <strong>Answers stay on this device</strong>
+                            <span>Saved values are encrypted in Ume’s shared app container. Encryption keys are protected by Apple Keychain.</span>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div>
+                            <strong>Answer values are not sent for AI mapping</strong>
+                            <span>Only bounded field context—such as labels, descriptions, field types, group headings, and option labels—is sent.</span>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div>
+                            <strong>Sensitive fields are skipped</strong>
+                            <span>Ume does not save passwords, payment fields, hidden values, or fields identified as security secrets.</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
 
         <p id="status" role="status" aria-live="polite"></p>
-
-        <aside>
-            <strong>Privacy boundary</strong>
-            Answers are encrypted in Ume’s shared app container. Only field labels, types, names, and option labels are sent for AI mapping; answer values stay on this device.
-        </aside>
-
-        <p class="platform-ios extension-help">Enable Ume under Settings → Apps → Safari → Extensions.</p>
-        <div class="platform-mac extension-help">
-            <p class="state-unknown">Enable Ume in Safari Settings → Extensions.</p>
-            <p class="state-on">Ume’s Safari extension is enabled.</p>
-            <p class="state-off">Ume’s Safari extension is disabled.</p>
-            <button class="open-preferences secondary" type="button">Open Safari Extension Settings</button>
-        </div>
     </main>
 </body>
 </html>

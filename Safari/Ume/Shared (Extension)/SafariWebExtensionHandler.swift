@@ -2,23 +2,6 @@ import SafariServices
 import Security
 import CryptoKit
 
-private let keychainService = "com.justin.ume.ai-settings"
-private let answerKeyService = "com.justin.ume.answer-encryption"
-#if os(macOS)
-private let appGroupIdentifier = "XDWKSAH7W3.group.com.justin.ume.shared"
-#else
-private let appGroupIdentifier = "group.com.justin.ume.shared"
-#endif
-private func sharedKeychainAccessGroup() -> String? {
-    Bundle.main.object(forInfoDictionaryKey: "UmeKeychainAccessGroup") as? String
-}
-
-private struct AISettings: Codable {
-    let provider: String
-    let model: String
-    let apiKey: String
-}
-
 private enum MappingError: LocalizedError {
     case message(String)
     var errorDescription: String? {
@@ -44,14 +27,14 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         switch type {
         case "UME_GET_ANSWERS":
             do {
-                complete(context, ["ok": true, "answers": try loadAnswers()])
+                complete(context, ["ok": true, "answers": try AnswerStore.load()])
             } catch {
                 complete(context, ["ok": false, "error": error.localizedDescription])
             }
         case "UME_SAVE_ANSWERS":
             do {
                 let answers = payload["answers"] as? [[String: Any]] ?? []
-                try saveAnswers(answers)
+                try AnswerStore.save(answers)
                 complete(context, ["ok": true])
             } catch {
                 complete(context, ["ok": false, "error": error.localizedDescription])
@@ -71,7 +54,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     }
 
     private func mapFields(_ payload: [String: Any]) async throws -> [[String: String]] {
-        guard let settings = loadSettings(), ["openai", "anthropic"].contains(settings.provider), !settings.apiKey.isEmpty else {
+        guard let settings = SettingsStore.load(), ["openai", "anthropic"].contains(settings.provider), !settings.apiKey.isEmpty else {
             throw MappingError.message("Open the Ume app and add an OpenAI or Anthropic API key first.")
         }
         guard let saved = payload["saved"] as? [[String: Any]],
@@ -166,81 +149,6 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             throw MappingError.message(providerMessage ?? "The AI provider rejected the request.")
         }
         return data
-    }
-
-    private func keychainQuery(service: String = keychainService) -> [String: Any] {
-        var query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: "default"
-        ]
-        if let accessGroup = sharedKeychainAccessGroup() { query[kSecAttrAccessGroup as String] = accessGroup }
-        return query
-    }
-
-    private func loadSettings() -> AISettings? {
-        var query = keychainQuery()
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
-        return try? JSONDecoder().decode(AISettings.self, from: data)
-    }
-
-    private func answerFileURL() throws -> URL {
-        guard let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) else {
-            throw MappingError.message("Ume could not access its shared data container.")
-        }
-        return container.appendingPathComponent("answers.encrypted", isDirectory: false)
-    }
-
-    private func answerEncryptionKey() throws -> SymmetricKey {
-        var query = keychainQuery(service: answerKeyService)
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var item: CFTypeRef?
-        if SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess, let data = item as? Data {
-            return SymmetricKey(data: data)
-        }
-
-        let key = SymmetricKey(size: .bits256)
-        let data = key.withUnsafeBytes { Data($0) }
-        var inserted = keychainQuery(service: answerKeyService)
-        inserted[kSecValueData as String] = data
-        inserted[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        guard SecItemAdd(inserted as CFDictionary, nil) == errSecSuccess else {
-            throw MappingError.message("Apple Keychain could not protect saved answers.")
-        }
-        return key
-    }
-
-    private func loadAnswers() throws -> [[String: Any]] {
-        let url = try answerFileURL()
-        guard FileManager.default.fileExists(atPath: url.path) else { return [] }
-        let combined = try Data(contentsOf: url)
-        let box = try AES.GCM.SealedBox(combined: combined)
-        let data = try AES.GCM.open(box, using: answerEncryptionKey())
-        guard let answers = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            throw MappingError.message("Saved answers could not be read.")
-        }
-        return answers
-    }
-
-    private func saveAnswers(_ answers: [[String: Any]]) throws {
-        guard answers.count <= 2_000, JSONSerialization.isValidJSONObject(answers) else {
-            throw MappingError.message("The saved answer data was invalid or too large.")
-        }
-        let data = try JSONSerialization.data(withJSONObject: answers, options: [.sortedKeys])
-        let sealed = try AES.GCM.seal(data, using: answerEncryptionKey())
-        guard let combined = sealed.combined else {
-            throw MappingError.message("Saved answers could not be encrypted.")
-        }
-#if os(iOS)
-        try combined.write(to: answerFileURL(), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
-#else
-        try combined.write(to: answerFileURL(), options: .atomic)
-#endif
     }
 
     private func complete(_ context: NSExtensionContext, _ message: [String: Any]) {

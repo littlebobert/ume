@@ -74,10 +74,24 @@ test("generated identifiers are detected and weakly weighted", () => {
   assert.ok(semantic > generatedOnly);
 });
 
-test("merge updates a strongly matching saved answer", () => {
-  const previous = entry({ autocomplete: "email", label: "Email", value: "old@example.com" });
+test("user labels participate in semantic matching", () => {
+  const saved = entry({ userLabel: "Mother's mobile phone", label: "Contact" });
+  const field = entry({ accessibleName: "Mother mobile phone" });
+  assert.equal(bestMatch([saved], field), saved);
+});
+
+test("merge updates a strongly matching saved answer and preserves its identity", () => {
+  const previous = entry({ answerID: "answer-1", userLabel: "My email", autocomplete: "email", label: "Email", value: "old@example.com" });
   const next = entry({ autocomplete: "email", label: "Email address", value: "new@example.com" });
   const merged = mergeEntries([previous], [next]);
   assert.equal(merged.length, 1);
   assert.equal(merged[0].value, "new@example.com");
+  assert.equal(merged[0].answerID, "answer-1");
+  assert.equal(merged[0].userLabel, "My email");
+});
+
+test("merge assigns stable identities to new answers", () => {
+  const merged = mergeEntries([], [entry({ label: "Email" })]);
+  assert.equal(typeof merged[0].answerID, "string");
+  assert.ok(merged[0].answerID.length > 10);
 });

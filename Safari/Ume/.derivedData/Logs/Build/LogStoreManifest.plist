@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>13</integer>
+	<key>logs</key>
+	<dict>
+		<key>698BE62E-57C2-490E-85AF-603B88EF1323</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>698BE62E-57C2-490E-85AF-603B88EF1323.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>Ume project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>Ume (macOS)</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project Ume with scheme Ume (macOS) and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>807180735.33178902</real>
+			<key>timeStoppedRecording</key>
+			<real>807180744.94911802</real>
+			<key>title</key>
+			<string>Building project Ume with scheme Ume (macOS) and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>698BE62E-57C2-490E-85AF-603B88EF1323</string>
+		</dict>
+		<key>F87B7BE8-8C2A-4FB9-9641-196853389F0E</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>F87B7BE8-8C2A-4FB9-9641-196853389F0E.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>E</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>4</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>Ume project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>Ume (macOS)</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project Ume with scheme Ume (macOS) and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>807180726.73310804</real>
+			<key>timeStoppedRecording</key>
+			<real>807180727.90244997</real>
+			<key>title</key>
+			<string>Building project Ume with scheme Ume (macOS) and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>F87B7BE8-8C2A-4FB9-9641-196853389F0E</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

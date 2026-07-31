@@ -5,11 +5,29 @@ const keyState = document.getElementById("key-state");
 const status = document.getElementById("status");
 const answerSummary = document.getElementById("answer-summary");
 const answerList = document.getElementById("answer-list");
-const toggleAnswers = document.getElementById("toggle-answers");
-const defaults = { openai: "gpt-5.6-terra", anthropic: "claude-haiku-4-5" };
+const tabs = [...document.querySelectorAll("[role='tab']")];
+const panels = [...document.querySelectorAll("[role='tabpanel']")];
+const defaults = { openai: "gpt-5.6-terra", anthropic: "claude-opus-5" };
 
 function post(action, extra = {}) {
     webkit.messageHandlers.controller.postMessage({ action, ...extra });
+}
+
+function selectTab(name, focus = false) {
+    tabs.forEach((tab) => {
+        const selected = tab.dataset.tab === name;
+        tab.classList.toggle("active", selected);
+        tab.setAttribute("aria-selected", String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+        if (selected && focus) tab.focus();
+    });
+    panels.forEach((panel) => {
+        const selected = panel.dataset.panel === name;
+        panel.hidden = !selected;
+        panel.classList.toggle("active", selected);
+    });
+    status.textContent = "";
+    status.className = "";
 }
 
 function show(platform, enabled, useSettingsInsteadOfPreferences) {
@@ -19,18 +37,18 @@ function show(platform, enabled, useSettingsInsteadOfPreferences) {
         document.body.classList.toggle("state-off", !enabled);
     }
     if (useSettingsInsteadOfPreferences) {
-        document.querySelector(".open-preferences").textContent = "Open Safari Extension Settings";
+        document.querySelector(".open-preferences").textContent = "Open Safari Settings…";
     }
     post("load-settings");
 }
 
 function answerName(answer, index) {
-    return answer.label || answer.placeholder || answer.name || answer.autocomplete || `Saved answer ${index + 1}`;
+    return answer.accessibleName || answer.label || answer.placeholder || answer.name || answer.autocomplete || `Saved answer ${index + 1}`;
 }
 
 function renderAnswers(answers = []) {
     answerSummary.textContent = answers.length
-        ? `${answers.length} answer${answers.length === 1 ? "" : "s"} saved on this device.`
+        ? `${answers.length} answer${answers.length === 1 ? "" : "s"} stored securely on this device.`
         : "No saved answers.";
     answerList.replaceChildren();
     if (!answers.length) {
@@ -57,7 +75,7 @@ function renderAnswers(answers = []) {
 function receiveSettings(settings) {
     provider.value = ["openai", "anthropic"].includes(settings.provider) ? settings.provider : "openai";
     model.value = settings.model || defaults[provider.value] || "";
-    keyState.textContent = settings.hasKey ? "A key is saved in Apple Keychain." : "No key saved.";
+    keyState.textContent = settings.hasKey ? "A key is saved securely in Apple Keychain." : "No key saved.";
     document.getElementById("delete-key").disabled = !settings.hasKey;
     renderAnswers(settings.answers || []);
 }
@@ -69,6 +87,20 @@ function receiveResult(result) {
     if (result.ok) apiKey.value = "";
 }
 
+tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => selectTab(tab.dataset.tab));
+    tab.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        let nextIndex = index;
+        if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+        if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+        if (event.key === "Home") nextIndex = 0;
+        if (event.key === "End") nextIndex = tabs.length - 1;
+        selectTab(tabs[nextIndex].dataset.tab, true);
+    });
+});
+
 provider.addEventListener("change", () => {
     if (!model.value || Object.values(defaults).includes(model.value)) model.value = defaults[provider.value] || "";
 });
@@ -79,13 +111,7 @@ document.getElementById("save").addEventListener("click", () => {
 
 document.getElementById("delete-key").addEventListener("click", () => post("delete-key"));
 document.getElementById("forget-everything").addEventListener("click", () => {
-    if (confirm("Delete every saved answer and all AI settings? This cannot be undone.")) post("forget-everything");
-});
-toggleAnswers.addEventListener("click", () => {
-    const willShow = answerList.hidden;
-    answerList.hidden = !willShow;
-    toggleAnswers.textContent = willShow ? "Hide" : "View";
-    toggleAnswers.setAttribute("aria-expanded", String(willShow));
+    if (confirm("Delete every saved answer? Your AI settings and API key will be kept. This cannot be undone.")) post("forget-everything");
 });
 const preferences = document.querySelector("button.open-preferences");
 if (preferences) preferences.addEventListener("click", () => post("open-preferences"));

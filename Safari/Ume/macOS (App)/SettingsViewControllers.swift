@@ -337,8 +337,7 @@ final class GeneralSettingsViewController: NSViewController {
 
     override func loadView() {
         view = settingsPaneView()
-        let stack = paneStack(title: "General", description: "Manage Ume’s Safari extension and form-filling behavior.")
-        let extensionTitle = NSTextField(labelWithString: "Safari Extension")
+        let extensionTitle = titleLabel("Safari Extension")
         extensionTitle.font = .systemFont(ofSize: 13, weight: .semibold)
         stateIcon.imageScaling = .scaleProportionallyUpOrDown
         stateIcon.translatesAutoresizingMaskIntoConstraints = false
@@ -353,13 +352,12 @@ final class GeneralSettingsViewController: NSViewController {
         extensionRow.alignment = .leading
         extensionRow.spacing = 7
 
-        stack.addArrangedSubview(extensionRow)
-        view.addSubview(stack)
+        extensionRow.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(extensionRow)
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            stack.topAnchor.constraint(equalTo: view.topAnchor),
-            extensionRow.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -60),
+            extensionRow.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 30),
+            extensionRow.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -30),
+            extensionRow.topAnchor.constraint(equalTo: view.topAnchor, constant: 28),
             stateIcon.widthAnchor.constraint(equalToConstant: 15),
             stateIcon.heightAnchor.constraint(equalToConstant: 15)
         ])
@@ -420,6 +418,9 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
         form.column(at: 0).xPlacement = .leading
         form.column(at: 0).width = 96
         form.column(at: 1).width = 420
+        for rowIndex in 0..<form.numberOfRows {
+            form.row(at: rowIndex).yPlacement = .center
+        }
 
         let delete = NSButton(title: "Delete Saved Key", target: self, action: #selector(deleteKey))
         delete.bezelStyle = .rounded
@@ -494,7 +495,6 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
 
 final class SavedDataViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSTextFieldDelegate {
     private let table = NSTableView()
-    private let summary = descriptionLabel("")
     private let deleteButton = NSButton()
     private var answers: [[String: Any]] = []
 
@@ -532,7 +532,6 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         buttons.spacing = 8
 
         let stack = paneStack(title: "Saved Data", description: "Double-click any label or value to edit it. Changes save when you press Return or leave the field.")
-        stack.addArrangedSubview(summary)
         stack.addArrangedSubview(scroll)
         stack.addArrangedSubview(buttons)
         view.addSubview(stack)
@@ -550,7 +549,6 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
 
     private func reload() {
         answers = (try? AnswerStore.load()) ?? []
-        summary.stringValue = answers.isEmpty ? "No saved answers." : "\(answers.count) saved answer\(answers.count == 1 ? "" : "s")."
         table.reloadData()
     }
 

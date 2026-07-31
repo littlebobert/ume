@@ -3,6 +3,7 @@ import Cocoa
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindowController: NSWindowController?
+    private var onboardingWindowController: OnboardingWindowController?
     private var aboutWindowController: AboutWindowController?
     private var privacyWindowController: PrivacyWindowController?
 
@@ -16,13 +17,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func configureSettingsWindow() {
         guard let window = NSApp.windows.first else { return }
-        window.title = "Ume Settings"
         window.styleMask.insert([.closable, .miniaturizable, .resizable])
+        settingsWindowController = window.windowController
+        showSettingsContent(in: window)
+        window.center()
+        if !OnboardingStore.isComplete {
+            window.orderOut(nil)
+            showOnboarding(nil)
+        }
+    }
+
+    private func showSettingsContent(in window: NSWindow) {
+        window.title = "Ume Settings"
         window.minSize = NSSize(width: 680, height: 520)
         window.setContentSize(NSSize(width: 760, height: 620))
         window.contentViewController = SettingsTabViewController()
         window.center()
-        settingsWindowController = window.windowController
     }
 
     private func installEditMenu() {
@@ -76,6 +86,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    private func showOnboarding(_ sender: Any?) {
+        if onboardingWindowController == nil {
+            onboardingWindowController = OnboardingWindowController { [weak self] in
+                self?.onboardingWindowController?.close()
+                NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: "/Applications/Safari.app"), configuration: NSWorkspace.OpenConfiguration())
+            }
+        }
+        onboardingWindowController?.showWindow(sender)
+        onboardingWindowController?.window?.makeKeyAndOrderFront(sender)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     @objc private func showAbout(_ sender: Any?) {
         if aboutWindowController == nil {
             aboutWindowController = AboutWindowController { [weak self] in self?.showPrivacy() }
@@ -90,6 +112,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         privacyWindowController?.showWindow(nil)
         privacyWindowController?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        guard let url = urls.first(where: { $0.scheme == "ume" }) else { return }
+        if url.host == "onboarding" {
+            showOnboarding(nil)
+        } else {
+            showSettings(nil)
+        }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { showSettings(nil) }
+        return true
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }

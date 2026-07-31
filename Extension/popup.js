@@ -8,6 +8,9 @@
   const count = document.getElementById("answer-count");
   const activity = document.getElementById("activity");
   const activityLabel = document.getElementById("activity-label");
+  const getStarted = document.getElementById("get-started");
+  const readyContent = document.getElementById("ready-content");
+  const openAppButton = document.getElementById("open-app");
   let busy = false;
   let cachedAnswers = [];
 
@@ -40,6 +43,24 @@
   function show(message, isError = false) {
     status.textContent = message;
     status.classList.toggle("error", isError);
+  }
+
+  async function loadOnboardingState() {
+    const result = await sendNative({ type: "UME_GET_ONBOARDING_STATE" });
+    if (!result?.ok) throw new Error(result?.error || "Ume setup status is unavailable.");
+    return Boolean(result.complete);
+  }
+
+  async function openCompanionApp() {
+    openAppButton.disabled = true;
+    try {
+      const result = await sendNative({ type: "UME_OPEN_APP" });
+      if (!result?.ok) throw new Error(result?.error || "Open the Ume app to finish setup.");
+      window.close();
+    } catch (error) {
+      openAppButton.disabled = false;
+      getStarted.querySelector("p").textContent = error.message || "Open the Ume app to finish setup.";
+    }
   }
 
   async function loadNativeAnswers() {
@@ -134,5 +155,18 @@
 
   learnButton.addEventListener("click", learn);
   fillButton.addEventListener("click", fill);
-  refreshAnswers().catch((error) => show(error.message || "Ume could not access saved answers.", true));
+  openAppButton.addEventListener("click", openCompanionApp);
+
+  loadOnboardingState()
+    .then((complete) => {
+      getStarted.hidden = complete;
+      readyContent.hidden = !complete;
+      if (complete) return refreshAnswers();
+      return undefined;
+    })
+    .catch((error) => {
+      getStarted.hidden = false;
+      readyContent.hidden = true;
+      getStarted.querySelector("p").textContent = error.message || "Open the Ume app to finish setup.";
+    });
 })();

@@ -25,6 +25,18 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         }
 
         switch type {
+        case "UME_GET_ONBOARDING_STATE":
+            complete(context, ["ok": true, "complete": OnboardingStore.isComplete])
+        case "UME_OPEN_APP":
+            guard let url = URL(string: "ume://onboarding") else {
+                complete(context, ["ok": false, "error": "Ume could not open the companion app."])
+                return
+            }
+            context.open(url) { [weak self] opened in
+                self?.complete(context, opened
+                    ? ["ok": true]
+                    : ["ok": false, "error": "Open the Ume app to finish setup."])
+            }
         case "UME_GET_ANSWERS":
             do {
                 complete(context, ["ok": true, "answers": try AnswerStore.load()])

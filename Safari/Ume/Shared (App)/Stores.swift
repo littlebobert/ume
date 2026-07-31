@@ -41,6 +41,26 @@ private func keychainQuery(service: String) -> [String: Any] {
     return query
 }
 
+enum OnboardingStore {
+    private static let completionKey = "onboarding-completed"
+
+    static var isComplete: Bool {
+        get {
+            guard let defaults = UserDefaults(suiteName: appGroupIdentifier) else {
+                return SettingsStore.load()?.apiKey.isEmpty == false
+            }
+            if defaults.object(forKey: completionKey) == nil,
+               SettingsStore.load()?.apiKey.isEmpty == false {
+                defaults.set(true, forKey: completionKey)
+            }
+            return defaults.bool(forKey: completionKey)
+        }
+        set {
+            UserDefaults(suiteName: appGroupIdentifier)?.set(newValue, forKey: completionKey)
+        }
+    }
+}
+
 enum SettingsStore {
     static func load() -> AISettings? {
         var query = keychainQuery(service: keychainService)

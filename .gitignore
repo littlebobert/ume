@@ -4,5 +4,5 @@ node_modules/
 
 # Xcode generated build and per-user state
 **/DerivedData/
-**/.derivedData/
+**/.derivedData*/
 **/xcuserdata/

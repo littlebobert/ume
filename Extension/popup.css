@@ -42,6 +42,11 @@ button {
 button:hover:not(:disabled) { background: #fff8f4; border-color: #c7b1a6; }
 button:disabled { cursor: default; opacity: .5; }
 button:focus-visible { outline: 3px solid rgb(183 44 70 / 22%); outline-offset: 2px; }
+.get-started { padding: 18px; border: 1px solid #eaded7; border-radius: 14px; background: #fff; text-align: center; }
+.get-started h2 { margin: 0; font-size: 16px; }
+.get-started p { margin: 7px 0 14px; color: #675a54; font-size: 12px; line-height: 1.45; }
+button.primary { border-color: #a8253e; background: #b72c46; color: white; }
+button.primary:hover:not(:disabled) { border-color: #8f1f34; background: #a8253e; }
 .activity { display: flex; min-height: 34px; align-items: center; gap: 8px; margin: 10px 2px -4px; color: #675a54; font-size: 12px; }
 .spinner { width: 14px; height: 14px; border: 2px solid #e4d2ca; border-top-color: #b72c46; border-radius: 50%; animation: spin .75s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -53,8 +58,9 @@ footer { display: flex; align-items: center; justify-content: space-between; gap
 @media (prefers-color-scheme: dark) {
   :root { background: #211c1a; color: #f7efeb; }
   header p, #status, footer, .activity { color: #bdaea7; }
-  .notice { border-color: #4b3f3a; background: #2c2522; color: #c8bab3; }
-  .notice strong { color: #f7efeb; }
+  .notice, .get-started { border-color: #4b3f3a; background: #2c2522; color: #c8bab3; }
+  .notice strong, .get-started h2 { color: #f7efeb; }
+  .get-started p { color: #bdaea7; }
   button { border-color: #594943; background: #342b28; color: #f7efeb; }
   button:hover:not(:disabled) { background: #3c312d; border-color: #755f56; }
   footer { border-color: #4b3f3a; }

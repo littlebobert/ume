@@ -60,6 +60,13 @@ button.danger { border-color: #d2a1aa; background: #fff; color: #a6223b; }
 #status { min-height: 18px; max-width: 650px; margin: 18px auto 0; color: #666; font-size: 11px; text-align: center; }
 #status.success { color: #23743e; }
 #status.error { color: #a9233e; }
+.onboarding { max-width: 560px; margin: 8vh auto 0; text-align: center; }
+.onboarding[hidden], #settings-content[hidden] { display: none; }
+.onboarding-mark { margin: 0 auto 16px; }
+.onboarding > p { max-width: 500px; margin: 8px auto 22px; color: #666; font-size: 13px; line-height: 1.5; }
+.onboarding-form { margin: 0 auto 18px; text-align: left; }
+.onboarding .onboarding-privacy { margin-bottom: 16px; color: #777; font-size: 11px; }
+.onboarding button { min-width: 120px; }
 body:not(.platform-mac, .platform-ios) :is(.platform-mac, .platform-ios), body.platform-ios .platform-mac, body.platform-mac .platform-ios { display: none; }
 body:not(.state-on, .state-off) :is(.state-on, .state-off), body.state-on :is(.state-off, .state-unknown), body.state-off :is(.state-on, .state-unknown) { display: none; }
 

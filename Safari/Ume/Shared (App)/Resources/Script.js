@@ -8,6 +8,11 @@ const answerList = document.getElementById("answer-list");
 const tabs = [...document.querySelectorAll("[role='tab']")];
 const panels = [...document.querySelectorAll("[role='tabpanel']")];
 const defaults = { openai: "gpt-5.6-terra", anthropic: "claude-opus-5" };
+const onboarding = document.getElementById("onboarding");
+const settingsContent = document.getElementById("settings-content");
+const onboardingProvider = document.getElementById("onboarding-provider");
+const onboardingModel = document.getElementById("onboarding-model");
+const onboardingAPIKey = document.getElementById("onboarding-api-key");
 
 function post(action, extra = {}) {
     webkit.messageHandlers.controller.postMessage({ action, ...extra });
@@ -73,6 +78,9 @@ function renderAnswers(answers = []) {
 }
 
 function receiveSettings(settings) {
+    const needsOnboarding = !settings.onboardingComplete;
+    onboarding.hidden = !needsOnboarding;
+    settingsContent.hidden = needsOnboarding;
     provider.value = ["openai", "anthropic"].includes(settings.provider) ? settings.provider : "openai";
     model.value = settings.model || defaults[provider.value] || "";
     keyState.textContent = settings.hasKey ? "A key is saved securely in Apple Keychain." : "No key saved.";
@@ -103,6 +111,21 @@ tabs.forEach((tab, index) => {
 
 provider.addEventListener("change", () => {
     if (!model.value || Object.values(defaults).includes(model.value)) model.value = defaults[provider.value] || "";
+});
+
+onboardingProvider.addEventListener("change", () => {
+    onboardingModel.value = defaults[onboardingProvider.value] || "";
+});
+
+document.getElementById("complete-onboarding").addEventListener("click", () => {
+    const selectedModel = onboardingModel.value.trim();
+    const suppliedKey = onboardingAPIKey.value.trim();
+    if (!selectedModel || !suppliedKey) {
+        status.textContent = "Enter a model and API key to continue.";
+        status.className = "error";
+        return;
+    }
+    post("complete-onboarding", { provider: onboardingProvider.value, model: selectedModel, apiKey: suppliedKey });
 });
 
 document.getElementById("save").addEventListener("click", () => {

@@ -2,7 +2,7 @@ import AppKit
 
 final class AboutWindowController: NSWindowController {
     init(openPrivacy: @escaping () -> Void) {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 430, height: 440), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 295), styleMask: [.titled, .closable], backing: .buffered, defer: false)
         window.title = "About Ume"
         window.isReleasedWhenClosed = false
         window.center()
@@ -14,7 +14,7 @@ final class AboutWindowController: NSWindowController {
         name.font = .systemFont(ofSize: 26, weight: .bold)
         let version = NSTextField(labelWithString: "Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"))")
         version.textColor = .secondaryLabelColor
-        let explanation = NSTextField(labelWithString: "Fill it once. Keep it private.")
+        let explanation = NSTextField(labelWithString: "Fills in web forms automatically.")
         explanation.textColor = .secondaryLabelColor
         explanation.alignment = .center
         let madeInJapan = NSTextField(labelWithString: "Made in Japan")
@@ -34,12 +34,12 @@ final class AboutWindowController: NSWindowController {
         let stack = NSStackView(views: [icon, name, version, explanation, madeInJapan, buttons, source])
         stack.orientation = .vertical
         stack.alignment = .centerX
-        stack.spacing = 9
-        stack.setCustomSpacing(18, after: version)
-        stack.setCustomSpacing(14, after: explanation)
-        stack.setCustomSpacing(14, after: madeInJapan)
-        stack.setCustomSpacing(20, after: buttons)
-        stack.edgeInsets = NSEdgeInsets(top: 28, left: 34, bottom: 26, right: 34)
+        stack.spacing = 4
+        stack.setCustomSpacing(7, after: version)
+        stack.setCustomSpacing(6, after: explanation)
+        stack.setCustomSpacing(6, after: madeInJapan)
+        stack.setCustomSpacing(7, after: buttons)
+        stack.edgeInsets = NSEdgeInsets(top: 8, left: 20, bottom: 8, right: 20)
         stack.translatesAutoresizingMaskIntoConstraints = false
         window.contentView?.addSubview(stack)
         NSLayoutConstraint.activate([
@@ -47,9 +47,9 @@ final class AboutWindowController: NSWindowController {
             stack.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor),
             stack.topAnchor.constraint(equalTo: window.contentView!.topAnchor),
             stack.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor),
-            icon.widthAnchor.constraint(equalToConstant: 88),
-            icon.heightAnchor.constraint(equalToConstant: 88),
-            explanation.widthAnchor.constraint(equalToConstant: 360)
+            icon.widthAnchor.constraint(equalToConstant: 78),
+            icon.heightAnchor.constraint(equalToConstant: 78),
+            explanation.widthAnchor.constraint(equalToConstant: 340)
         ])
         super.init(window: window)
     }

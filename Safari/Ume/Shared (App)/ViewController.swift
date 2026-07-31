@@ -23,6 +23,8 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
             sendSettings()
         case "save-settings":
             saveSettings(body)
+        case "complete-onboarding":
+            saveSettings(body, completesOnboarding: true)
         case "delete-key":
             SettingsStore.delete()
             sendResult(ok: true, message: "The saved API key was deleted.")
@@ -38,7 +40,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
         }
     }
 
-    private func saveSettings(_ body: [String: Any]) {
+    private func saveSettings(_ body: [String: Any], completesOnboarding: Bool = false) {
         let provider = body["provider"] as? String ?? "openai"
         let model = body["model"] as? String ?? ""
         let suppliedKey = body["apiKey"] as? String ?? ""
@@ -49,7 +51,8 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
         }
         do {
             try SettingsStore.save(AISettings(provider: provider, model: model, apiKey: key))
-            sendResult(ok: true, message: "Settings saved securely in Apple Keychain.")
+            if completesOnboarding { OnboardingStore.isComplete = true }
+            sendResult(ok: true, message: completesOnboarding ? "Ume is ready to use in Safari." : "Settings saved securely in Apple Keychain.")
         } catch {
             sendResult(ok: false, message: error.localizedDescription)
         }
@@ -61,6 +64,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
             "provider": ["openai", "anthropic"].contains(settings?.provider ?? "") ? settings!.provider : "openai",
             "model": settings?.model ?? "",
             "hasKey": !(settings?.apiKey.isEmpty ?? true),
+            "onboardingComplete": OnboardingStore.isComplete,
             "answers": (try? AnswerStore.load()) ?? []
         ]
     }

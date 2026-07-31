@@ -28,6 +28,278 @@ private func paneStack(title: String, description: String) -> NSStackView {
     return stack
 }
 
+final class OnboardingWindowController: NSWindowController {
+    init(completion: @escaping () -> Void) {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 440),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Get Started with Ume"
+        window.isReleasedWhenClosed = false
+        window.contentViewController = OnboardingViewController(completion: completion)
+        window.center()
+        super.init(window: window)
+    }
+
+    required init?(coder: NSCoder) { nil }
+}
+
+final class OnboardingViewController: NSViewController {
+    private let content = NSView()
+    private let backButton = NSButton(title: "Back", target: nil, action: nil)
+    private let nextButton = NSButton(title: "Continue", target: nil, action: nil)
+    private let safariSettingsButton = NSButton(title: "Open Safari Extension Settings…", target: nil, action: nil)
+    private let provider = NSPopUpButton()
+    private let model = NSTextField()
+    private let apiKey = NSSecureTextField()
+    private let status = descriptionLabel("")
+    private let completion: () -> Void
+    private var step = 0
+    private var attemptedSafariSettings = false
+
+    init(completion: @escaping () -> Void) {
+        self.completion = completion
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func loadView() {
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 600, height: 440))
+        content.translatesAutoresizingMaskIntoConstraints = false
+
+        backButton.target = self
+        backButton.action = #selector(goBack)
+        backButton.bezelStyle = .rounded
+        nextButton.target = self
+        nextButton.action = #selector(goForward)
+        nextButton.bezelStyle = .rounded
+        nextButton.keyEquivalent = "\r"
+
+        let spacer = NSView()
+        let controls = NSStackView(views: [backButton, spacer, nextButton])
+        controls.orientation = .horizontal
+        controls.alignment = .centerY
+        controls.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(content)
+        view.addSubview(controls)
+        NSLayoutConstraint.activate([
+            content.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 42),
+            content.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -42),
+            content.topAnchor.constraint(equalTo: view.topAnchor, constant: 30),
+            content.bottomAnchor.constraint(equalTo: controls.topAnchor, constant: -20),
+            controls.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            controls.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            controls.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -20)
+        ])
+        showStep(0)
+    }
+
+    private func showStep(_ newStep: Int) {
+        step = newStep
+        content.subviews.forEach { $0.removeFromSuperview() }
+        let page: NSView
+        switch step {
+        case 0:
+            page = welcomePage()
+            backButton.isHidden = true
+            nextButton.title = "Continue"
+            nextButton.isEnabled = true
+            nextButton.keyEquivalent = "\r"
+        case 1:
+            page = providerPage()
+            backButton.isHidden = false
+            nextButton.title = "Save and Continue"
+            nextButton.isEnabled = true
+            nextButton.keyEquivalent = "\r"
+        case 2:
+            page = safariPage()
+            backButton.isHidden = false
+            nextButton.title = "Continue"
+            nextButton.isEnabled = attemptedSafariSettings
+            nextButton.keyEquivalent = attemptedSafariSettings ? "\r" : ""
+        default:
+            page = readyPage()
+            backButton.isHidden = true
+            nextButton.title = "Open Safari"
+            nextButton.isEnabled = true
+            nextButton.keyEquivalent = "\r"
+        }
+        page.translatesAutoresizingMaskIntoConstraints = false
+        content.addSubview(page)
+        NSLayoutConstraint.activate([
+            page.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            page.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            page.topAnchor.constraint(equalTo: content.topAnchor),
+            page.bottomAnchor.constraint(equalTo: content.bottomAnchor)
+        ])
+    }
+
+    private func welcomePage() -> NSView {
+        let icon = NSImageView(image: NSApp.applicationIconImage)
+        icon.imageScaling = .scaleProportionallyUpOrDown
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            icon.widthAnchor.constraint(equalToConstant: 82),
+            icon.heightAnchor.constraint(equalToConstant: 82)
+        ])
+        return centeredPage(
+            views: [icon, heading("Welcome to Ume"), body("Ume remembers answers you choose and fills similar web forms automatically.")],
+            spacing: 13
+        )
+    }
+
+    private func providerPage() -> NSView {
+        if provider.numberOfItems == 0 {
+            provider.addItems(withTitles: ["OpenAI", "Anthropic"])
+            provider.target = self
+            provider.action = #selector(providerChanged)
+            let settings = SettingsStore.load()
+            provider.selectItem(at: settings?.provider == "anthropic" ? 1 : 0)
+            model.stringValue = settings?.model ?? defaultModel
+            apiKey.placeholderString = settings?.apiKey.isEmpty == false ? "A key is already saved" : "Paste your API key"
+        }
+        status.stringValue = ""
+        let form = NSGridView(views: [
+            [NSTextField(labelWithString: "Provider:"), provider],
+            [NSTextField(labelWithString: "Model:"), model],
+            [NSTextField(labelWithString: "API key:"), apiKey]
+        ])
+        form.rowSpacing = 12
+        form.columnSpacing = 16
+        form.column(at: 0).xPlacement = .trailing
+        form.column(at: 0).width = 80
+        form.column(at: 1).width = 330
+        return centeredPage(views: [heading("Connect an AI provider"), body("Your personal saved answers are never sent to the API provider. Ume only sends info about the form you’re on, like its field labels."), form, body("Your API key is stored in Apple Keychain."), status], spacing: 10)
+    }
+
+    private func safariPage() -> NSView {
+        let safariImage = symbol("safari", fallback: "Safari")?.withSymbolConfiguration(.init(pointSize: 64, weight: .regular)) ?? NSImage()
+        let safariIcon = NSImageView(image: safariImage)
+        safariIcon.contentTintColor = .systemBlue
+        safariIcon.imageScaling = .scaleProportionallyUpOrDown
+        safariIcon.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            safariIcon.widthAnchor.constraint(equalToConstant: 78),
+            safariIcon.heightAnchor.constraint(equalToConstant: 78)
+        ])
+        safariSettingsButton.target = self
+        safariSettingsButton.action = #selector(openSafariSettings)
+        safariSettingsButton.bezelStyle = .rounded
+        safariSettingsButton.keyEquivalent = attemptedSafariSettings ? "" : "\r"
+        return centeredPage(views: [safariIcon, heading("Enable Ume in Safari"), safariSettingsButton, body("If the button doesn’t work, open Safari → Settings → Extensions and turn on Ume."), body("Return here after Ume is enabled.")], spacing: 12)
+    }
+
+    private func readyPage() -> NSView {
+        let checkImage = symbol("checkmark.circle.fill", fallback: "Ready")?.withSymbolConfiguration(.init(pointSize: 52, weight: .regular)) ?? NSImage()
+        let image = NSImageView(image: checkImage)
+        image.contentTintColor = .systemGreen
+        image.imageScaling = .scaleProportionallyUpOrDown
+        image.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            image.widthAnchor.constraint(equalToConstant: 62),
+            image.heightAnchor.constraint(equalToConstant: 62)
+        ])
+        return centeredPage(views: [image, heading("Ume is ready"), body("Use Remember my answers on a completed form. Later, choose Fill this form to reuse them.")], spacing: 14)
+    }
+
+    private func centeredPage(views: [NSView], spacing: CGFloat) -> NSView {
+        let stack = NSStackView(views: views)
+        stack.orientation = .vertical
+        stack.alignment = .centerX
+        stack.spacing = spacing
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        let container = NSView()
+        container.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            stack.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor),
+            stack.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor)
+        ])
+        return container
+    }
+
+    private func heading(_ text: String) -> NSTextField {
+        let label = NSTextField(labelWithString: text)
+        label.font = .systemFont(ofSize: 25, weight: .bold)
+        label.alignment = .center
+        return label
+    }
+
+    private func body(_ text: String) -> NSTextField {
+        let label = descriptionLabel(text)
+        label.alignment = .center
+        label.maximumNumberOfLines = 3
+        label.widthAnchor.constraint(equalToConstant: 470).isActive = true
+        return label
+    }
+
+    private var selectedProvider: String { provider.indexOfSelectedItem == 1 ? "anthropic" : "openai" }
+    private var defaultModel: String { selectedProvider == "anthropic" ? "claude-opus-5" : "gpt-5.6-terra" }
+
+    @objc private func providerChanged() {
+        model.stringValue = defaultModel
+    }
+
+    @objc private func openSafariSettings() {
+        attemptedSafariSettings = true
+        safariSettingsButton.keyEquivalent = ""
+        nextButton.isEnabled = true
+        nextButton.keyEquivalent = "\r"
+        let configuration = NSWorkspace.OpenConfiguration()
+        NSWorkspace.shared.openApplication(
+            at: URL(fileURLWithPath: "/Applications/Safari.app"),
+            configuration: configuration
+        ) { _, _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                SFSafariApplication.showPreferencesForExtension(withIdentifier: extensionBundleIdentifier) { error in
+                    if error != nil {
+                        NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Safari").first?
+                            .activate(options: [.activateAllWindows])
+                    }
+                }
+            }
+        }
+    }
+
+    @objc private func goBack() {
+        if step > 0 { showStep(step - 1) }
+    }
+
+    @objc private func goForward() {
+        if step == 0 {
+            showStep(1)
+        } else if step == 1 {
+            saveProvider()
+        } else if step == 2 {
+            showStep(3)
+        } else {
+            OnboardingStore.isComplete = true
+            completion()
+        }
+    }
+
+    private func saveProvider() {
+        let trimmedModel = model.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let suppliedKey = apiKey.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = suppliedKey.isEmpty ? SettingsStore.load()?.apiKey ?? "" : suppliedKey
+        guard !trimmedModel.isEmpty, !key.isEmpty else {
+            status.stringValue = "Enter a model and API key to continue."
+            return
+        }
+        do {
+            try SettingsStore.save(AISettings(provider: selectedProvider, model: trimmedModel, apiKey: key))
+            showStep(2)
+        } catch {
+            status.stringValue = error.localizedDescription
+        }
+    }
+}
+
 final class SettingsTabViewController: NSTabViewController {
     override func viewDidLoad() {
         super.viewDidLoad()

@@ -2,7 +2,7 @@ import AppKit
 
 final class AboutWindowController: NSWindowController {
     init(openPrivacy: @escaping () -> Void) {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 295), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 310, height: 271), styleMask: [.titled, .closable], backing: .buffered, defer: false)
         window.title = "About Ume"
         window.isReleasedWhenClosed = false
         window.center()
@@ -12,7 +12,7 @@ final class AboutWindowController: NSWindowController {
         icon.translatesAutoresizingMaskIntoConstraints = false
         let name = NSTextField(labelWithString: "Ume")
         name.font = .systemFont(ofSize: 26, weight: .bold)
-        let version = NSTextField(labelWithString: "Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"))")
+        let version = NSTextField(labelWithString: "Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")")
         version.textColor = .secondaryLabelColor
         let explanation = NSTextField(labelWithString: "Fills in web forms automatically.")
         explanation.textColor = .secondaryLabelColor
@@ -27,9 +27,16 @@ final class AboutWindowController: NSWindowController {
         buttons.orientation = .horizontal
         buttons.alignment = .centerY
         buttons.spacing = 8
-        let source = NSButton(title: "Open source under the MIT License", target: LinkTarget.shared, action: #selector(LinkTarget.openSource))
-        source.bezelStyle = .inline
-        source.contentTintColor = .linkColor
+        let source = NSButton(title: "", target: LinkTarget.shared, action: #selector(LinkTarget.openSource))
+        source.isBordered = false
+        source.attributedTitle = NSAttributedString(
+            string: "Open source under the MIT License",
+            attributes: [
+                .foregroundColor: NSColor.linkColor,
+                .underlineStyle: NSUnderlineStyle.single.rawValue,
+                .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+            ]
+        )
 
         let stack = NSStackView(views: [icon, name, version, explanation, madeInJapan, buttons, source])
         stack.orientation = .vertical
@@ -38,8 +45,8 @@ final class AboutWindowController: NSWindowController {
         stack.setCustomSpacing(7, after: version)
         stack.setCustomSpacing(6, after: explanation)
         stack.setCustomSpacing(6, after: madeInJapan)
-        stack.setCustomSpacing(7, after: buttons)
-        stack.edgeInsets = NSEdgeInsets(top: 8, left: 20, bottom: 8, right: 20)
+        stack.setCustomSpacing(11, after: buttons)
+        stack.edgeInsets = NSEdgeInsets(top: 14, left: 0, bottom: 10, right: 0)
         stack.translatesAutoresizingMaskIntoConstraints = false
         window.contentView?.addSubview(stack)
         NSLayoutConstraint.activate([
@@ -49,7 +56,7 @@ final class AboutWindowController: NSWindowController {
             stack.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor),
             icon.widthAnchor.constraint(equalToConstant: 78),
             icon.heightAnchor.constraint(equalToConstant: 78),
-            explanation.widthAnchor.constraint(equalToConstant: 340)
+            explanation.widthAnchor.constraint(equalToConstant: 296)
         ])
         super.init(window: window)
     }
@@ -59,21 +66,20 @@ final class AboutWindowController: NSWindowController {
 
 final class PrivacyWindowController: NSWindowController {
     init() {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 430), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 315), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
         window.title = "Ume Privacy"
         window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: 500, height: 380)
+        window.minSize = NSSize(width: 500, height: 300)
         window.center()
 
         let title = NSTextField(labelWithString: "Privacy")
         title.font = .systemFont(ofSize: 24, weight: .bold)
-        let intro = NSTextField(wrappingLabelWithString: "Ume is designed to keep your actual answers on your device.")
+        let intro = NSTextField(wrappingLabelWithString: "Ume keeps your actual answers encrypted in its private app storage.")
         intro.textColor = .secondaryLabelColor
         let details = [
-            ("Encrypted local storage", "Saved values are encrypted in Ume’s shared app container. The encryption key is protected by Apple Keychain."),
-            ("AI receives field context, not answers", "For unmatched fields, Ume may send bounded labels, descriptions, field types, group headings, and option labels. Saved answer values remain local."),
-            ("Sensitive fields are skipped", "Ume does not save passwords, payment fields, hidden values, or fields identified as security secrets."),
-            ("You stay in control", "You can edit or delete individual saved answers, or clear all answers while keeping your provider settings and API key.")
+            ("Encrypted answer storage", "Saved values are encrypted in Ume’s shared app container. The encryption key is protected by Apple Keychain."),
+            ("AI receives field context, not answers", "Ume may send labels, field descriptions, field types, form group headings, and option labels. Saved answer values are never sent to your selected AI provider."),
+            ("You stay in control", "You can edit or delete your saved answers at any time.")
         ]
         let stack = NSStackView(views: [title, intro])
         stack.orientation = .vertical

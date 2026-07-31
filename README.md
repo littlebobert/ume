@@ -2,7 +2,7 @@
 
 Ume is a private form filler for Safari on iPhone, iPad, and Mac. Complete a form once, choose **Remember my answers**, then use **Fill this form** on similar forms later.
 
-*Ume* (埋め) is the imperative—and stem form—of *umeru* (埋める), “to fill in.”
+*Ume* (埋め) means “fill it in” in Japanese—a compact command based on *umeru* (埋める), “to fill in.”
 
 ## How it works
 

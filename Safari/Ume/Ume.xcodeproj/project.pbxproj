@@ -47,6 +47,8 @@
 		A10000040000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
 		A10000050000000000000001 /* SettingsViewControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000110000000000000001 /* SettingsViewControllers.swift */; };
 		A10000060000000000000001 /* AboutPrivacyWindowControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000120000000000000001 /* AboutPrivacyWindowControllers.swift */; };
+		A10000070000000000000001 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = A10000130000000000000001 /* icons */; };
+		A10000080000000000000001 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = A10000130000000000000001 /* icons */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -118,6 +120,7 @@
 		A10000100000000000000001 /* Stores.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stores.swift; sourceTree = "<group>"; };
 		A10000110000000000000001 /* SettingsViewControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewControllers.swift; sourceTree = "<group>"; };
 		A10000120000000000000001 /* AboutPrivacyWindowControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutPrivacyWindowControllers.swift; sourceTree = "<group>"; };
+		A10000130000000000000001 /* icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = icons; path = ../../../Extension/icons; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -248,6 +251,7 @@
 				D0A1D32F301B98AE0082FD16 /* lib */,
 				D0A1D330301B98AE0082FD16 /* popup.css */,
 				D0A1D331301B98AE0082FD16 /* content.js */,
+				A10000130000000000000001 /* icons */,
 			);
 			name = Resources;
 			path = "Shared (Extension)";
@@ -400,6 +404,7 @@
 				D0A1D33A301B98AE0082FD16 /* manifest.json in Resources */,
 				D0A1D33B301B98AE0082FD16 /* lib in Resources */,
 				D0A1D339301B98AE0082FD16 /* popup.html in Resources */,
+				A10000070000000000000001 /* icons in Resources */,
 			);
 		};
 		D0A1D305301B98AE0082FD16 /* Resources */ = {
@@ -411,6 +416,7 @@
 				D0A1D334301B98AE0082FD16 /* manifest.json in Resources */,
 				D0A1D335301B98AE0082FD16 /* lib in Resources */,
 				D0A1D333301B98AE0082FD16 /* popup.html in Resources */,
+				A10000080000000000000001 /* icons in Resources */,
 			);
 		};
 /* End PBXResourcesBuildPhase section */

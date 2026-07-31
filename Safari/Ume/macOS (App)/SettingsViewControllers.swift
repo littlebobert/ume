@@ -18,6 +18,17 @@ private func descriptionLabel(_ text: String) -> NSTextField {
     return label
 }
 
+private let settingsPaneSize = NSSize(width: 720, height: 500)
+
+private func settingsPaneView() -> NSView {
+    let view = NSView(frame: NSRect(origin: .zero, size: settingsPaneSize))
+    NSLayoutConstraint.activate([
+        view.widthAnchor.constraint(greaterThanOrEqualToConstant: settingsPaneSize.width),
+        view.heightAnchor.constraint(greaterThanOrEqualToConstant: settingsPaneSize.height)
+    ])
+    return view
+}
+
 private func paneStack(title: String, description: String) -> NSStackView {
     let stack = NSStackView(views: [titleLabel(title), descriptionLabel(description)])
     stack.orientation = .vertical
@@ -303,14 +314,16 @@ final class OnboardingViewController: NSViewController {
 final class SettingsTabViewController: NSTabViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
+        preferredContentSize = settingsPaneSize
         tabStyle = .toolbar
         transitionOptions = [.crossfade]
         addTabViewItem(item(GeneralSettingsViewController(), label: "General", image: "gearshape"))
-        addTabViewItem(item(AISettingsViewController(), label: "AI Mapping", image: "sparkles"))
+        addTabViewItem(item(AISettingsViewController(), label: "AI Provider", image: "sparkles"))
         addTabViewItem(item(SavedDataViewController(), label: "Saved Data", image: "tray.full"))
     }
 
     private func item(_ controller: NSViewController, label: String, image: String) -> NSTabViewItem {
+        controller.preferredContentSize = settingsPaneSize
         let item = NSTabViewItem(viewController: controller)
         item.label = label
         item.image = symbol(image, fallback: label)
@@ -319,55 +332,59 @@ final class SettingsTabViewController: NSTabViewController {
 }
 
 final class GeneralSettingsViewController: NSViewController {
+    private let stateIcon = NSImageView()
     private let stateLabel = descriptionLabel("Checking Safari extension status…")
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 720, height: 500))
+        view = settingsPaneView()
         let stack = paneStack(title: "General", description: "Manage Ume’s Safari extension and form-filling behavior.")
         let extensionTitle = NSTextField(labelWithString: "Safari Extension")
         extensionTitle.font = .systemFont(ofSize: 13, weight: .semibold)
+        stateIcon.imageScaling = .scaleProportionallyUpOrDown
+        stateIcon.translatesAutoresizingMaskIntoConstraints = false
+        let stateRow = NSStackView(views: [stateIcon, stateLabel])
+        stateRow.orientation = .horizontal
+        stateRow.alignment = .centerY
+        stateRow.spacing = 6
         let openButton = NSButton(title: "Open Safari Settings…", target: self, action: #selector(openSafariSettings))
         openButton.bezelStyle = .rounded
-        let extensionRow = NSStackView(views: [extensionTitle, stateLabel, openButton])
+        let extensionRow = NSStackView(views: [extensionTitle, stateRow, openButton])
         extensionRow.orientation = .vertical
         extensionRow.alignment = .leading
         extensionRow.spacing = 7
-        extensionRow.edgeInsets = NSEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-        extensionRow.wantsLayer = true
-        extensionRow.layer?.cornerRadius = 9
-        extensionRow.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
-
-        let behaviorTitle = NSTextField(labelWithString: "Private matching first")
-        behaviorTitle.font = .systemFont(ofSize: 13, weight: .semibold)
-        let behavior = descriptionLabel("Ume matches fields on your device first. Your AI provider is contacted only for fields that cannot be matched confidently.")
-        let behaviorRow = NSStackView(views: [behaviorTitle, behavior])
-        behaviorRow.orientation = .vertical
-        behaviorRow.alignment = .leading
-        behaviorRow.spacing = 5
-        behaviorRow.edgeInsets = NSEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-        behaviorRow.wantsLayer = true
-        behaviorRow.layer?.cornerRadius = 9
-        behaviorRow.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
 
         stack.addArrangedSubview(extensionRow)
-        stack.addArrangedSubview(behaviorRow)
         view.addSubview(stack)
         NSLayoutConstraint.activate([
             stack.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             stack.topAnchor.constraint(equalTo: view.topAnchor),
             extensionRow.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -60),
-            behaviorRow.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -60)
+            stateIcon.widthAnchor.constraint(equalToConstant: 15),
+            stateIcon.heightAnchor.constraint(equalToConstant: 15)
         ])
+    }
+
+    override func viewWillAppear() {
+        super.viewWillAppear()
         refreshState()
     }
 
     private func refreshState() {
+        stateIcon.image = nil
+        stateLabel.stringValue = "Checking Safari extension status…"
         SFSafariExtensionManager.getStateOfSafariExtension(withIdentifier: extensionBundleIdentifier) { [weak self] state, _ in
             DispatchQueue.main.async {
-                self?.stateLabel.stringValue = state?.isEnabled == true
+                guard let self else { return }
+                let isEnabled = state?.isEnabled == true
+                self.stateLabel.stringValue = isEnabled
                     ? "Ume is enabled and ready in Safari."
                     : "Ume is disabled. Enable it in Safari Settings → Extensions."
+                self.stateIcon.image = NSImage(
+                    systemSymbolName: isEnabled ? "checkmark.circle.fill" : "exclamationmark.circle.fill",
+                    accessibilityDescription: isEnabled ? "Enabled" : "Disabled"
+                )
+                self.stateIcon.contentTintColor = isEnabled ? .systemGreen : .systemOrange
             }
         }
     }
@@ -384,7 +401,7 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
     private let status = descriptionLabel("")
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 720, height: 500))
+        view = settingsPaneView()
         provider.addItems(withTitles: ["OpenAI", "Anthropic"])
         provider.target = self
         provider.action = #selector(providerChanged)
@@ -411,7 +428,7 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
         buttons.alignment = .centerY
         buttons.distribution = .gravityAreas
 
-        let stack = paneStack(title: "AI Mapping", description: "Used only when on-device matching cannot identify a field confidently.")
+        let stack = paneStack(title: "AI Provider", description: "Used only when on-device matching cannot identify a field confidently.")
         stack.spacing = 18
         stack.addArrangedSubview(form)
         stack.addArrangedSubview(status)
@@ -482,7 +499,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     private var answers: [[String: Any]] = []
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 720, height: 500))
+        view = settingsPaneView()
         let labelColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("label"))
         labelColumn.title = "Label"
         labelColumn.width = 260

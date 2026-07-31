@@ -1,6 +1,9 @@
 import SafariServices
 import Security
 import CryptoKit
+#if os(macOS)
+import AppKit
+#endif
 
 private enum MappingError: LocalizedError {
     case message(String)
@@ -27,16 +30,24 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         switch type {
         case "UME_GET_ONBOARDING_STATE":
             complete(context, ["ok": true, "complete": OnboardingStore.isComplete])
-        case "UME_OPEN_APP":
-            guard let url = URL(string: "ume://onboarding") else {
+        case "UME_OPEN_APP", "UME_OPEN_SETTINGS":
+            let destination = type == "UME_OPEN_SETTINGS" ? "settings" : "onboarding"
+            guard let url = URL(string: "ume://\(destination)") else {
                 complete(context, ["ok": false, "error": "Ume could not open the companion app."])
                 return
             }
+            #if os(macOS)
+            let opened = NSWorkspace.shared.open(url)
+            complete(context, opened
+                ? ["ok": true]
+                : ["ok": false, "error": "Ume Settings could not be opened."])
+            #else
             context.open(url) { [weak self] opened in
                 self?.complete(context, opened
                     ? ["ok": true]
-                    : ["ok": false, "error": "Open the Ume app to finish setup."])
+                    : ["ok": false, "error": "Ume Settings could not be opened."])
             }
+            #endif
         case "UME_GET_ANSWERS":
             do {
                 complete(context, ["ok": true, "answers": try AnswerStore.load()])

@@ -11,6 +11,7 @@
   const getStarted = document.getElementById("get-started");
   const readyContent = document.getElementById("ready-content");
   const openAppButton = document.getElementById("open-app");
+  const openSettingsButton = document.getElementById("open-settings");
   let busy = false;
   let cachedAnswers = [];
 
@@ -60,6 +61,18 @@
     } catch (error) {
       openAppButton.disabled = false;
       getStarted.querySelector("p").textContent = error.message || "Open the Ume app to finish setup.";
+    }
+  }
+
+  async function openSettings() {
+    openSettingsButton.disabled = true;
+    try {
+      const result = await sendNative({ type: "UME_OPEN_SETTINGS" });
+      if (!result?.ok) throw new Error(result?.error || "Ume Settings could not be opened.");
+      window.close();
+    } catch (error) {
+      openSettingsButton.disabled = false;
+      show(error.message || "Ume Settings could not be opened.", true);
     }
   }
 
@@ -156,6 +169,7 @@
   learnButton.addEventListener("click", learn);
   fillButton.addEventListener("click", fill);
   openAppButton.addEventListener("click", openCompanionApp);
+  openSettingsButton.addEventListener("click", openSettings);
 
   loadOnboardingState()
     .then((complete) => {

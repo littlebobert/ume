@@ -2,5 +2,7 @@
 node_modules/
 *.log
 
-# Xcode per-user workspace and UI state
+# Xcode generated build and per-user state
+**/DerivedData/
+**/.derivedData/
 **/xcuserdata/

@@ -1,4 +1,0 @@
-Target dependency graph (2 targets)
-Target 'Ume (macOS)' in project 'Ume'
-➜ Explicit dependency on target 'Ume Extension (macOS)' in project 'Ume'
-Target 'Ume Extension (macOS)' in project 'Ume' (no dependencies)

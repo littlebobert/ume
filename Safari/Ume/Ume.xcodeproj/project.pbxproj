@@ -1,0 +1,971 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 110;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		D0A1D2E3301B98AE0082FD16 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2E2301B98AE0082FD16 /* AppDelegate.swift */; };
+		D0A1D2E5301B98AE0082FD16 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2E4301B98AE0082FD16 /* SceneDelegate.swift */; };
+		D0A1D2E8301B98AE0082FD16 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2E6301B98AE0082FD16 /* LaunchScreen.storyboard */; };
+		D0A1D2EB301B98AE0082FD16 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2E9301B98AE0082FD16 /* Main.storyboard */; };
+		D0A1D2F4301B98AE0082FD16 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2F3301B98AE0082FD16 /* AppDelegate.swift */; };
+		D0A1D2F7301B98AE0082FD16 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2F5301B98AE0082FD16 /* Main.storyboard */; };
+		D0A1D2FE301B98AE0082FD16 /* Ume Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D0A1D2FD301B98AE0082FD16 /* Ume Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D0A1D308301B98AE0082FD16 /* Ume Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D0A1D307301B98AE0082FD16 /* Ume Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D0A1D30D301B98AE0082FD16 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D2301B98AD0082FD16 /* Main.html */; };
+		D0A1D30E301B98AE0082FD16 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D2301B98AD0082FD16 /* Main.html */; };
+		D0A1D30F301B98AE0082FD16 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D4301B98AD0082FD16 /* Icon.png */; };
+		D0A1D310301B98AE0082FD16 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D4301B98AD0082FD16 /* Icon.png */; };
+		D0A1D311301B98AE0082FD16 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D5301B98AD0082FD16 /* Style.css */; };
+		D0A1D312301B98AE0082FD16 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D5301B98AD0082FD16 /* Style.css */; };
+		D0A1D313301B98AE0082FD16 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D6301B98AD0082FD16 /* Script.js */; };
+		D0A1D314301B98AE0082FD16 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D6301B98AD0082FD16 /* Script.js */; };
+		D0A1D315301B98AE0082FD16 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2D7301B98AD0082FD16 /* ViewController.swift */; };
+		D0A1D316301B98AE0082FD16 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2D7301B98AD0082FD16 /* ViewController.swift */; };
+		D0A1D317301B98AE0082FD16 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D8301B98AE0082FD16 /* Assets.xcassets */; };
+		D0A1D318301B98AE0082FD16 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D8301B98AE0082FD16 /* Assets.xcassets */; };
+		D0A1D319301B98AE0082FD16 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2DA301B98AE0082FD16 /* SafariWebExtensionHandler.swift */; };
+		D0A1D31A301B98AE0082FD16 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2DA301B98AE0082FD16 /* SafariWebExtensionHandler.swift */; };
+		D0A1D332301B98AE0082FD16 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32C301B98AE0082FD16 /* popup.js */; };
+		D0A1D333301B98AE0082FD16 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32D301B98AE0082FD16 /* popup.html */; };
+		D0A1D334301B98AE0082FD16 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32E301B98AE0082FD16 /* manifest.json */; };
+		D0A1D335301B98AE0082FD16 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32F301B98AE0082FD16 /* lib */; };
+		D0A1D336301B98AE0082FD16 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D330301B98AE0082FD16 /* popup.css */; };
+		D0A1D337301B98AE0082FD16 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D331301B98AE0082FD16 /* content.js */; };
+		D0A1D338301B98AE0082FD16 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32C301B98AE0082FD16 /* popup.js */; };
+		D0A1D339301B98AE0082FD16 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32D301B98AE0082FD16 /* popup.html */; };
+		D0A1D33A301B98AE0082FD16 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32E301B98AE0082FD16 /* manifest.json */; };
+		D0A1D33B301B98AE0082FD16 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32F301B98AE0082FD16 /* lib */; };
+		D0A1D33C301B98AE0082FD16 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D330301B98AE0082FD16 /* popup.css */; };
+		D0A1D33D301B98AE0082FD16 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D331301B98AE0082FD16 /* content.js */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D0A1D2FF301B98AE0082FD16 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0A1D2CC301B98AD0082FD16 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D0A1D2FC301B98AE0082FD16;
+			remoteInfo = "Ume Extension (iOS)";
+		};
+		D0A1D309301B98AE0082FD16 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0A1D2CC301B98AD0082FD16 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D0A1D306301B98AE0082FD16;
+			remoteInfo = "Ume Extension (macOS)";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D0A1D320301B98AE0082FD16 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				D0A1D2FE301B98AE0082FD16 /* Ume Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+		D0A1D327301B98AE0082FD16 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				D0A1D308301B98AE0082FD16 /* Ume Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		D0A1D2D3301B98AD0082FD16 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
+		D0A1D2D4301B98AD0082FD16 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
+		D0A1D2D5301B98AD0082FD16 /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
+		D0A1D2D6301B98AD0082FD16 /* Script.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = Script.js; sourceTree = "<group>"; };
+		D0A1D2D7301B98AD0082FD16 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		D0A1D2D8301B98AE0082FD16 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D0A1D2DA301B98AE0082FD16 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		D0A1D2DF301B98AE0082FD16 /* Ume.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ume.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D0A1D2E2301B98AE0082FD16 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		D0A1D2E4301B98AE0082FD16 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		D0A1D2E7301B98AE0082FD16 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		D0A1D2EA301B98AE0082FD16 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		D0A1D2EC301B98AE0082FD16 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D0A1D2F1301B98AE0082FD16 /* Ume.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ume.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D0A1D2F3301B98AE0082FD16 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		D0A1D2F6301B98AE0082FD16 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		D0A1D2F8301B98AE0082FD16 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D0A1D2FD301B98AE0082FD16 /* Ume Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Ume Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D0A1D302301B98AE0082FD16 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D0A1D307301B98AE0082FD16 /* Ume Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Ume Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D0A1D30C301B98AE0082FD16 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D0A1D32C301B98AE0082FD16 /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = popup.js; path = ../../../Extension/popup.js; sourceTree = "<group>"; };
+		D0A1D32D301B98AE0082FD16 /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = popup.html; path = ../../../Extension/popup.html; sourceTree = "<group>"; };
+		D0A1D32E301B98AE0082FD16 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = ../../../Extension/manifest.json; sourceTree = "<group>"; };
+		D0A1D32F301B98AE0082FD16 /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = ../../../Extension/lib; sourceTree = "<group>"; };
+		D0A1D330301B98AE0082FD16 /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; name = popup.css; path = ../../../Extension/popup.css; sourceTree = "<group>"; };
+		D0A1D331301B98AE0082FD16 /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = content.js; path = ../../../Extension/content.js; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D0A1D2DC301B98AE0082FD16 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		D0A1D2EE301B98AE0082FD16 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		D0A1D2FA301B98AE0082FD16 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		D0A1D304301B98AE0082FD16 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D0A1D2CB301B98AD0082FD16 = {
+			isa = PBXGroup;
+			children = (
+				D0A1D2D0301B98AD0082FD16 /* Shared (App) */,
+				D0A1D2D9301B98AE0082FD16 /* Shared (Extension) */,
+				D0A1D2E1301B98AE0082FD16 /* iOS (App) */,
+				D0A1D2F2301B98AE0082FD16 /* macOS (App) */,
+				D0A1D301301B98AE0082FD16 /* iOS (Extension) */,
+				D0A1D30B301B98AE0082FD16 /* macOS (Extension) */,
+				D0A1D2E0301B98AE0082FD16 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D0A1D2D0301B98AD0082FD16 /* Shared (App) */ = {
+			isa = PBXGroup;
+			children = (
+				D0A1D2D7301B98AD0082FD16 /* ViewController.swift */,
+				D0A1D2D8301B98AE0082FD16 /* Assets.xcassets */,
+				D0A1D2D1301B98AD0082FD16 /* Resources */,
+			);
+			path = "Shared (App)";
+			sourceTree = "<group>";
+		};
+		D0A1D2D1301B98AD0082FD16 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				D0A1D2D2301B98AD0082FD16 /* Main.html */,
+				D0A1D2D4301B98AD0082FD16 /* Icon.png */,
+				D0A1D2D5301B98AD0082FD16 /* Style.css */,
+				D0A1D2D6301B98AD0082FD16 /* Script.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		D0A1D2D9301B98AE0082FD16 /* Shared (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				D0A1D32B301B98AE0082FD16 /* Resources */,
+				D0A1D2DA301B98AE0082FD16 /* SafariWebExtensionHandler.swift */,
+			);
+			path = "Shared (Extension)";
+			sourceTree = "<group>";
+		};
+		D0A1D2E0301B98AE0082FD16 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D0A1D2DF301B98AE0082FD16 /* Ume.app */,
+				D0A1D2F1301B98AE0082FD16 /* Ume.app */,
+				D0A1D2FD301B98AE0082FD16 /* Ume Extension.appex */,
+				D0A1D307301B98AE0082FD16 /* Ume Extension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D0A1D2E1301B98AE0082FD16 /* iOS (App) */ = {
+			isa = PBXGroup;
+			children = (
+				D0A1D2E2301B98AE0082FD16 /* AppDelegate.swift */,
+				D0A1D2E4301B98AE0082FD16 /* SceneDelegate.swift */,
+				D0A1D2E6301B98AE0082FD16 /* LaunchScreen.storyboard */,
+				D0A1D2E9301B98AE0082FD16 /* Main.storyboard */,
+				D0A1D2EC301B98AE0082FD16 /* Info.plist */,
+			);
+			path = "iOS (App)";
+			sourceTree = "<group>";
+		};
+		D0A1D2F2301B98AE0082FD16 /* macOS (App) */ = {
+			isa = PBXGroup;
+			children = (
+				D0A1D2F3301B98AE0082FD16 /* AppDelegate.swift */,
+				D0A1D2F5301B98AE0082FD16 /* Main.storyboard */,
+				D0A1D2F8301B98AE0082FD16 /* Info.plist */,
+			);
+			path = "macOS (App)";
+			sourceTree = "<group>";
+		};
+		D0A1D301301B98AE0082FD16 /* iOS (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				D0A1D302301B98AE0082FD16 /* Info.plist */,
+			);
+			path = "iOS (Extension)";
+			sourceTree = "<group>";
+		};
+		D0A1D30B301B98AE0082FD16 /* macOS (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				D0A1D30C301B98AE0082FD16 /* Info.plist */,
+			);
+			path = "macOS (Extension)";
+			sourceTree = "<group>";
+		};
+		D0A1D32B301B98AE0082FD16 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				D0A1D32C301B98AE0082FD16 /* popup.js */,
+				D0A1D32D301B98AE0082FD16 /* popup.html */,
+				D0A1D32E301B98AE0082FD16 /* manifest.json */,
+				D0A1D32F301B98AE0082FD16 /* lib */,
+				D0A1D330301B98AE0082FD16 /* popup.css */,
+				D0A1D331301B98AE0082FD16 /* content.js */,
+			);
+			name = Resources;
+			path = "Shared (Extension)";
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D0A1D2DE301B98AE0082FD16 /* Ume (iOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D0A1D321301B98AE0082FD16 /* Build configuration list for PBXNativeTarget "Ume (iOS)" */;
+			buildPhases = (
+				D0A1D2DB301B98AE0082FD16 /* Sources */,
+				D0A1D2DC301B98AE0082FD16 /* Frameworks */,
+				D0A1D2DD301B98AE0082FD16 /* Resources */,
+				D0A1D320301B98AE0082FD16 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D0A1D300301B98AE0082FD16 /* PBXTargetDependency */,
+			);
+			name = "Ume (iOS)";
+			productName = "Ume (iOS)";
+			productReference = D0A1D2DF301B98AE0082FD16 /* Ume.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D0A1D2F0301B98AE0082FD16 /* Ume (macOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D0A1D328301B98AE0082FD16 /* Build configuration list for PBXNativeTarget "Ume (macOS)" */;
+			buildPhases = (
+				D0A1D2ED301B98AE0082FD16 /* Sources */,
+				D0A1D2EE301B98AE0082FD16 /* Frameworks */,
+				D0A1D2EF301B98AE0082FD16 /* Resources */,
+				D0A1D327301B98AE0082FD16 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D0A1D30A301B98AE0082FD16 /* PBXTargetDependency */,
+			);
+			name = "Ume (macOS)";
+			productName = "Ume (macOS)";
+			productReference = D0A1D2F1301B98AE0082FD16 /* Ume.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D0A1D2FC301B98AE0082FD16 /* Ume Extension (iOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D0A1D31D301B98AE0082FD16 /* Build configuration list for PBXNativeTarget "Ume Extension (iOS)" */;
+			buildPhases = (
+				D0A1D2F9301B98AE0082FD16 /* Sources */,
+				D0A1D2FA301B98AE0082FD16 /* Frameworks */,
+				D0A1D2FB301B98AE0082FD16 /* Resources */,
+			);
+			buildRules = (
+			);
+			name = "Ume Extension (iOS)";
+			productName = "Ume Extension (iOS)";
+			productReference = D0A1D2FD301B98AE0082FD16 /* Ume Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		D0A1D306301B98AE0082FD16 /* Ume Extension (macOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D0A1D324301B98AE0082FD16 /* Build configuration list for PBXNativeTarget "Ume Extension (macOS)" */;
+			buildPhases = (
+				D0A1D303301B98AE0082FD16 /* Sources */,
+				D0A1D304301B98AE0082FD16 /* Frameworks */,
+				D0A1D305301B98AE0082FD16 /* Resources */,
+			);
+			buildRules = (
+			);
+			name = "Ume Extension (macOS)";
+			productName = "Ume Extension (macOS)";
+			productReference = D0A1D307301B98AE0082FD16 /* Ume Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D0A1D2CC301B98AD0082FD16 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					D0A1D2DE301B98AE0082FD16 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					D0A1D2F0301B98AE0082FD16 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					D0A1D2FC301B98AE0082FD16 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					D0A1D306301B98AE0082FD16 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = D0A1D2CF301B98AD0082FD16 /* Build configuration list for PBXProject "Ume" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D0A1D2CB301B98AD0082FD16;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = D0A1D2E0301B98AE0082FD16 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D0A1D2DE301B98AE0082FD16 /* Ume (iOS) */,
+				D0A1D2F0301B98AE0082FD16 /* Ume (macOS) */,
+				D0A1D2FC301B98AE0082FD16 /* Ume Extension (iOS) */,
+				D0A1D306301B98AE0082FD16 /* Ume Extension (macOS) */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D0A1D2DD301B98AE0082FD16 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				D0A1D30F301B98AE0082FD16 /* Icon.png in Resources */,
+				D0A1D2E8301B98AE0082FD16 /* LaunchScreen.storyboard in Resources */,
+				D0A1D30D301B98AE0082FD16 /* Main.html in Resources */,
+				D0A1D313301B98AE0082FD16 /* Script.js in Resources */,
+				D0A1D317301B98AE0082FD16 /* Assets.xcassets in Resources */,
+				D0A1D2EB301B98AE0082FD16 /* Main.storyboard in Resources */,
+				D0A1D311301B98AE0082FD16 /* Style.css in Resources */,
+			);
+		};
+		D0A1D2EF301B98AE0082FD16 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				D0A1D310301B98AE0082FD16 /* Icon.png in Resources */,
+				D0A1D312301B98AE0082FD16 /* Style.css in Resources */,
+				D0A1D2F7301B98AE0082FD16 /* Main.storyboard in Resources */,
+				D0A1D314301B98AE0082FD16 /* Script.js in Resources */,
+				D0A1D318301B98AE0082FD16 /* Assets.xcassets in Resources */,
+				D0A1D30E301B98AE0082FD16 /* Main.html in Resources */,
+			);
+		};
+		D0A1D2FB301B98AE0082FD16 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				D0A1D33D301B98AE0082FD16 /* content.js in Resources */,
+				D0A1D33C301B98AE0082FD16 /* popup.css in Resources */,
+				D0A1D338301B98AE0082FD16 /* popup.js in Resources */,
+				D0A1D33A301B98AE0082FD16 /* manifest.json in Resources */,
+				D0A1D33B301B98AE0082FD16 /* lib in Resources */,
+				D0A1D339301B98AE0082FD16 /* popup.html in Resources */,
+			);
+		};
+		D0A1D305301B98AE0082FD16 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				D0A1D337301B98AE0082FD16 /* content.js in Resources */,
+				D0A1D336301B98AE0082FD16 /* popup.css in Resources */,
+				D0A1D332301B98AE0082FD16 /* popup.js in Resources */,
+				D0A1D334301B98AE0082FD16 /* manifest.json in Resources */,
+				D0A1D335301B98AE0082FD16 /* lib in Resources */,
+				D0A1D333301B98AE0082FD16 /* popup.html in Resources */,
+			);
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D0A1D2DB301B98AE0082FD16 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				D0A1D315301B98AE0082FD16 /* ViewController.swift in Sources */,
+				D0A1D2E3301B98AE0082FD16 /* AppDelegate.swift in Sources */,
+				D0A1D2E5301B98AE0082FD16 /* SceneDelegate.swift in Sources */,
+			);
+		};
+		D0A1D2ED301B98AE0082FD16 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				D0A1D316301B98AE0082FD16 /* ViewController.swift in Sources */,
+				D0A1D2F4301B98AE0082FD16 /* AppDelegate.swift in Sources */,
+			);
+		};
+		D0A1D2F9301B98AE0082FD16 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				D0A1D319301B98AE0082FD16 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+		};
+		D0A1D303301B98AE0082FD16 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				D0A1D31A301B98AE0082FD16 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D0A1D300301B98AE0082FD16 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D0A1D2FC301B98AE0082FD16 /* Ume Extension (iOS) */;
+			targetProxy = D0A1D2FF301B98AE0082FD16 /* PBXContainerItemProxy */;
+		};
+		D0A1D30A301B98AE0082FD16 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D0A1D306301B98AE0082FD16 /* Ume Extension (macOS) */;
+			targetProxy = D0A1D309301B98AE0082FD16 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		D0A1D2D2301B98AD0082FD16 /* Main.html */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D0A1D2D3301B98AD0082FD16 /* Base */,
+			);
+			name = Main.html;
+			sourceTree = "<group>";
+		};
+		D0A1D2E6301B98AE0082FD16 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D0A1D2E7301B98AE0082FD16 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+		D0A1D2E9301B98AE0082FD16 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D0A1D2EA301B98AE0082FD16 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		D0A1D2F5301B98AE0082FD16 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D0A1D2F6301B98AE0082FD16 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		D0A1D31B301B98AE0082FD16 /* Debug configuration for PBXProject "Ume" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		D0A1D31C301B98AE0082FD16 /* Release configuration for PBXProject "Ume" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		D0A1D31E301B98AE0082FD16 /* Debug configuration for PBXNativeTarget "Ume Extension (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "iOS (Extension)/Ume Extension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Ume Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume.Extension;
+				PRODUCT_NAME = "Ume Extension";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D0A1D31F301B98AE0082FD16 /* Release configuration for PBXNativeTarget "Ume Extension (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "iOS (Extension)/Ume Extension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Ume Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume.Extension;
+				PRODUCT_NAME = "Ume Extension";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		D0A1D322301B98AE0082FD16 /* Debug configuration for PBXNativeTarget "Ume (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "iOS (App)/Ume.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Ume;
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume;
+				PRODUCT_NAME = Ume;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D0A1D323301B98AE0082FD16 /* Release configuration for PBXNativeTarget "Ume (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "iOS (App)/Ume.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Ume;
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume;
+				PRODUCT_NAME = Ume;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		D0A1D325301B98AE0082FD16 /* Debug configuration for PBXNativeTarget "Ume Extension (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "macOS (Extension)/Ume Extension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XDWKSAH7W3;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Ume Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume.Extension;
+				PRODUCT_NAME = "Ume Extension";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		D0A1D326301B98AE0082FD16 /* Release configuration for PBXNativeTarget "Ume Extension (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "macOS (Extension)/Ume Extension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XDWKSAH7W3;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Ume Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume.Extension;
+				PRODUCT_NAME = "Ume Extension";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		D0A1D329301B98AE0082FD16 /* Debug configuration for PBXNativeTarget "Ume (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "macOS (App)/Ume.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XDWKSAH7W3;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Ume;
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume;
+				PRODUCT_NAME = Ume;
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		D0A1D32A301B98AE0082FD16 /* Release configuration for PBXNativeTarget "Ume (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "macOS (App)/Ume.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XDWKSAH7W3;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Ume;
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume;
+				PRODUCT_NAME = Ume;
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D0A1D2CF301B98AD0082FD16 /* Build configuration list for PBXProject "Ume" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D0A1D31B301B98AE0082FD16 /* Debug configuration for PBXProject "Ume" */,
+				D0A1D31C301B98AE0082FD16 /* Release configuration for PBXProject "Ume" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		D0A1D31D301B98AE0082FD16 /* Build configuration list for PBXNativeTarget "Ume Extension (iOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D0A1D31E301B98AE0082FD16 /* Debug configuration for PBXNativeTarget "Ume Extension (iOS)" */,
+				D0A1D31F301B98AE0082FD16 /* Release configuration for PBXNativeTarget "Ume Extension (iOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		D0A1D321301B98AE0082FD16 /* Build configuration list for PBXNativeTarget "Ume (iOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D0A1D322301B98AE0082FD16 /* Debug configuration for PBXNativeTarget "Ume (iOS)" */,
+				D0A1D323301B98AE0082FD16 /* Release configuration for PBXNativeTarget "Ume (iOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		D0A1D324301B98AE0082FD16 /* Build configuration list for PBXNativeTarget "Ume Extension (macOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D0A1D325301B98AE0082FD16 /* Debug configuration for PBXNativeTarget "Ume Extension (macOS)" */,
+				D0A1D326301B98AE0082FD16 /* Release configuration for PBXNativeTarget "Ume Extension (macOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		D0A1D328301B98AE0082FD16 /* Build configuration list for PBXNativeTarget "Ume (macOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D0A1D329301B98AE0082FD16 /* Debug configuration for PBXNativeTarget "Ume (macOS)" */,
+				D0A1D32A301B98AE0082FD16 /* Release configuration for PBXNativeTarget "Ume (macOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D0A1D2CC301B98AD0082FD16 /* Project object */;
+	validationLevel = 1;
+}

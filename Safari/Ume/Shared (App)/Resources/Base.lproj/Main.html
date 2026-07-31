@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="../Style.css">
+    <script src="../Script.js" defer></script>
+</head>
+<body>
+    <main>
+        <div class="mark" aria-hidden="true">梅</div>
+        <h1>Ume</h1>
+        <p class="lede">Manage AI mapping and the answers Ume keeps securely on this device.</p>
+
+        <section>
+            <h2>AI mapping</h2>
+            <p class="section-copy">Used automatically when local matching cannot confidently fill a field.</p>
+            <label>Provider
+                <select id="provider">
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                </select>
+            </label>
+            <label>Model
+                <input id="model" autocomplete="off" placeholder="Provider model name">
+            </label>
+            <label>API key
+                <input id="api-key" type="password" autocomplete="off" placeholder="Paste a new key">
+            </label>
+            <p id="key-state" class="hint">No key saved.</p>
+            <button id="save" class="primary" type="button">Save settings</button>
+            <button id="delete-key" class="secondary" type="button">Delete saved key</button>
+        </section>
+
+        <section>
+            <div class="section-heading">
+                <div>
+                    <h2>Stored answers</h2>
+                    <p id="answer-summary" class="section-copy">No saved answers.</p>
+                </div>
+                <button id="toggle-answers" class="compact secondary" type="button" aria-expanded="false">View</button>
+            </div>
+            <div id="answer-list" class="answer-list" hidden></div>
+        </section>
+
+        <section class="danger-zone">
+            <h2>Forget everything</h2>
+            <p class="section-copy">Permanently deletes every saved answer, your provider key, and AI settings.</p>
+            <button id="forget-everything" class="danger" type="button">Forget everything</button>
+        </section>
+
+        <p id="status" role="status" aria-live="polite"></p>
+
+        <aside>
+            <strong>Privacy boundary</strong>
+            Answers are encrypted in Ume’s shared app container. Only field labels, types, names, and option labels are sent for AI mapping; answer values stay on this device.
+        </aside>
+
+        <p class="platform-ios extension-help">Enable Ume under Settings → Apps → Safari → Extensions.</p>
+        <div class="platform-mac extension-help">
+            <p class="state-unknown">Enable Ume in Safari Settings → Extensions.</p>
+            <p class="state-on">Ume’s Safari extension is enabled.</p>
+            <p class="state-off">Ume’s Safari extension is disabled.</p>
+            <button class="open-preferences secondary" type="button">Open Safari Extension Settings</button>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,64 @@
+:root {
+  color-scheme: light dark;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  background: #f7f2ed;
+  color: #302825;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { width: min(760px, 100%); margin: 0 auto; padding: 32px 18px 80px; }
+header { margin-bottom: 24px; }
+.eyebrow { color: #b72c46; font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+h1 { margin: 6px 0; font-size: clamp(30px, 7vw, 48px); letter-spacing: -.04em; }
+header p { max-width: 600px; margin: 0; color: #746762; line-height: 1.5; }
+nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 26px 0 14px; padding: 5px; border-radius: 14px; background: #eae0d9; }
+button { font: inherit; }
+.tab { min-height: 42px; border: 0; border-radius: 10px; background: transparent; color: #665954; font-weight: 700; }
+.tab.active { background: white; color: #a9233e; box-shadow: 0 2px 10px rgb(50 35 30 / 10%); }
+.panel { padding: 18px; border: 1px solid #e5d8d0; border-radius: 20px; background: #fffdfb; box-shadow: 0 12px 40px rgb(74 49 39 / 8%); }
+.instructions { margin-bottom: 22px; padding: 14px 16px; border-radius: 12px; background: #fbecef; color: #6b3943; line-height: 1.45; }
+.instructions strong { display: block; color: #91213a; }
+fieldset { margin: 0 0 25px; padding: 0; border: 0; }
+legend { width: 100%; margin-bottom: 13px; padding-bottom: 8px; border-bottom: 1px solid #eee3dc; font-size: 18px; font-weight: 750; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+label { display: grid; gap: 6px; color: #594d48; font-size: 13px; font-weight: 650; }
+label.wide { grid-column: 1 / -1; }
+input, select, textarea { width: 100%; min-height: 46px; padding: 11px 12px; border: 1px solid #d8cac2; border-radius: 10px; background: white; color: #302825; font: inherit; font-size: 16px; }
+textarea { min-height: 84px; resize: vertical; }
+input:focus, select:focus, textarea:focus { border-color: #b72c46; outline: 3px solid rgb(183 44 70 / 14%); }
+.check { display: flex; grid-template-columns: auto 1fr; align-items: center; gap: 9px; }
+.check input { width: 22px; min-height: 22px; accent-color: #b72c46; }
+.skip-test { padding: 14px; border: 1px dashed #d5c3b9; border-radius: 12px; }
+.skip-test legend { border: 0; }
+.check-results { width: 100%; min-height: 48px; border: 0; border-radius: 11px; background: #b72c46; color: white; font-weight: 750; }
+output { display: block; margin-top: 12px; padding: 13px; border-radius: 10px; line-height: 1.45; }
+output.success { background: #e5f6eb; color: #176333; }
+output.partial { background: #fff1d8; color: #79500a; }
+.portal { background: #f4f7fa; border-color: #d9e1e8; }
+.portal-heading { display: flex; align-items: start; justify-content: space-between; gap: 15px; margin-bottom: 18px; }
+.portal-heading h2 { margin: 4px 0 0; font-size: 25px; letter-spacing: -.025em; }
+.portal-step { color: #557087; font-size: 12px; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; }
+.portal-badge { padding: 7px 9px; border-radius: 20px; background: #dfeaf1; color: #405c70; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.question-card { display: grid; grid-template-columns: 35px 1fr; gap: 12px; margin-bottom: 12px; padding: 17px; border: 1px solid #dbe3e9; border-radius: 13px; background: white; }
+.question-number { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #e8eef3; color: #4c687c; font-size: 11px; font-weight: 800; }
+.question-body { display: grid; gap: 7px; }
+.question-label { margin: 0; color: #594d48; font-size: 13px; font-weight: 650; }
+.hint { margin: -2px 0 2px; color: #78868f; font-size: 12px; }
+.split-name { grid-template-columns: 1fr 1fr; }
+.split-name .question-label { grid-column: 1 / -1; }
+[hidden] { display: none !important; }
+@media (max-width: 560px) { .grid { grid-template-columns: 1fr; } label.wide { grid-column: auto; } main { padding-top: 22px; } .panel { padding: 15px; } }
+@media (prefers-color-scheme: dark) {
+  :root { background: #1e1a18; color: #f4ece8; }
+  header p { color: #b8aaa3; }
+  nav { background: #312925; }
+  .tab { color: #b9aaa3; }
+  .tab.active, .panel, .portal { background: #2a2421; }
+  .panel { border-color: #4a3d37; }
+  .question-card { border-color: #4a5054; background: #24282b; }
+  .portal-badge, .question-number { background: #34434d; color: #c5d9e5; }
+  legend { border-color: #493d37; }
+  label { color: #cec0b9; }
+  input, select, textarea { border-color: #594a43; background: #211c1a; color: #f4ece8; }
+  .skip-test { border-color: #5d4c44; }
+}

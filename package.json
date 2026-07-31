@@ -1,0 +1,15 @@
+{
+  "name": "ume-form-filler",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A local-only, mobile-first Safari form filler.",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check Extension/popup.js && node --check Extension/content.js && node --check Extension/lib/matcher.js && node --check test-form/script.js",
+    "test-form": "python3 -m http.server 8000 --directory test-form"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

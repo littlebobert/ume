@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Ume — Private Form Filler",
+  "version": "0.1.0",
+  "description": "Save answers locally and reuse them on similar forms.",
+  "permissions": ["storage", "activeTab", "nativeMessaging"],
+  "action": {
+    "default_title": "Ume",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["lib/matcher.js", "content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "host_permissions": ["http://*/*", "https://*/*"]
+}

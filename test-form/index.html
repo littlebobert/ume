@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Ume Test Clinic</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="eyebrow">Ume test clinic</span>
+        <h1>Patient intake</h1>
+        <p>This page is local and does not submit or transmit anything. Use fictional information only.</p>
+      </header>
+
+      <nav aria-label="Test form variants">
+        <button class="tab active" type="button" data-form="learn">1. Learn</button>
+        <button class="tab" type="button" data-form="replay">2. Similar</button>
+        <button class="tab" type="button" data-form="different">3. Different</button>
+      </nav>
+
+      <section id="learn-panel" class="panel">
+        <div class="instructions">
+          <strong>First, teach Ume.</strong>
+          Complete this form, invoke Ume in Safari, then choose <b>Remember my answers</b>.
+        </div>
+
+        <form id="patient-intake" autocomplete="on">
+          <fieldset>
+            <legend>About you</legend>
+            <div class="grid">
+              <label>First name<input name="first_name" autocomplete="given-name" value="Hanako"></label>
+              <label>Last name<input name="last_name" autocomplete="family-name" value="Yamada"></label>
+              <label>Date of birth<input name="date_of_birth" autocomplete="bday" type="date" value="1962-04-18"></label>
+              <label>Email address<input name="email" autocomplete="email" type="email" value="hanako@example.com"></label>
+              <label class="wide">Phone number<input name="phone" autocomplete="tel" type="tel" value="090-1234-5678"></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Emergency contact</legend>
+            <div class="grid">
+              <label>Emergency contact name<input name="emergency_contact_name" value="Taro Yamada"></label>
+              <label>Emergency contact phone number<input name="emergency_contact_phone" type="tel" value="080-9876-5432"></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Health information</legend>
+            <div class="grid">
+              <label>Blood type
+                <select name="blood_type">
+                  <option value="">Choose one</option>
+                  <option>A</option><option selected>B</option><option>AB</option><option>O</option><option>Unknown</option>
+                </select>
+              </label>
+              <label>Primary physician<input name="primary_physician" value="Dr. Sakura Ito"></label>
+              <label class="wide">Current medications<textarea name="current_medications">Atorvastatin 10 mg once daily</textarea></label>
+              <label class="wide">Known allergies<textarea name="known_allergies">Penicillin</textarea></label>
+            </div>
+            <label class="check"><input name="has_insurance" type="checkbox" checked> I currently have health insurance</label>
+          </fieldset>
+
+          <fieldset class="skip-test">
+            <legend>Fields Ume should skip</legend>
+            <div class="grid">
+              <label>Portal password<input name="password" type="password" value="not-a-real-password"></label>
+              <label>Social Security number<input name="ssn" value="000-00-0000"></label>
+            </div>
+          </fieldset>
+        </form>
+      </section>
+
+      <section id="replay-panel" class="panel" hidden>
+        <div class="instructions">
+          <strong>Now test the match.</strong>
+          These fields use different IDs and wording. Invoke Ume and choose <b>Fill this form</b>.
+        </div>
+
+        <form id="returning-patient" autocomplete="on">
+          <fieldset>
+            <legend>Patient details</legend>
+            <div class="grid">
+              <label>Given name<input id="patientGiven" name="patientGiven" autocomplete="given-name"></label>
+              <label>Family name<input id="patientFamily" name="patientFamily" autocomplete="family-name"></label>
+              <label>Birth date<input id="dobValue" name="dobValue" autocomplete="bday" type="date"></label>
+              <label>Your email<input id="contactEmail" name="contactEmail" autocomplete="email" type="email"></label>
+              <label class="wide">Mobile phone<input id="mobileNumber" name="mobileNumber" autocomplete="tel" type="tel"></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>In case of emergency</legend>
+            <div class="grid">
+              <label>Emergency contact full name<input name="emergencyPerson"></label>
+              <label>Emergency contact phone<input name="emergencyPhone" type="tel"></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Medical profile</legend>
+            <div class="grid">
+              <label>Blood type
+                <select name="patientBloodGroup">
+                  <option value="">Choose one</option>
+                  <option>A</option><option>B</option><option>AB</option><option>O</option><option>Unknown</option>
+                </select>
+              </label>
+              <label>Primary care physician<input name="primaryCarePhysician"></label>
+              <label class="wide">Current medication list<textarea name="medicationList"></textarea></label>
+              <label class="wide">Known medication allergies<textarea name="allergyList"></textarea></label>
+            </div>
+            <label class="check"><input name="insuranceCoverage" type="checkbox"> I currently have health insurance</label>
+          </fieldset>
+
+          <button id="check-results" class="check-results" type="button">Check results</button>
+          <output id="result" aria-live="polite"></output>
+        </form>
+      </section>
+
+      <section id="different-panel" class="panel portal" hidden>
+        <div class="portal-heading">
+          <div>
+            <span class="portal-step">Questionnaire · Step 2 of 4</span>
+            <h2>Confirm your records</h2>
+          </div>
+          <span class="portal-badge">Secure portal demo</span>
+        </div>
+        <div class="instructions">
+          <strong>A harder, differently structured form.</strong>
+          This uses cards, reordered questions, synonyms, generated field names, and ARIA labels. Deterministic matching should fill standard identity fields but may miss semantic medical fields—those misses are where an optional AI mapper would help.
+        </div>
+
+        <form id="different-format" autocomplete="on">
+          <div class="question-card">
+            <span class="question-number">01</span>
+            <div class="question-body">
+              <label for="portal-email">Where should we send appointment updates?</label>
+              <p class="hint">Use the email address you check most often.</p>
+              <input id="portal-email" name="q_1042" autocomplete="email" type="email">
+            </div>
+          </div>
+
+          <div class="question-card">
+            <span class="question-number">02</span>
+            <div class="question-body split-name">
+              <p class="question-label">What is your legal name?</p>
+              <input name="q_2001" autocomplete="family-name" aria-label="Surname">
+              <input name="q_2002" autocomplete="given-name" aria-label="Forename">
+            </div>
+          </div>
+
+          <div class="question-card">
+            <span class="question-number">03</span>
+            <div class="question-body">
+              <label for="portal-dob">When were you born?</label>
+              <input id="portal-dob" name="q_3100" autocomplete="bday" type="date">
+            </div>
+          </div>
+
+          <div class="question-card">
+            <span class="question-number">04</span>
+            <div class="question-body">
+              <label for="portal-mobile">Best number for reaching you</label>
+              <input id="portal-mobile" name="q_4200" autocomplete="tel" type="tel">
+            </div>
+          </div>
+
+          <div class="question-card">
+            <span class="question-number">05</span>
+            <div class="question-body">
+              <label for="portal-drugs">List anything you take regularly, including dosage</label>
+              <textarea id="portal-drugs" name="q_5517"></textarea>
+            </div>
+          </div>
+
+          <div class="question-card">
+            <span class="question-number">06</span>
+            <div class="question-body">
+              <label for="portal-reactions">Do any medicines cause you a reaction?</label>
+              <textarea id="portal-reactions" name="q_6612"></textarea>
+            </div>
+          </div>
+
+          <div class="question-card">
+            <span class="question-number">07</span>
+            <div class="question-body">
+              <label for="portal-doctor">Who normally manages your care?</label>
+              <input id="portal-doctor" name="q_7720">
+            </div>
+          </div>
+
+          <button id="check-different" class="check-results" type="button">Check harder form</button>
+          <output id="different-result" aria-live="polite"></output>
+        </form>
+      </section>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ume</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="mark" aria-hidden="true">梅</div>
+        <div>
+          <h1>Ume</h1>
+          <p>Fill it once. Keep it private.</p>
+        </div>
+      </header>
+
+      <section class="notice">
+        <strong>Stored securely on this device.</strong>
+        Ume never saves passwords, payment fields, or hidden values.
+      </section>
+
+      <div class="actions">
+        <button id="learn" type="button">Remember my answers</button>
+        <button id="fill" type="button">Fill this form</button>
+      </div>
+
+      <div id="activity" class="activity" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="activity-label">Working…</span>
+      </div>
+      <p id="status" role="status" aria-live="polite">Open a form to get started.</p>
+
+      <footer>
+        <span id="answer-count">0 saved answers</span>
+        <span>Manage data in the Ume app</span>
+      </footer>
+    </main>
+    <script src="lib/matcher.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

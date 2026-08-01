@@ -20,6 +20,225 @@ private func descriptionLabel(_ text: String) -> NSTextField {
 
 private let settingsPaneSize = NSSize(width: 720, height: 500)
 
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
+
+class ConfirmPopoverViewController: NSViewController, NSWindowDelegate {
+    var onApply: (() -> Void)?
+    private var applied = false
+
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        view.window?.delegate = self
+    }
+
+    func applyAndClose() {
+        guard !applied else { return }
+        applied = true
+        onApply?()
+        view.window?.close()
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        guard !applied else { return }
+        applied = true
+        onApply?()
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
+        applyAndClose()
+    }
+}
+
+final class PhonePopoverViewController: ConfirmPopoverViewController {
+    private let countryField: NSTextField
+    private let numberField: NSTextField
+
+    init(countryField: NSTextField, numberField: NSTextField) {
+        self.countryField = countryField
+        self.numberField = numberField
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func loadView() {
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 74))
+        let countryLabel = NSTextField(labelWithString: "Country code")
+        let numberLabel = NSTextField(labelWithString: "Phone number")
+        countryField.translatesAutoresizingMaskIntoConstraints = false
+        numberField.translatesAutoresizingMaskIntoConstraints = false
+        let grid = NSGridView(views: [
+            [countryLabel, countryField],
+            [numberLabel, numberField]
+        ])
+        grid.column(at: 0).xPlacement = .trailing
+        grid.rowAlignment = .firstBaseline
+        grid.columnSpacing = 8
+        grid.rowSpacing = 8
+        grid.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(grid)
+        NSLayoutConstraint.activate([
+            grid.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            grid.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            countryField.widthAnchor.constraint(equalToConstant: 80),
+            numberField.widthAnchor.constraint(equalToConstant: 180)
+        ])
+        let done = NSButton(title: "Done", target: self, action: #selector(donePressed))
+        done.keyEquivalent = "\r"
+        done.isBordered = false
+        done.isTransparent = true
+        view.addSubview(done)
+    }
+
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        view.window?.makeFirstResponder(numberField)
+    }
+
+    @objc private func donePressed() {
+        applyAndClose()
+    }
+}
+
+final class DebugLogWindowController: NSWindowController, NSWindowDelegate {
+    init() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 680, height: 440),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "AI Debug Log"
+        window.minSize = NSSize(width: 480, height: 320)
+        window.isReleasedWhenClosed = false
+        window.contentViewController = DebugLogViewController()
+        window.center()
+        super.init(window: window)
+    }
+
+    required init?(coder: NSCoder) { nil }
+}
+
+final class DebugLogViewController: NSViewController {
+    private let textView = NSTextView()
+    private let noteLabel = NSTextField(wrappingLabelWithString: "")
+
+    override func loadView() {
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 680, height: 440))
+        noteLabel.textColor = .secondaryLabelColor
+        noteLabel.font = .systemFont(ofSize: 11)
+        noteLabel.stringValue = AIDebugLogStore.hidesSensitiveInfo
+            ? "Sensitive field details are hidden. Saved answer values and API keys are never logged."
+            : "This log may contain field labels and other potentially sensitive form details, but never saved answer values or API keys."
+
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
+        textView.textContainerInset = NSSize(width: 6, height: 6)
+
+        let scroll = NSScrollView()
+        scroll.documentView = textView
+        scroll.hasVerticalScroller = true
+        scroll.hasHorizontalScroller = true
+        scroll.autohidesScrollers = true
+        scroll.borderType = .bezelBorder
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+
+        let deleteButton = NSButton(title: "Delete Log", target: self, action: #selector(deleteLog))
+        deleteButton.bezelStyle = .rounded
+        let doneButton = NSButton(title: "Done", target: self, action: #selector(closeWindow))
+        doneButton.bezelStyle = .rounded
+        doneButton.keyEquivalent = "\r"
+        noteLabel.translatesAutoresizingMaskIntoConstraints = false
+        let buttons = NSStackView(views: [deleteButton, NSView(), doneButton])
+        buttons.orientation = .horizontal
+        buttons.alignment = .centerY
+        buttons.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(noteLabel)
+        view.addSubview(scroll)
+        view.addSubview(buttons)
+        NSLayoutConstraint.activate([
+            noteLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            noteLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            noteLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 16),
+
+            scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            scroll.topAnchor.constraint(equalTo: noteLabel.bottomAnchor, constant: 10),
+            scroll.bottomAnchor.constraint(equalTo: buttons.topAnchor, constant: -12),
+
+            buttons.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            buttons.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            buttons.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -16)
+        ])
+        reloadLog()
+    }
+
+    private func reloadLog() {
+        let log = AIDebugLogStore.read()
+        if !log.isEmpty {
+            textView.string = log
+        } else if let error = AIDebugLogStore.lastError {
+            textView.string = "Ume attempted to write the AI debug log, but it failed:\n\n\(error)"
+        } else if let attempt = AIDebugLogStore.lastAttempt {
+            textView.string = "Ume attempted to write the AI debug log at \(attempt.formatted()), but no entries could be read."
+        } else if !AIDebugLogStore.isEnabled {
+            textView.string = "AI debug logging is disabled. Enable it in AI Provider settings, then fill a form again."
+        } else {
+            textView.string = "No AI debug request has reached the native extension yet."
+        }
+    }
+
+    @objc private func deleteLog() {
+        try? AIDebugLogStore.clear()
+        view.window?.close()
+    }
+
+    @objc private func closeWindow() {
+        view.window?.close()
+    }
+}
+
+final class DatePopoverViewController: ConfirmPopoverViewController {
+    private let picker: NSDatePicker
+
+    init(picker: NSDatePicker) {
+        self.picker = picker
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func loadView() {
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 240, height: 56))
+        picker.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(picker)
+        NSLayoutConstraint.activate([
+            picker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            picker.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+        let done = NSButton(title: "Done", target: self, action: #selector(donePressed))
+        done.keyEquivalent = "\r"
+        done.isBordered = false
+        done.isTransparent = true
+        view.addSubview(done)
+    }
+
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        view.window?.makeFirstResponder(picker)
+    }
+
+    @objc private func donePressed() {
+        applyAndClose()
+    }
+}
+
 private func settingsPaneView() -> NSView {
     let view = NSView(frame: NSRect(origin: .zero, size: settingsPaneSize))
     NSLayoutConstraint.activate([
@@ -316,7 +535,7 @@ final class SettingsTabViewController: NSTabViewController {
         super.viewDidLoad()
         preferredContentSize = settingsPaneSize
         tabStyle = .toolbar
-        transitionOptions = [.crossfade]
+        transitionOptions = []
         addTabViewItem(item(GeneralSettingsViewController(), label: "General", image: "gearshape"))
         addTabViewItem(item(AISettingsViewController(), label: "AI Provider", image: "sparkles"))
         addTabViewItem(item(SavedDataViewController(), label: "Saved Data", image: "tray.full"))
@@ -397,6 +616,10 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
     private let model = NSTextField()
     private let apiKey = NSSecureTextField()
     private let status = descriptionLabel("")
+    private let debugLogging = NSButton(checkboxWithTitle: "Enable logging for bug reports", target: nil, action: nil)
+    private let debugNote = descriptionLabel("Your logs are never sent automatically. They are only sent if you manually send them in via the Report a Bug button.")
+    private let hideSensitive = NSButton(checkboxWithTitle: "Hide potentially sensitive info in AI debug logs", target: nil, action: nil)
+    private let debugButtons = NSStackView()
 
     override func loadView() {
         view = settingsPaneView()
@@ -429,11 +652,27 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
         buttons.alignment = .centerY
         buttons.distribution = .gravityAreas
 
+        debugLogging.target = self
+        debugLogging.action = #selector(debugLoggingChanged)
+        hideSensitive.target = self
+        hideSensitive.action = #selector(hideSensitiveChanged)
+        let viewLog = NSButton(title: "View Log…", target: self, action: #selector(viewDebugLog))
+        let clearLog = NSButton(title: "Clear Log", target: self, action: #selector(clearDebugLog))
+        debugButtons.addArrangedSubview(viewLog)
+        debugButtons.addArrangedSubview(clearLog)
+        debugButtons.orientation = .horizontal
+        debugButtons.spacing = 8
+        let debugSection = NSStackView(views: [debugLogging, debugNote, hideSensitive, debugButtons])
+        debugSection.orientation = .vertical
+        debugSection.alignment = .leading
+        debugSection.spacing = 7
+
         let stack = paneStack(title: "AI Provider", description: "Used only when on-device matching cannot identify a field confidently.")
         stack.spacing = 18
         stack.addArrangedSubview(form)
         stack.addArrangedSubview(status)
         stack.addArrangedSubview(buttons)
+        stack.addArrangedSubview(debugSection)
         view.addSubview(stack)
         NSLayoutConstraint.activate([
             stack.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -441,7 +680,8 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
             stack.topAnchor.constraint(equalTo: view.topAnchor),
             form.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -60),
             status.widthAnchor.constraint(equalTo: form.widthAnchor),
-            buttons.widthAnchor.constraint(equalTo: form.widthAnchor)
+            buttons.widthAnchor.constraint(equalTo: form.widthAnchor),
+            debugSection.widthAnchor.constraint(equalTo: form.widthAnchor)
         ])
         loadSettings()
     }
@@ -451,6 +691,16 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
         provider.selectItem(at: settings?.provider == "anthropic" ? 1 : 0)
         model.stringValue = settings?.model ?? defaultModel
         status.stringValue = settings?.apiKey.isEmpty == false ? "A key is saved in Apple Keychain." : "No key is saved."
+        debugLogging.state = AIDebugLogStore.isEnabled ? .on : .off
+        hideSensitive.state = AIDebugLogStore.hidesSensitiveInfo ? .on : .off
+        updateDebugDependentControls()
+    }
+
+    private func updateDebugDependentControls() {
+        let enabled = debugLogging.state == .on
+        debugNote.isHidden = !enabled
+        hideSensitive.isHidden = !enabled
+        debugButtons.isHidden = !enabled
     }
 
     private var selectedProvider: String { provider.indexOfSelectedItem == 1 ? "anthropic" : "openai" }
@@ -487,6 +737,42 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
         }
     }
 
+    @objc private func debugLoggingChanged() {
+        let enabled = debugLogging.state == .on
+        AIDebugLogStore.isEnabled = enabled
+        if !enabled {
+            do {
+                try AIDebugLogStore.clear()
+                status.stringValue = "Logging disabled and saved logs deleted."
+            } catch {
+                status.stringValue = "Logging disabled, but saved logs could not be deleted: \(error.localizedDescription)"
+            }
+        }
+        updateDebugDependentControls()
+    }
+
+    @objc private func hideSensitiveChanged() {
+        AIDebugLogStore.hidesSensitiveInfo = hideSensitive.state == .on
+    }
+
+    private var logWindowController: NSWindowController?
+
+    @objc private func viewDebugLog() {
+        let controller = DebugLogWindowController()
+        logWindowController = controller
+        controller.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func clearDebugLog() {
+        do {
+            try AIDebugLogStore.clear()
+            status.stringValue = "AI debug log cleared."
+        } catch {
+            status.stringValue = error.localizedDescription
+        }
+    }
+
     @objc private func deleteKey() {
         SettingsStore.delete()
         loadSettings()
@@ -496,18 +782,27 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
 final class SavedDataViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSTextFieldDelegate {
     private let table = NSTableView()
     private let deleteButton = NSButton()
+    private let addButton = NSButton()
     private var answers: [[String: Any]] = []
+    private var draftAnswer: [String: Any]?
+    private var navigatingCells = false
+    private static let answerTypes = ["", "date", "gender", "phone"]
+    private static let typeTitles = ["Auto", "Date", "Gender", "Phone"]
 
     override func loadView() {
         view = settingsPaneView()
         let labelColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("label"))
         labelColumn.title = "Label"
-        labelColumn.width = 260
+        labelColumn.width = 220
         let valueColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("value"))
         valueColumn.title = "Value"
-        valueColumn.width = 340
+        valueColumn.width = 300
+        let typeColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("type"))
+        typeColumn.title = "Type"
+        typeColumn.width = 110
         table.addTableColumn(labelColumn)
         table.addTableColumn(valueColumn)
+        table.addTableColumn(typeColumn)
         table.headerView = NSTableHeaderView()
         table.usesAlternatingRowBackgroundColors = true
         table.allowsMultipleSelection = false
@@ -515,23 +810,32 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         table.dataSource = self
         table.target = self
         table.doubleAction = #selector(beginInlineEditing)
+        table.rowHeight = 24
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, self.handleTableKey(event) else { return event }
+            return nil
+        }
 
         let scroll = NSScrollView()
         scroll.documentView = table
         scroll.hasVerticalScroller = true
         scroll.borderType = .bezelBorder
 
+        addButton.title = "Add…"
+        addButton.target = self
+        addButton.action = #selector(addAnswer)
+        addButton.bezelStyle = .rounded
         deleteButton.title = "Delete"
         deleteButton.target = self
         deleteButton.action = #selector(deleteSelected)
         deleteButton.bezelStyle = .rounded
         deleteButton.isEnabled = false
         let clear = NSButton(title: "Clear All Answers…", target: self, action: #selector(clearAll))
-        let buttons = NSStackView(views: [deleteButton, NSView(), clear])
+        let buttons = NSStackView(views: [addButton, deleteButton, NSView(), clear])
         buttons.orientation = .horizontal
         buttons.spacing = 8
 
-        let stack = paneStack(title: "Saved Data", description: "Double-click any label or value to edit it. Changes save when you press Return or leave the field.")
+        let stack = paneStack(title: "Saved Data", description: "Double-click a label or value to edit; click a type to change it. Use Phone for numbers — Ume fills country-code fields automatically. Changes save automatically.")
         stack.addArrangedSubview(scroll)
         stack.addArrangedSubview(buttons)
         view.addSubview(stack)
@@ -552,27 +856,251 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         table.reloadData()
     }
 
-    func numberOfRows(in tableView: NSTableView) -> Int { answers.count }
+    override func viewWillDisappear() {
+        super.viewWillDisappear()
+        discardEmptyDraft()
+    }
+
+    private var displayedAnswers: [[String: Any]] {
+        answers + (draftAnswer.map { [$0] } ?? [])
+    }
+
+    func numberOfRows(in tableView: NSTableView) -> Int { displayedAnswers.count }
 
     func tableViewSelectionDidChange(_ notification: Notification) {
         deleteButton.isEnabled = answers.indices.contains(table.selectedRow)
+        if !navigatingCells && draftAnswer != nil && table.selectedRow != answers.count && table.selectedRow >= 0 {
+            discardEmptyDraft()
+        }
+    }
+
+    private func discardEmptyDraft() {
+        guard let draft = draftAnswer else { return }
+        let label = (draft["userLabel"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let value = (draft["value"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if label.isEmpty && value.isEmpty {
+            draftAnswer = nil
+            table.reloadData()
+        }
+    }
+
+    private func handleTableKey(_ event: NSEvent) -> Bool {
+        guard let window = view.window, event.window === window,
+              window.firstResponder === table,
+              table.selectedRow >= 0 else { return false }
+        let row = table.selectedRow
+        switch event.keyCode {
+        case 51, 117:
+            deleteSelected()
+            return true
+        case 36, 76:
+            startEditing(row: row, column: 0)
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func startEditing(row: Int, column: Int) {
+        guard displayedAnswers.indices.contains(row) else { return }
+        let answer = displayedAnswers[row]
+        let type = answer["answerType"] as? String ?? detectedType(answer)
+        if column == 1, type == "phone" {
+            presentPhonePopover(row: row)
+        } else if column == 1, type == "date" {
+            presentDatePopover(row: row)
+        } else {
+            editCell(row: row, column: column)
+        }
     }
 
     @objc private func beginInlineEditing() {
-        let row = table.clickedRow
-        let column = table.clickedColumn
-        guard answers.indices.contains(row), column >= 0,
-              let cell = table.view(atColumn: column, row: row, makeIfNecessary: true) as? NSTableCellView,
-              let field = cell.textField else { return }
+        let column = table.clickedColumn == 2 ? 0 : table.clickedColumn
+        startEditing(row: table.clickedRow, column: column)
+    }
+
+    private func editCell(row: Int, column: Int) {
+        guard displayedAnswers.indices.contains(row), column >= 0, column < table.numberOfColumns,
+              let cell = table.view(atColumn: column, row: row, makeIfNecessary: true) as? NSTableCellView else { return }
+        guard column < 2, let field = cell.textField else { return }
         field.isEditable = true
         table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        table.scrollRowToVisible(row)
         view.window?.makeFirstResponder(field)
         field.currentEditor()?.selectAll(nil)
     }
 
+    @objc private func typeChanged(_ sender: NSPopUpButton) {
+        let row = sender.tag
+        guard displayedAnswers.indices.contains(row),
+              Self.answerTypes.indices.contains(sender.indexOfSelectedItem) else { return }
+        let type = Self.answerTypes[sender.indexOfSelectedItem]
+        if row == answers.count {
+            draftAnswer?["answerType"] = type.isEmpty ? nil : type
+            return
+        }
+        guard let id = answers[row]["answerID"] as? String else { return }
+        do {
+            var all = try AnswerStore.load()
+            guard let index = all.firstIndex(where: { $0["answerID"] as? String == id }) else { return }
+            all[index]["answerType"] = type.isEmpty ? nil : type
+            try AnswerStore.save(all)
+            answers = all
+        } catch {
+            present(error)
+            reload()
+        }
+    }
+
+    private func answerForRow(_ row: Int) -> [String: Any]? {
+        displayedAnswers[safe: row]
+    }
+
+    private func persistChanges(row: Int, mutate: (inout [String: Any]) -> Void) {
+        if row == answers.count {
+            guard var draft = draftAnswer else { return }
+            mutate(&draft)
+            draftAnswer = draft
+            table.reloadData()
+            return
+        }
+        guard answers.indices.contains(row), let id = answers[row]["answerID"] as? String else { return }
+        do {
+            var all = try AnswerStore.load()
+            guard let index = all.firstIndex(where: { $0["answerID"] as? String == id }) else { return }
+            mutate(&all[index])
+            try AnswerStore.save(all)
+            answers = all
+            table.reloadData()
+        } catch {
+            present(error)
+            reload()
+        }
+    }
+
+    private func anchorCellView(row: Int, column: Int) -> NSView {
+        table.view(atColumn: column, row: row, makeIfNecessary: true) ?? table
+    }
+
+    private func present(_ controller: NSViewController, row: Int, column: Int = 1) {
+        table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        table.scrollRowToVisible(row)
+        let popover = NSPopover()
+        popover.contentViewController = controller
+        popover.behavior = .transient
+        popover.show(relativeTo: anchorCellView(row: row, column: column).bounds, of: anchorCellView(row: row, column: column), preferredEdge: .maxY)
+    }
+
+    private func presentPhonePopover(row: Int) {
+        guard let answer = answerForRow(row) else { return }
+        let countryField = NSTextField()
+        countryField.placeholderString = "e.g. 81"
+        countryField.stringValue = answer["countryCode"] as? String ?? ""
+        let numberField = NSTextField()
+        numberField.placeholderString = "Local number"
+        numberField.stringValue = answer["value"] as? String ?? ""
+        let controller = PhonePopoverViewController(countryField: countryField, numberField: numberField)
+        controller.onApply = { [weak self] in
+            self?.persistChanges(row: row) { answer in
+                answer["countryCode"] = countryField.stringValue.trimmingCharacters(in: .whitespaces).isEmpty ? nil : countryField.stringValue.filter(\.isNumber)
+                answer["value"] = numberField.stringValue
+            }
+        }
+        present(controller, row: row)
+    }
+
+    private func presentDatePopover(row: Int) {
+        guard let answer = answerForRow(row) else { return }
+        let picker = NSDatePicker()
+        picker.datePickerStyle = .textFieldAndStepper
+        picker.datePickerElements = [.yearMonthDay]
+        picker.dateValue = Self.parseDate(answer["value"] as? String) ?? Date()
+        let controller = DatePopoverViewController(picker: picker)
+        controller.onApply = { [weak self] in
+            self?.persistChanges(row: row) { answer in
+                answer["value"] = Self.formatDate(picker.dateValue)
+            }
+        }
+        present(controller, row: row)
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
+
+    private static func parseDate(_ string: String?) -> Date? {
+        guard let string, !string.isEmpty else { return nil }
+        if let date = dateFormatter.date(from: string) { return date }
+        let iso = DateFormatter()
+        iso.locale = Locale(identifier: "en_US_POSIX")
+        iso.dateFormat = "yyyy-MM-dd"
+        return iso.date(from: string)
+    }
+
+    private static func formatDate(_ date: Date) -> String {
+        dateFormatter.string(from: date)
+    }
+
+    private func detectedType(_ answer: [String: Any]) -> String {
+        if let explicit = answer["answerType"] as? String, Self.answerTypes.contains(explicit) { return explicit }
+        let text = " " + ([answer["userLabel"], answer["accessibleName"], answer["label"], answer["name"], answer["autocomplete"]]
+            .compactMap { $0 as? String }.joined(separator: " "))
+            .lowercased()
+            .replacingOccurrences(of: #"[^a-z0-9]+"#, with: " ", options: .regularExpression) + " "
+        if text.range(of: #" (country (phone )?code|phone country|calling code|dial code) "#, options: .regularExpression) != nil { return "phone" }
+        if text.range(of: #" (phone|telephone|tel|mobile|cell) "#, options: .regularExpression) != nil { return "phone" }
+        if text.range(of: #" (birth ?day|birth ?date|date of birth|d o b) "#, options: .regularExpression) != nil { return "date" }
+        if text.range(of: #" (gender|sex) "#, options: .regularExpression) != nil { return "gender" }
+        return ""
+    }
+
+    private func advance(from row: Int, current: Int) {
+        if current == 0 {
+            view.window?.makeFirstResponder(nil)
+            startEditing(row: row, column: 1)
+        } else if row + 1 < displayedAnswers.count {
+            view.window?.makeFirstResponder(nil)
+            startEditing(row: row + 1, column: 0)
+        } else {
+            view.window?.makeFirstResponder(nil)
+        }
+    }
+
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        let answer = answers[row]
+        let answer = displayedAnswers[row]
         let identifier = tableColumn?.identifier ?? NSUserInterfaceItemIdentifier("cell")
+
+        if identifier.rawValue == "type" {
+            let cell = tableView.makeView(withIdentifier: identifier, owner: self) as? NSTableCellView ?? NSTableCellView()
+            var popup = cell.viewWithTag(701) as? NSPopUpButton
+            if popup == nil {
+                let button = NSPopUpButton(frame: .zero, pullsDown: false)
+                button.addItems(withTitles: Self.typeTitles)
+                button.isBordered = false
+                button.font = .systemFont(ofSize: NSFont.systemFontSize)
+                button.target = self
+                button.action = #selector(typeChanged(_:))
+                button.tag = 701
+                button.translatesAutoresizingMaskIntoConstraints = false
+                cell.identifier = identifier
+                cell.addSubview(button)
+                NSLayoutConstraint.activate([
+                    button.leadingAnchor.constraint(greaterThanOrEqualTo: cell.leadingAnchor),
+                    button.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: 2),
+                    button.centerYAnchor.constraint(equalTo: cell.centerYAnchor)
+                ])
+                popup = button
+            }
+            popup?.tag = row
+            let explicit = answer["answerType"] as? String
+            let type = (explicit.map { Self.answerTypes.contains($0) ? $0 : "" } ?? detectedType(answer))
+            popup?.selectItem(at: Self.answerTypes.firstIndex(of: type) ?? 0)
+            return cell
+        }
+
         let cell = tableView.makeView(withIdentifier: identifier, owner: self) as? NSTableCellView ?? NSTableCellView()
         if cell.textField == nil {
             let text = NSTextField()
@@ -596,10 +1124,10 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         cell.textField?.identifier = identifier
         cell.textField?.isEditable = false
         if identifier.rawValue == "label" {
-            cell.textField?.stringValue = displayLabel(answer, row: row)
+            cell.textField?.stringValue = answer["userLabel"] as? String ?? displayLabel(answer, row: row)
             cell.textField?.placeholderString = "Label"
         } else {
-            cell.textField?.stringValue = valueString(answer["value"])
+            cell.textField?.stringValue = displayValue(answer)
             cell.textField?.placeholderString = answer["value"] is Bool ? "Yes or No" : "Value"
         }
         return cell
@@ -617,9 +1145,73 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         return value.map(String.init(describing:)) ?? ""
     }
 
+    private func displayValue(_ answer: [String: Any]) -> String {
+        let value = valueString(answer["value"])
+        guard detectedType(answer) == "phone",
+              let code = answer["countryCode"] as? String else { return value }
+        let digits = code.filter(\.isNumber)
+        guard !digits.isEmpty else { return value }
+        return value.isEmpty ? "+\(digits)" : "+\(digits) \(value)"
+    }
+
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        guard commandSelector == #selector(NSResponder.insertTab(_:)),
+              let field = control as? NSTextField else { return false }
+        let row: Int
+        let current: Int
+        guard displayedAnswers.indices.contains(field.tag),
+              let raw = field.identifier?.rawValue, raw == "label" || raw == "value" else { return false }
+        row = field.tag
+        current = raw == "label" ? 0 : 1
+        navigatingCells = true
+        defer { navigatingCells = false }
+        advance(from: row, current: current)
+        return true
+    }
+
+    func controlTextDidBeginEditing(_ notification: Notification) {
+        guard let field = notification.object as? NSTextField else { return }
+        field.isEditable = true
+    }
+
     func controlTextDidEndEditing(_ notification: Notification) {
         guard let field = notification.object as? NSTextField,
-              answers.indices.contains(field.tag),
+              displayedAnswers.indices.contains(field.tag) else { return }
+        if field.tag == answers.count, var draft = draftAnswer {
+            let editedLabel = field.identifier?.rawValue == "label"
+            let text = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if editedLabel {
+                draft["userLabel"] = text
+                draft["accessibleName"] = text
+                draft["label"] = text
+            } else {
+                draft["value"] = text
+            }
+            draftAnswer = draft
+
+            let label = (draft["userLabel"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let value = (draft["value"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            field.isEditable = false
+            if !label.isEmpty && !value.isEmpty {
+                do {
+                    let type = draft["answerType"] as? String
+                    try AnswerStore.add(userLabel: label, value: value, answerType: type?.isEmpty == false ? type : nil)
+                    if let code = draft["countryCode"] as? String, !code.isEmpty {
+                        var all = try AnswerStore.load()
+                        if let last = all.indices.last { all[last]["countryCode"] = code }
+                        try AnswerStore.save(all)
+                    }
+                    draftAnswer = nil
+                    reload()
+                    table.selectRowIndexes(IndexSet(integer: answers.count - 1), byExtendingSelection: false)
+                } catch {
+                    present(error)
+                }
+            }
+            return
+        }
+
+        guard answers.indices.contains(field.tag),
               let id = answers[field.tag]["answerID"] as? String else { return }
         let answer = answers[field.tag]
         let editedLabel = field.identifier?.rawValue == "label"
@@ -646,6 +1238,25 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
             field.stringValue = editedLabel ? displayLabel(answer, row: field.tag) : valueString(answer["value"])
             field.isEditable = false
             present(error)
+        }
+    }
+
+    @objc private func addAnswer() {
+        guard draftAnswer == nil else { return }
+        draftAnswer = [
+            "answerID": UUID().uuidString,
+            "kind": "text",
+            "inputType": "text"
+        ]
+        table.reloadData()
+        let row = answers.count
+        table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        table.scrollRowToVisible(row)
+        DispatchQueue.main.async {
+            guard let cell = self.table.view(atColumn: 0, row: row, makeIfNecessary: true) as? NSTableCellView,
+                  let field = cell.textField else { return }
+            field.isEditable = true
+            self.view.window?.makeFirstResponder(field)
         }
     }
 

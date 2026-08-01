@@ -30,6 +30,8 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         switch type {
         case "UME_GET_ONBOARDING_STATE":
             complete(context, ["ok": true, "complete": OnboardingStore.isComplete])
+        case "UME_GET_DEBUG_LOGGING_STATE":
+            complete(context, ["ok": true, "enabled": AIDebugLogStore.isEnabled])
         case "UME_OPEN_APP", "UME_OPEN_SETTINGS":
             let destination = type == "UME_OPEN_SETTINGS" ? "settings" : "onboarding"
             guard let url = URL(string: "ume://\(destination)") else {
@@ -94,9 +96,21 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             throw MappingError.message("Could not encode sanitized field schemas.")
         }
 
-        let response = settings.provider == "openai"
-            ? try await requestOpenAI(settings, inputJSON: inputJSON)
-            : try await requestAnthropic(settings, inputJSON: inputJSON)
+        AIDebugLogStore.append(
+            "REQUEST provider=\(settings.provider) model=\(settings.model)",
+            details: AIDebugLogStore.hidesSensitiveInfo ? Self.redactedSchemas(saved: saved, fields: fields) : inputJSON
+        )
+
+        let response: String
+        do {
+            response = settings.provider == "openai"
+                ? try await requestOpenAI(settings, inputJSON: inputJSON)
+                : try await requestAnthropic(settings, inputJSON: inputJSON)
+            AIDebugLogStore.append("RESPONSE provider=\(settings.provider)", details: response)
+        } catch {
+            AIDebugLogStore.append("ERROR provider=\(settings.provider)", details: error.localizedDescription)
+            throw error
+        }
 
         guard let object = try JSONSerialization.jsonObject(with: Data(response.utf8)) as? [String: Any],
               let rawMappings = object["mappings"] as? [[String: Any]] else {
@@ -109,6 +123,22 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                   fieldIDs.contains(field), savedIDs.contains(key) else { return nil }
             return ["field": field, "key": key]
         }
+    }
+
+    private static func redactedSchemas(saved: [[String: Any]], fields: [[String: Any]]) -> String {
+        let redact: ([[String: Any]]) -> [[String: Any]] = { list in
+            list.map { schema in
+                var copy = schema
+                for key in ["label", "accessibleName", "accessibleDescription", "placeholder", "group", "section", "form", "optionLabel", "groupName", "tableHeaders", "options", "name", "id", "value"] {
+                    copy[key] = nil
+                }
+                return copy
+            }
+        }
+        let redacted: [String: Any] = ["savedFieldSchemas": redact(saved), "currentFormSchemas": redact(fields)]
+        guard let data = try? JSONSerialization.data(withJSONObject: redacted, options: [.sortedKeys]),
+              let json = String(data: data, encoding: .utf8) else { return "(redacted)" }
+        return json
     }
 
     private func requestOpenAI(_ settings: AISettings, inputJSON: String) async throws -> String {

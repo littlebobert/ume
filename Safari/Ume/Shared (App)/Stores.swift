@@ -97,6 +97,80 @@ enum SettingsStore {
     }
 }
 
+enum AIDebugLogStore {
+    private static let enabledKey = "ai-debug-logging-enabled"
+    private static let hideSensitiveKey = "ai-debug-log-hide-sensitive"
+    private static let lastErrorKey = "ai-debug-log-last-error"
+    private static let lastAttemptKey = "ai-debug-log-last-attempt"
+    private static let maximumBytes = 512_000
+
+    static var isEnabled: Bool {
+        get { UserDefaults(suiteName: appGroupIdentifier)?.bool(forKey: enabledKey) ?? false }
+        set { UserDefaults(suiteName: appGroupIdentifier)?.set(newValue, forKey: enabledKey) }
+    }
+
+    static var hidesSensitiveInfo: Bool {
+        get {
+            let defaults = UserDefaults(suiteName: appGroupIdentifier)
+            return defaults?.object(forKey: hideSensitiveKey) as? Bool ?? true
+        }
+        set { UserDefaults(suiteName: appGroupIdentifier)?.set(newValue, forKey: hideSensitiveKey) }
+    }
+
+    private static func fileURL() throws -> URL {
+        guard let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) else {
+            throw StoreError.message("Ume could not access its shared data container.")
+        }
+        return container.appendingPathComponent("ai-debug.log", isDirectory: false)
+    }
+
+    static var lastError: String? {
+        UserDefaults(suiteName: appGroupIdentifier)?.string(forKey: lastErrorKey)
+    }
+
+    static var lastAttempt: Date? {
+        UserDefaults(suiteName: appGroupIdentifier)?.object(forKey: lastAttemptKey) as? Date
+    }
+
+    static func append(_ event: String, details: String) {
+        guard isEnabled else { return }
+        let defaults = UserDefaults(suiteName: appGroupIdentifier)
+        defaults?.set(Date(), forKey: lastAttemptKey)
+        do {
+            let url = try fileURL()
+            let timestamp = ISO8601DateFormatter().string(from: Date())
+            let entry = "[\(timestamp)] \(event)\n\(details)\n\n"
+            var existing = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+            existing.append(entry)
+            if existing.utf8.count > maximumBytes {
+                let suffix = existing.utf8.suffix(maximumBytes)
+                existing = String(decoding: suffix, as: UTF8.self)
+                if let firstNewline = existing.firstIndex(of: "\n") {
+                    existing.removeSubrange(...firstNewline)
+                }
+            }
+            try existing.write(to: url, atomically: true, encoding: .utf8)
+            defaults?.removeObject(forKey: lastErrorKey)
+        } catch {
+            defaults?.set(error.localizedDescription, forKey: lastErrorKey)
+        }
+    }
+
+    static func read() -> String {
+        guard let url = try? fileURL() else { return "" }
+        return (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+    }
+
+    static func clear() throws {
+        let defaults = UserDefaults(suiteName: appGroupIdentifier)
+        defaults?.removeObject(forKey: lastErrorKey)
+        defaults?.removeObject(forKey: lastAttemptKey)
+        let url = try fileURL()
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        try FileManager.default.removeItem(at: url)
+    }
+}
+
 enum AnswerStore {
     private static let maximumCount = 2_000
 
@@ -144,10 +218,18 @@ enum AnswerStore {
     private static func normalized(_ answers: [[String: Any]]) -> ([[String: Any]], Bool) {
         var changed = false
         let result = answers.map { answer -> [String: Any] in
-            guard answer["answerID"] as? String == nil else { return answer }
             var migrated = answer
-            migrated["answerID"] = UUID().uuidString
-            changed = true
+            if migrated["answerID"] as? String == nil {
+                migrated["answerID"] = UUID().uuidString
+                changed = true
+            }
+            if (migrated["answerType"] as? String) == "countrycode" {
+                let code = (migrated["value"] as? String ?? "").filter(\.isNumber)
+                migrated["countryCode"] = code.isEmpty ? nil : code
+                migrated["answerType"] = "phone"
+                migrated["value"] = ""
+                changed = true
+            }
             return migrated
         }
         return (result, changed)
@@ -193,6 +275,29 @@ enum AnswerStore {
         }
         if let coordinatedError { throw coordinatedError }
         if let writeError { throw writeError }
+    }
+
+    static func add(userLabel: String, value: String, answerType: String? = nil) throws {
+        let label = userLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let value = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !label.isEmpty, !value.isEmpty else {
+            throw StoreError.message("Enter both a label and a value.")
+        }
+        var answer: [String: Any] = [
+            "answerID": UUID().uuidString,
+            "userLabel": label,
+            "accessibleName": label,
+            "label": label,
+            "kind": "text",
+            "inputType": "text",
+            "value": value
+        ]
+        if let type = answerType?.trimmingCharacters(in: .whitespacesAndNewlines), !type.isEmpty {
+            answer["answerType"] = type
+        }
+        var answers = try load()
+        answers.append(answer)
+        try save(answers)
     }
 
     static func update(id: String, userLabel: String, value: Any) throws {

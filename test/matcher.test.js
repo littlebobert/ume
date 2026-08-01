@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { bestMatch, looksGenerated, mergeEntries, normalize, score } = require("../Extension/lib/matcher.js");
+const { answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, score } = require("../Extension/lib/matcher.js");
 
 const entry = (overrides = {}) => ({
   accessibleDescription: "",
@@ -44,6 +44,26 @@ test("incompatible input types never match", () => {
   const saved = entry({ accessibleName: "Birthday", inputType: "date" });
   const field = entry({ accessibleName: "Birthday", inputType: "number" });
   assert.equal(bestMatch([saved], field), null);
+});
+
+test("phone answers are incompatible with travel identifier fields", () => {
+  const phone = entry({ accessibleName: "Phone number", name: "traveler.phone.mobileNumber", value: "090-1234-5678" });
+  for (const label of ["Frequent flyer number", "Redress Number", "Known Traveler Number or PASS ID"]) {
+    const field = entry({ accessibleName: label, name: label.replaceAll(" ", ".") });
+    assert.equal(compatible(phone, field), false);
+    assert.equal(bestMatch([phone], field), null);
+  }
+});
+
+test("untyped phone answers match phone fields via context", () => {
+  const phone = entry({ accessibleName: "Phone number", name: "traveler.phone.mobileNumber", value: "090-1234-5678" });
+  const field = entry({ accessibleName: "Contact phone" });
+  assert.equal(compatible(phone, field), true);
+});
+
+test("semantically equivalent phone fields remain compatible", () => {
+  const phone = entry({ accessibleName: "Phone number", value: "090-1234-5678" });
+  assert.equal(compatible(phone, entry({ accessibleName: "Mobile telephone" })), true);
 });
 
 test("ambiguous equal matches are rejected", () => {
@@ -94,4 +114,57 @@ test("merge assigns stable identities to new answers", () => {
   const merged = mergeEntries([], [entry({ label: "Email" })]);
   assert.equal(typeof merged[0].answerID, "string");
   assert.ok(merged[0].answerID.length > 10);
+});
+
+test("answerType falls back to semantic detection and validates explicit values", () => {
+  assert.equal(answerType(entry({ accessibleName: "Date of birth" })), "date");
+  assert.equal(answerType(entry({ accessibleName: "Mobile phone" })), "phone");
+  assert.equal(answerType(entry({ accessibleName: "Calling code" })), "phone");
+  assert.equal(answerType(entry({ accessibleName: "First name" })), "");
+  assert.equal(answerType(entry({ accessibleName: "Contact", answerType: "gender" })), "gender");
+  assert.equal(answerType(entry({ accessibleName: "Contact", answerType: "bogus" })), "");
+});
+
+test("typed phone answers match phone and calling code fields but not identifiers", () => {
+  const phone = entry({ answerType: "phone", accessibleName: "Contact", value: "15551234567", countryCode: "1" });
+  assert.equal(compatible(phone, entry({ accessibleName: "Phone number" })), true);
+  assert.equal(compatible(phone, entry({ accessibleName: "Country code" })), true);
+  assert.equal(compatible(phone, entry({ accessibleName: "Calling code" })), true);
+  assert.equal(compatible(phone, entry({ accessibleName: "Country code", kind: "select" })), true);
+  assert.equal(compatible(phone, entry({ accessibleName: "Redress number" })), false);
+});
+
+test("typed answers still respect field kind requirements", () => {
+  const date = entry({ answerType: "date", accessibleName: "Contact" });
+  assert.equal(compatible(date, entry({ accessibleName: "Anything", kind: "select" })), false);
+  assert.equal(compatible(date, entry({ accessibleName: "Anything", kind: "text" })), true);
+});
+
+test("gender answers match radio groups and dropdowns but not phone fields", () => {
+  const gender = entry({ answerType: "gender", accessibleName: "Gender", value: "Female" });
+  assert.equal(compatible(gender, entry({ accessibleName: "Gender", kind: "radio", value: "female" })), true);
+  assert.equal(compatible(gender, entry({ accessibleName: "Title", kind: "radio", value: "mr" })), true);
+  assert.equal(compatible(gender, entry({ accessibleName: "Department", kind: "radio", value: "engineering" })), false);
+  assert.equal(compatible(gender, entry({ accessibleName: "Gender", kind: "select" })), true);
+  assert.equal(compatible(gender, entry({ accessibleName: "Gender", kind: "text" })), true);
+  assert.equal(compatible(gender, entry({ accessibleName: "Phone number", kind: "text" })), false);
+});
+
+test("legacy countrycode answers are treated as phone", () => {
+  const legacy = entry({ answerType: "countrycode", accessibleName: "Country code", value: "81" });
+  assert.equal(answerType(legacy), "phone");
+});
+
+test("date answers match split month, day, and year fields", () => {
+  const dob = entry({ answerType: "date", accessibleName: "Date of birth", value: "1962-04-18" });
+  assert.ok(bestMatch([dob], entry({ accessibleName: "Month", kind: "select", name: "dob.month" })));
+  assert.ok(bestMatch([dob], entry({ accessibleName: "DD", kind: "select", name: "dob.day" })));
+  assert.ok(bestMatch([dob], entry({ accessibleName: "YYYY", kind: "select", name: "dob.year" })));
+  assert.ok(bestMatch([dob], entry({ accessibleName: "Birth month", autocomplete: "bday-month" })));
+  assert.equal(bestMatch([dob], entry({ accessibleName: "State", kind: "select" })), null);
+});
+
+test("phone answers match country calling code dropdowns", () => {
+  const phone = entry({ answerType: "phone", accessibleName: "Phone number", value: "09012345678", countryCode: "81" });
+  assert.ok(bestMatch([phone], entry({ accessibleName: "Country calling code", kind: "select", name: "phone.cc" })));
 });

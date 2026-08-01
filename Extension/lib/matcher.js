@@ -50,8 +50,65 @@
     return entry?.userLabel || entry?.accessibleName || entry?.label || "";
   }
 
+  function semanticText(entry) {
+    return normalize([
+      nameText(entry), entry?.label, entry?.name, entry?.id, entry?.autocomplete,
+      entry?.placeholder, entry?.group, entry?.section
+    ].filter(Boolean).join(" "));
+  }
+
+  function semanticCategory(entry) {
+    const text = semanticText(entry);
+    if (/(?:^| )(?:country (?:phone )?code|phone country|calling code|dial code|international code|country dialing)(?: |$)/.test(text)) return "phone";
+    if (/(?:^| )(?:phone|telephone|tel|mobile|cell)(?: |$)/.test(text)) return "phone";
+    if (/(?:^| )(?:birth ?day|birth ?date|date of birth|d o b)(?: |$)/.test(text)) return "date";
+    if (/(?:^| )(?:month|mm|day|dd|year|yyyy|yy)(?: |$)/.test(text) && (entry?.inputType === "date" || entry?.inputType === "number" || entry?.kind === "select" || /^bday-(month|day|year)$/.test(entry?.autocomplete || ""))) return "date";
+    if (/(?:^| )(?:gender|sex)(?: |$)/.test(text)) return "gender";
+    if (/(?:^| )(?:frequent flyer|mileage|loyalty|member(?:ship)?|account|redress|known traveler|ktn|pass id|passport|license|identification|traveler number)(?: |$)/.test(text)) return "identifier";
+    return "";
+  }
+
+  const VALID_TYPES = new Set(["date", "gender", "phone"]);
+  const FIELD_CATEGORIES = { date: "date", gender: "gender", phone: "phone" };
+
+  function answerType(entry) {
+    const explicit = typeof entry?.answerType === "string" ? entry.answerType : "";
+    if (VALID_TYPES.has(explicit)) return explicit;
+    const detected = semanticCategory(entry);
+    return FIELD_CATEGORIES[detected] || "";
+  }
+
+  function compatible(saved, field) {
+    if (!saved || !field) return false;
+    const savedType = answerType(saved);
+    const fieldCategory = semanticCategory(field);
+    if (savedType && field.kind === "radio") {
+      if (savedType === "gender") {
+        const text = normalize([field.accessibleName, field.label, field.group, field.name, field.value].filter(Boolean).join(" "));
+        return /(?:^| )(?:female|male|woman|man|non ?binary|gender|sex|mr|mrs|ms|miss|mx)(?: |$)/.test(text);
+      }
+      return false;
+    }
+    if (saved.kind !== field.kind) {
+      const fieldText = semanticText(field);
+      const callingCode = /(?:^| )(?:country (?:phone )?code|phone country|calling code|dial code|international code|country dialing)(?: |$)/.test(fieldText);
+      const datePart = /(?:^| )(?:month|mm|day|dd|year|yyyy|yy)(?: |$)/.test(fieldText);
+      const crossKind = (savedType === "gender")
+        || (savedType === "date" && (fieldCategory === "date" || datePart))
+        || (savedType === "phone" && callingCode);
+      if (!crossKind) return false;
+    }
+    if (savedType) {
+      if (fieldCategory === "identifier") return false;
+      if (!fieldCategory) return true;
+      return savedType === fieldCategory;
+    }
+    const savedCategory = semanticCategory(saved);
+    return !(savedCategory && fieldCategory && savedCategory !== fieldCategory);
+  }
+
   function score(saved, field) {
-    if (!saved || !field || saved.kind !== field.kind) return -Infinity;
+    if (!compatible(saved, field)) return -Infinity;
     if (saved.inputType && field.inputType && saved.inputType !== field.inputType) {
       const compatibleTextTypes = new Set(["", "email", "search", "tel", "text", "url"]);
       if (!compatibleTextTypes.has(saved.inputType) || !compatibleTextTypes.has(field.inputType)) return -Infinity;
@@ -59,6 +116,8 @@
 
     let total = 0;
     if (saved.autocomplete && saved.autocomplete === field.autocomplete) total += 100;
+    const savedType = answerType(saved);
+    if (savedType && savedType === semanticCategory(field)) total += 45;
     if (saved.name && !looksGenerated(saved.name) && !looksGenerated(field.name) && normalize(saved.name) === normalize(field.name)) total += 50;
     if (saved.id && !looksGenerated(saved.id) && !looksGenerated(field.id) && normalize(saved.id) === normalize(field.id)) total += 30;
     total += overlap(nameText(saved), nameText(field)) * 70;
@@ -92,7 +151,7 @@
       }
     }
 
-    return tied ? null : best;
+    return tied && answerType(field) !== "date" ? null : best;
   }
 
   function mergeEntries(existing, incoming) {
@@ -114,5 +173,5 @@
     return result;
   }
 
-  return { bestMatch, looksGenerated, mergeEntries, normalize, overlap, score };
+  return { answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, overlap, score };
 });

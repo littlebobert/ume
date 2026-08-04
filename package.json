@@ -5,7 +5,7 @@
   "description": "A local-only, mobile-first Safari form filler.",
   "scripts": {
     "test": "node --test",
-    "check": "node --check Extension/popup.js && node --check Extension/content.js && node --check Extension/lib/matcher.js && node --check test-form/script.js",
+    "check": "node --check Extension/popup.js && node --check Extension/content.js && node --check Extension/lib/matcher.js && node --check Extension/lib/dom.js && node --check Extension/lib/date.js && node --check Extension/lib/phone.js && node --check test-form/script.js",
     "test-form": "python3 -m http.server 8000 --directory test-form"
   },
   "engines": {

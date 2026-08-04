@@ -16,10 +16,19 @@
     return compactText(element?.innerText || element?.textContent || "");
   }
 
+  const { deepQuerySelectorAll } = UmeDOM;
+  const { formatDateParts, parseDateParts } = UmeDate;
+  const { countryCodeDigits, digitsOnly, localNumberDigits, valueForField: phoneValueForField } = UmePhone;
+
+  function elementById(element, id) {
+    const root = element.getRootNode?.();
+    return root?.getElementById?.(id) || document.getElementById(id);
+  }
+
   function referencedText(element, attribute) {
     return compactText((element.getAttribute(attribute) || "")
       .split(/\s+/)
-      .map((id) => textOf(document.getElementById(id)))
+      .map((id) => textOf(elementById(element, id)))
       .filter(Boolean)
       .join(" "));
   }
@@ -98,7 +107,7 @@
 
     const headers = [];
     const explicit = (cell.getAttribute("headers") || "").split(/\s+/).filter(Boolean);
-    headers.push(...explicit.map((id) => textOf(document.getElementById(id))));
+    headers.push(...explicit.map((id) => textOf(elementById(element, id))));
 
     const row = cell.closest("tr");
     if (row) {
@@ -182,7 +191,7 @@
   function collectAnswers() {
     const answers = [];
     const seenRadios = new Set();
-    for (const element of document.querySelectorAll("input, select, textarea")) {
+    for (const element of deepQuerySelectorAll("input, select, textarea")) {
       if (!isEligible(element)) continue;
       if (element.type === "radio" && element.checked) {
         const key = element.name || `${describe(element).groupName}`;
@@ -207,27 +216,6 @@
     else element.value = String(value);
   }
 
-  function digitsOnly(value) {
-    return String(value || "").replace(/\D/g, "");
-  }
-
-  function countryCodeDigits(saved) {
-    const stored = digitsOnly(saved?.countryCode);
-    if (stored) return stored;
-    const value = String(saved?.value ?? "").trim();
-    if (!value.startsWith("+")) return "";
-    const match = value.match(/^\+(\d{1,3})/);
-    return match ? match[1] : "";
-  }
-
-  function localNumberDigits(saved, code) {
-    let digits = digitsOnly(saved?.value);
-    if (code && digits.startsWith(code)) digits = digits.slice(code.length);
-    else if (!code && digits.length > 10 && digits.startsWith("1")) digits = digits.slice(1);
-    if (code && code !== "1" && digits.startsWith("0")) digits = digits.slice(1);
-    return digits;
-  }
-
   function isCountryCodeField(element) {
     const text = UmeMatcher.normalize([
       element.id, element.name, element.placeholder, labelFor(element), accessibleNameFor(element)
@@ -248,13 +236,9 @@
   }
 
   function phoneParts(saved, element) {
-    const code = countryCodeDigits(saved);
-    if (isCountryCodeField(element)) {
-      const local = localNumberDigits(saved, code);
-      const candidate = code || (local && local !== digitsOnly(saved?.value) ? "1" : "");
-      return candidate ? [candidate, local] : null;
-    }
-    return [localNumberDigits(saved, code || (String(saved?.value ?? "").trim().startsWith("+") ? countryCodeDigits(saved) : ""))];
+    const callingCodeField = isCountryCodeField(element);
+    const value = phoneValueForField(saved, callingCodeField);
+    return value ? [value] : null;
   }
 
   function selectOption(element, option) {
@@ -293,41 +277,56 @@
     return selectOption(element, option);
   }
 
-  function applyRadio(saved) {
-    const normalized = UmeMatcher.normalize(saved?.value);
+  function genderValue(value) {
+    const normalized = UmeMatcher.normalize(value);
+    if (/^(?:f|female|woman)$/.test(normalized)) return "female";
+    if (/^(?:m|male|man)$/.test(normalized)) return "male";
+    if (/^(?:x|non binary|nonbinary|unspecified|undisclosed)$/.test(normalized)) return "nonbinary";
+    return normalized;
+  }
+
+  function applyRadio(saved, sourceElement) {
+    const type = UmeMatcher.answerType(saved);
+    const normalized = type === "gender" ? genderValue(saved?.value) : UmeMatcher.normalize(saved?.value);
     if (!normalized) return false;
-    const candidates = [...document.querySelectorAll("input[type='radio']")].filter(isEligible);
-    const exact = candidates.find((candidate) => {
-      const text = UmeMatcher.normalize([labelFor(candidate), candidate.value].filter(Boolean).join(" "));
-      return text === normalized;
+    const candidates = deepQuerySelectorAll("input[type='radio']").filter((candidate) => {
+      if (!isEligible(candidate)) return false;
+      const descriptor = describe(candidate);
+      if (sourceElement?.name && candidate.name && sourceElement.name !== candidate.name) return false;
+      return !sourceElement || UmeMatcher.compatible(saved, descriptor);
     });
-    const match = exact || candidates.find((candidate) => {
-      const text = UmeMatcher.normalize([labelFor(candidate), candidate.value].filter(Boolean).join(" "));
-      return text.startsWith(normalized);
+    const match = candidates.find((candidate) => {
+      const value = type === "gender"
+        ? genderValue([labelFor(candidate), candidate.value].filter(Boolean).join(" "))
+        : UmeMatcher.normalize([labelFor(candidate), candidate.value].filter(Boolean).join(" "));
+      return value === normalized || value.startsWith(`${normalized} `);
     });
     if (match && !match.checked) match.click();
-    return Boolean(match);
+    return Boolean(match && match.checked);
+  }
+
+  function applySegmentedGender(saved) {
+    const target = genderValue(saved?.value);
+    if (!target) return false;
+    const candidates = deepQuerySelectorAll("button, [role='radio']").filter((candidate) => {
+      if (candidate.disabled || candidate.getAttribute("aria-disabled") === "true") return false;
+      return genderValue([candidate.getAttribute("aria-label"), candidate.getAttribute("data-value"), candidate.getAttribute("value"), textOf(candidate)].filter(Boolean).join(" ")) === target;
+    });
+    const match = candidates.find((candidate) => {
+      const container = candidate.closest("[role='radiogroup'], mat-button-toggle-group, .mat-button-toggle-group") || candidate.parentElement;
+      const context = UmeMatcher.normalize(textOf(container));
+      return /(?:^| )male(?: |$)/.test(context) && /(?:^| )female(?: |$)/.test(context);
+    });
+    if (!match) return false;
+    match.click();
+    return match.getAttribute("aria-checked") !== "false" && match.getAttribute("aria-pressed") !== "false";
   }
 
   const MONTH_NAMES = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
-  function parseDateParts(raw) {
-    const text = String(raw ?? "").trim();
-    if (!text) return null;
-    let match = text.match(/^(\d{4})\D+(\d{1,2})\D+(\d{1,2})$/);
-    if (match) return { year: match[1], month: String(Number(match[2])), day: String(Number(match[3])) };
-    match = text.match(/^(\d{1,2})\D+(\d{1,2})\D+(\d{4})$/);
-    if (match) return { year: match[3], month: String(Number(match[1])), day: String(Number(match[2])) };
-    const timestamp = Date.parse(text);
-    if (!Number.isNaN(timestamp)) {
-      const date = new Date(timestamp);
-      return { year: String(date.getFullYear()), month: String(date.getMonth() + 1), day: String(date.getDate()) };
-    }
-    return null;
-  }
-
   function dateFieldPart(element) {
     const text = UmeMatcher.normalize([labelFor(element), element.name, element.id, element.placeholder, element.autocomplete].filter(Boolean).join(" "));
+    if (element.autocomplete === "bday" || /(?:^| )(?:birth ?day|birth ?date|date of birth|dob)(?: |$)/.test(text)) return "";
     if (/(?:^| )(?:month|mm)(?: |$)/.test(text) || element.autocomplete === "bday-month") return "month";
     if (/(?:^| )(?:year|yyyy|yy)(?: |$)/.test(text) || element.autocomplete === "bday-year") return "year";
     if (/(?:^| )(?:day|dd)(?: |$)/.test(text) || element.autocomplete === "bday-day") return "day";
@@ -353,16 +352,25 @@
     const parts = parseDateParts(saved?.value);
     if (!parts) return false;
     const part = dateFieldPart(element);
-    if (!part) return false;
-    const partValue = datePartValue(parts, part);
-    if (!partValue) return false;
-    if (element instanceof HTMLSelectElement) return applyDateSelect(element, partValue);
-    const text = UmeMatcher.normalize([element.placeholder, element.name, element.id].filter(Boolean).join(" "));
-    const value = (part === "month" || part === "day") && /mm|dd|yyyy|yy/.test(text) ? partValue.padded : partValue.numeric;
+    if (part) {
+      const partValue = datePartValue(parts, part);
+      if (!partValue) return false;
+      if (element instanceof HTMLSelectElement) return applyDateSelect(element, partValue);
+      const text = UmeMatcher.normalize([element.placeholder, element.name, element.id].filter(Boolean).join(" "));
+      const value = (part === "month" || part === "day") && /mm|dd|yyyy|yy/.test(text) ? partValue.padded : partValue.numeric;
+      setNativeValue(element, value);
+      dispatchValueEvents(element);
+      return String(element.value) === String(value);
+    }
+
+    if (element instanceof HTMLSelectElement) return false;
+    const normalized = UmeMatcher.normalize([labelFor(element), accessibleNameFor(element), element.name, element.id, element.placeholder, element.autocomplete].filter(Boolean).join(" "));
+    const isBirthDate = /(?:^| )(?:birth ?day|birth ?date|date of birth|dob)(?: |$)/.test(normalized) || element.autocomplete === "bday";
+    if (!isBirthDate) return false;
+    const value = formatDateParts(parts, [element.placeholder, labelFor(element), accessibleNameFor(element)].filter(Boolean).join(" "), element.type);
     setNativeValue(element, value);
-    element.dispatchEvent(new Event("input", { bubbles: true }));
-    element.dispatchEvent(new Event("change", { bubbles: true }));
-    return true;
+    dispatchValueEvents(element);
+    return String(element.value) === value;
   }
 
   function dispatchValueEvents(element) {
@@ -375,9 +383,10 @@
       if (element.checked !== Boolean(value)) element.click();
       return element.checked === Boolean(value);
     }
-    if (element.type === "radio") return applyRadio(saved || { value });
+    if (element.type === "radio") return applyRadio(saved || { value }, element);
 
     const type = UmeMatcher.answerType(saved);
+    if (type === "gender" && applySegmentedGender(saved)) return true;
     if (type === "date") {
       if (applyDate(element, saved)) return true;
       if (element instanceof HTMLSelectElement) return false;
@@ -407,7 +416,7 @@
   const failedApplications = new WeakSet();
 
   function eligibleElements() {
-    return [...document.querySelectorAll("input, select, textarea")].filter(isEligible);
+    return deepQuerySelectorAll("input, select, textarea").filter(isEligible);
   }
 
   function fillAnswers(savedEntries, diagnosticsEnabled = false) {
@@ -464,7 +473,7 @@
       matchedButNotApplied,
       ...(diagnosticsEnabled ? { countryCodeDiagnostics } : {}),
       eligibleFieldCount: elements.length,
-      domControlCount: document.querySelectorAll("input, select, textarea").length,
+      domControlCount: deepQuerySelectorAll("input, select, textarea").length,
       frameURL: location.href
     };
   }

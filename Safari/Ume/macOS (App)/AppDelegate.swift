@@ -29,9 +29,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showSettingsContent(in window: NSWindow) {
         window.title = "Ume Settings"
-        window.minSize = NSSize(width: 680, height: 520)
-        window.setContentSize(NSSize(width: 760, height: 620))
         window.contentViewController = SettingsTabViewController()
+        window.contentMinSize = NSSize(width: 720, height: 500)
+        window.setContentSize(NSSize(width: 760, height: 620))
         window.center()
     }
 

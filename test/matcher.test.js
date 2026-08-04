@@ -134,10 +134,11 @@ test("typed phone answers match phone and calling code fields but not identifier
   assert.equal(compatible(phone, entry({ accessibleName: "Redress number" })), false);
 });
 
-test("typed answers still respect field kind requirements", () => {
-  const date = entry({ answerType: "date", accessibleName: "Contact" });
+test("typed answers require compatible field kinds and semantics", () => {
+  const date = entry({ answerType: "date", accessibleName: "Date of birth" });
   assert.equal(compatible(date, entry({ accessibleName: "Anything", kind: "select" })), false);
-  assert.equal(compatible(date, entry({ accessibleName: "Anything", kind: "text" })), true);
+  assert.equal(compatible(date, entry({ accessibleName: "Anything", kind: "text" })), false);
+  assert.equal(compatible(date, entry({ accessibleName: "Date of birth", kind: "text" })), true);
 });
 
 test("gender answers match radio groups and dropdowns but not phone fields", () => {
@@ -167,4 +168,52 @@ test("date answers match split month, day, and year fields", () => {
 test("phone answers match country calling code dropdowns", () => {
   const phone = entry({ answerType: "phone", accessibleName: "Phone number", value: "09012345678", countryCode: "81" });
   assert.ok(bestMatch([phone], entry({ accessibleName: "Country calling code", kind: "select", name: "phone.cc" })));
+});
+
+test("typed phone answers never match unlabeled document number fields", () => {
+  const phone = entry({ answerType: "phone", accessibleName: "Phone number", value: "09012345678", countryCode: "81" });
+  const documentNumber = entry({ name: "docNumber", id: "adc-input-S-23BB" });
+  assert.equal(compatible(phone, documentNumber), false);
+  assert.equal(bestMatch([phone], documentNumber), null);
+});
+
+test("birth dates never match document expiration or issue dates", () => {
+  const birthday = entry({ answerType: "date", accessibleName: "Date of birth", value: "1962-04-18" });
+  for (const field of [
+    entry({ accessibleName: "Document expiration date", inputType: "date" }),
+    entry({ accessibleName: "Passport expiry month", kind: "select" }),
+    entry({ name: "documentExpirationYear", kind: "select" }),
+    entry({ accessibleName: "Document issue date", inputType: "date" })
+  ]) {
+    assert.equal(compatible(birthday, field), false);
+    assert.equal(bestMatch([birthday], field), null);
+  }
+});
+
+test("typed special answers require a positively identified destination", () => {
+  const birthday = entry({ answerType: "date", accessibleName: "Date of birth", value: "1962-04-18" });
+  const phone = entry({ answerType: "phone", accessibleName: "Phone number", value: "09012345678" });
+  const gender = entry({ answerType: "gender", accessibleName: "Gender", value: "Female" });
+  const anonymous = entry({ id: "generated-control" });
+  assert.equal(compatible(birthday, anonymous), false);
+  assert.equal(compatible(phone, anonymous), false);
+  assert.equal(compatible(gender, anonymous), false);
+});
+
+test("full birthday controls are recognized through autocomplete", () => {
+  const birthday = entry({ answerType: "date", accessibleName: "Date of birth", value: "1962-04-18" });
+  assert.equal(compatible(birthday, entry({ autocomplete: "bday", inputType: "date" })), true);
+});
+
+test("confirmation fields reuse their corresponding saved answer", () => {
+  const email = entry({ accessibleName: "Email", inputType: "email", value: "hanako@example.com" });
+  for (const label of ["Confirm email", "Re-enter email", "Verify email"]) {
+    assert.equal(bestMatch([email], entry({ accessibleName: label, inputType: "email" })), email);
+  }
+});
+
+test("confirmation matching preserves the underlying field identity", () => {
+  const email = entry({ accessibleName: "Email address", inputType: "email", value: "hanako@example.com" });
+  const phone = entry({ answerType: "phone", accessibleName: "Phone number", value: "09012345678" });
+  assert.equal(bestMatch([email, phone], entry({ accessibleName: "Confirm email address", inputType: "email" })), email);
 });

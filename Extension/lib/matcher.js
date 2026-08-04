@@ -50,6 +50,10 @@
     return entry?.userLabel || entry?.accessibleName || entry?.label || "";
   }
 
+  function withoutConfirmation(value) {
+    return normalize(value).replace(/^(?:confirm|confirmation|re enter|retype|repeat|verify)\s+/, "");
+  }
+
   function semanticText(entry) {
     return normalize([
       nameText(entry), entry?.label, entry?.name, entry?.id, entry?.autocomplete,
@@ -61,10 +65,11 @@
     const text = semanticText(entry);
     if (/(?:^| )(?:country (?:phone )?code|phone country|calling code|dial code|international code|country dialing)(?: |$)/.test(text)) return "phone";
     if (/(?:^| )(?:phone|telephone|tel|mobile|cell)(?: |$)/.test(text)) return "phone";
-    if (/(?:^| )(?:birth ?day|birth ?date|date of birth|d o b)(?: |$)/.test(text)) return "date";
-    if (/(?:^| )(?:month|mm|day|dd|year|yyyy|yy)(?: |$)/.test(text) && (entry?.inputType === "date" || entry?.inputType === "number" || entry?.kind === "select" || /^bday-(month|day|year)$/.test(entry?.autocomplete || ""))) return "date";
     if (/(?:^| )(?:gender|sex)(?: |$)/.test(text)) return "gender";
-    if (/(?:^| )(?:frequent flyer|mileage|loyalty|member(?:ship)?|account|redress|known traveler|ktn|pass id|passport|license|identification|traveler number)(?: |$)/.test(text)) return "identifier";
+    if (/(?:^| )(?:expir(?:y|ation)|expires?|valid (?:to|until)|issue date|issued (?:on|date))(?= |$)/.test(text)) return "document-date";
+    if (/(?:^| )(?:birth ?day|birth ?date|date of birth|d o b)(?: |$)/.test(text) || /^bday(?:-(?:month|day|year))?$/.test(entry?.autocomplete || "")) return "date";
+    if (/(?:^| )(?:month|mm|day|dd|year|yyyy|yy)(?: |$)/.test(text) && (entry?.inputType === "date" || entry?.inputType === "number" || entry?.kind === "select") && !/(?:^| )(?:document|passport|visa)(?: |$)/.test(text)) return "date";
+    if (/(?:^| )(?:document|doc|frequent flyer|mileage|loyalty|member(?:ship)?|account|redress|known traveler|ktn|pass id|passport|license|identification|traveler number)(?: |$)/.test(text)) return "identifier";
     return "";
   }
 
@@ -99,8 +104,8 @@
       if (!crossKind) return false;
     }
     if (savedType) {
-      if (fieldCategory === "identifier") return false;
-      if (!fieldCategory) return true;
+      if (fieldCategory === "identifier" || fieldCategory === "document-date") return false;
+      if (!fieldCategory) return false;
       return savedType === fieldCategory;
     }
     const savedCategory = semanticCategory(saved);
@@ -121,7 +126,15 @@
     if (saved.name && !looksGenerated(saved.name) && !looksGenerated(field.name) && normalize(saved.name) === normalize(field.name)) total += 50;
     if (saved.id && !looksGenerated(saved.id) && !looksGenerated(field.id) && normalize(saved.id) === normalize(field.id)) total += 30;
     total += overlap(nameText(saved), nameText(field)) * 70;
+    const fieldConfirmationName = withoutConfirmation(nameText(field));
+    if (fieldConfirmationName && fieldConfirmationName !== normalize(nameText(field))) {
+      total += overlap(nameText(saved), fieldConfirmationName) * 70;
+    }
     total += overlap(saved.label, field.label) * 45;
+    const fieldConfirmationLabel = withoutConfirmation(field.label);
+    if (fieldConfirmationLabel && fieldConfirmationLabel !== normalize(field.label)) {
+      total += overlap(saved.label, fieldConfirmationLabel) * 45;
+    }
     total += overlap(saved.name, field.name) * (looksGenerated(saved.name) || looksGenerated(field.name) ? 3 : 22);
     total += overlap(saved.placeholder, field.placeholder) * 12;
     total += overlap(saved.accessibleDescription, field.accessibleDescription) * 12;

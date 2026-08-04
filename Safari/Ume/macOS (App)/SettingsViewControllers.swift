@@ -240,12 +240,7 @@ final class DatePopoverViewController: ConfirmPopoverViewController {
 }
 
 private func settingsPaneView() -> NSView {
-    let view = NSView(frame: NSRect(origin: .zero, size: settingsPaneSize))
-    NSLayoutConstraint.activate([
-        view.widthAnchor.constraint(greaterThanOrEqualToConstant: settingsPaneSize.width),
-        view.heightAnchor.constraint(greaterThanOrEqualToConstant: settingsPaneSize.height)
-    ])
-    return view
+    NSView(frame: NSRect(origin: .zero, size: settingsPaneSize))
 }
 
 private func paneStack(title: String, description: String) -> NSStackView {

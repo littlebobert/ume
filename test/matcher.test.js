@@ -40,9 +40,9 @@ test("different field kinds never match", () => {
   assert.equal(bestMatch([saved], field), null);
 });
 
-test("incompatible input types never match", () => {
-  const saved = entry({ accessibleName: "Birthday", inputType: "date" });
-  const field = entry({ accessibleName: "Birthday", inputType: "number" });
+test("incompatible input types never match for ordinary answers", () => {
+  const saved = entry({ accessibleName: "Quantity", inputType: "date" });
+  const field = entry({ accessibleName: "Quantity", inputType: "number" });
   assert.equal(bestMatch([saved], field), null);
 });
 
@@ -149,6 +149,23 @@ test("gender answers match radio groups and dropdowns but not phone fields", () 
   assert.equal(compatible(gender, entry({ accessibleName: "Gender", kind: "select" })), true);
   assert.equal(compatible(gender, entry({ accessibleName: "Gender", kind: "text" })), true);
   assert.equal(compatible(gender, entry({ accessibleName: "Phone number", kind: "text" })), false);
+});
+
+test("remembered gender controls match dropdowns with a different HTML input type", () => {
+  const gender = entry({
+    answerType: "gender",
+    accessibleName: "Gender",
+    inputType: "radio",
+    kind: "radio",
+    value: "Female"
+  });
+  const unitedGender = entry({
+    accessibleName: "Gender(required)",
+    inputType: "select-one",
+    kind: "select",
+    name: "rtiTraveler.travelers[0].gender"
+  });
+  assert.equal(bestMatch([gender], unitedGender), gender);
 });
 
 test("legacy countrycode answers are treated as phone", () => {

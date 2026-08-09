@@ -114,14 +114,15 @@
 
   function score(saved, field) {
     if (!compatible(saved, field)) return -Infinity;
+    const savedType = answerType(saved);
     if (saved.inputType && field.inputType && saved.inputType !== field.inputType) {
       const compatibleTextTypes = new Set(["", "email", "search", "tel", "text", "url"]);
-      if (!compatibleTextTypes.has(saved.inputType) || !compatibleTextTypes.has(field.inputType)) return -Infinity;
+      const compatibleTextInput = compatibleTextTypes.has(saved.inputType) && compatibleTextTypes.has(field.inputType);
+      if (!savedType && !compatibleTextInput) return -Infinity;
     }
 
     let total = 0;
     if (saved.autocomplete && saved.autocomplete === field.autocomplete) total += 100;
-    const savedType = answerType(saved);
     if (savedType && savedType === semanticCategory(field)) total += 45;
     if (saved.name && !looksGenerated(saved.name) && !looksGenerated(field.name) && normalize(saved.name) === normalize(field.name)) total += 50;
     if (saved.id && !looksGenerated(saved.id) && !looksGenerated(field.id) && normalize(saved.id) === normalize(field.id)) total += 30;

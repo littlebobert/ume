@@ -279,10 +279,22 @@
 
   function genderValue(value) {
     const normalized = UmeMatcher.normalize(value);
-    if (/^(?:f|female|woman)$/.test(normalized)) return "female";
-    if (/^(?:m|male|man)$/.test(normalized)) return "male";
-    if (/^(?:x|non binary|nonbinary|unspecified|undisclosed)$/.test(normalized)) return "nonbinary";
+    const parts = new Set(normalized.split(" ").filter(Boolean));
+    if (parts.has("female") || parts.has("woman") || normalized === "f") return "f";
+    if (parts.has("male") || parts.has("man") || normalized === "m") return "m";
+    if (parts.has("undisclosed") || normalized === "u") return "u";
+    if (parts.has("unspecified") || normalized === "x" || normalized === "nonbinary" || normalized === "non binary") return "x";
     return normalized;
+  }
+
+  function applyGenderSelect(element, saved) {
+    if (applySelect(element, saved?.value)) return true;
+    const target = genderValue(saved?.value);
+    if (!target) return false;
+    const option = [...element.options].find((candidate) => {
+      return genderValue([candidate.text, candidate.value].filter(Boolean).join(" ")) === target;
+    });
+    return selectOption(element, option);
   }
 
   function applyRadio(saved, sourceElement) {
@@ -386,7 +398,11 @@
     if (element.type === "radio") return applyRadio(saved || { value }, element);
 
     const type = UmeMatcher.answerType(saved);
-    if (type === "gender" && applySegmentedGender(saved)) return true;
+    if (type === "gender") {
+      if (element instanceof HTMLSelectElement && applyGenderSelect(element, saved)) return true;
+      if (applySegmentedGender(saved)) return true;
+      if (element instanceof HTMLSelectElement) return false;
+    }
     if (type === "date") {
       if (applyDate(element, saved)) return true;
       if (element instanceof HTMLSelectElement) return false;

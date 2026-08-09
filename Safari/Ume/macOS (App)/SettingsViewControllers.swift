@@ -66,7 +66,7 @@ final class PhonePopoverViewController: ConfirmPopoverViewController {
     required init?(coder: NSCoder) { nil }
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 74))
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 118))
         let countryLabel = NSTextField(labelWithString: "Country code")
         let numberLabel = NSTextField(labelWithString: "Phone number")
         countryField.translatesAutoresizingMaskIntoConstraints = false
@@ -80,18 +80,21 @@ final class PhonePopoverViewController: ConfirmPopoverViewController {
         grid.columnSpacing = 8
         grid.rowSpacing = 8
         grid.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(grid)
-        NSLayoutConstraint.activate([
-            grid.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            grid.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            countryField.widthAnchor.constraint(equalToConstant: 80),
-            numberField.widthAnchor.constraint(equalToConstant: 180)
-        ])
         let done = NSButton(title: "Done", target: self, action: #selector(donePressed))
         done.keyEquivalent = "\r"
-        done.isBordered = false
-        done.isTransparent = true
+        done.bezelStyle = .rounded
+        done.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(grid)
         view.addSubview(done)
+        NSLayoutConstraint.activate([
+            grid.topAnchor.constraint(equalTo: view.topAnchor, constant: 14),
+            grid.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            countryField.widthAnchor.constraint(equalToConstant: 80),
+            numberField.widthAnchor.constraint(equalToConstant: 180),
+            done.topAnchor.constraint(equalTo: grid.bottomAnchor, constant: 10),
+            done.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -14),
+            done.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -10)
+        ])
     }
 
     override func viewDidAppear() {
@@ -101,6 +104,169 @@ final class PhonePopoverViewController: ConfirmPopoverViewController {
 
     @objc private func donePressed() {
         applyAndClose()
+    }
+}
+
+final class AddressEditorViewController: NSViewController {
+    var onSave: ((String, [String: Any]) -> Void)?
+
+    private let initialLabel: String
+    private let initialAddress: [String: Any]
+    private let labelField = NSTextField()
+    private let countryPopup = NSPopUpButton()
+    private let line1Field = NSTextField()
+    private let line2Field = NSTextField()
+    private let localityField = NSTextField()
+    private let areaField = NSTextField()
+    private let postalField = NSTextField()
+    private let areaLabel = NSTextField(labelWithString: "State / province / region")
+    private let postalLabel = NSTextField(labelWithString: "Postal code")
+
+    init(label: String, address: [String: Any]) {
+        initialLabel = label
+        initialAddress = address
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func loadView() {
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 480, height: 310))
+        labelField.stringValue = initialLabel
+        labelField.placeholderString = "Home address"
+        line1Field.stringValue = initialAddress["addressLine1"] as? String ?? ""
+        line1Field.placeholderString = "Street address"
+        line2Field.stringValue = initialAddress["addressLine2"] as? String ?? ""
+        line2Field.placeholderString = "Apartment, suite, building, etc."
+        localityField.stringValue = initialAddress["locality"] as? String ?? ""
+        localityField.placeholderString = "City or locality"
+        areaField.stringValue = initialAddress["administrativeArea"] as? String ?? ""
+        postalField.stringValue = initialAddress["postalCode"] as? String ?? ""
+
+        let locale = Locale.current
+        let countries = Locale.isoRegionCodes.compactMap { code -> (String, String)? in
+            guard let name = locale.localizedString(forRegionCode: code) else { return nil }
+            return (code, name)
+        }.sorted { $0.1.localizedCaseInsensitiveCompare($1.1) == .orderedAscending }
+        for (code, name) in countries {
+            countryPopup.addItem(withTitle: name)
+            countryPopup.lastItem?.representedObject = code
+        }
+        let initialCode = (initialAddress["countryCode"] as? String ?? locale.regionCode ?? "US").uppercased()
+        if let index = countryPopup.itemArray.firstIndex(where: { ($0.representedObject as? String) == initialCode }) {
+            countryPopup.selectItem(at: index)
+        }
+        countryPopup.target = self
+        countryPopup.action = #selector(countryChanged)
+
+        let grid = NSGridView(views: [
+            [NSTextField(labelWithString: "Label"), labelField],
+            [NSTextField(labelWithString: "Country / region"), countryPopup],
+            [NSTextField(labelWithString: "Street address"), line1Field],
+            [NSTextField(labelWithString: "Address line 2"), line2Field],
+            [NSTextField(labelWithString: "City / locality"), localityField],
+            [areaLabel, areaField],
+            [postalLabel, postalField]
+        ])
+        grid.column(at: 0).xPlacement = .trailing
+        grid.rowAlignment = .firstBaseline
+        grid.columnSpacing = 10
+        grid.rowSpacing = 10
+        grid.translatesAutoresizingMaskIntoConstraints = false
+
+        let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancelPressed))
+        cancel.bezelStyle = .rounded
+        let save = NSButton(title: "Save Address", target: self, action: #selector(savePressed))
+        save.bezelStyle = .rounded
+        save.keyEquivalent = "\r"
+        let buttons = NSStackView(views: [cancel, save])
+        buttons.orientation = .horizontal
+        buttons.spacing = 8
+        buttons.translatesAutoresizingMaskIntoConstraints = false
+
+        for field in [labelField, line1Field, line2Field, localityField, areaField, postalField] {
+            field.translatesAutoresizingMaskIntoConstraints = false
+        }
+        countryPopup.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(grid)
+        view.addSubview(buttons)
+        NSLayoutConstraint.activate([
+            grid.topAnchor.constraint(equalTo: view.topAnchor, constant: 16),
+            grid.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            grid.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            labelField.widthAnchor.constraint(equalToConstant: 300),
+            buttons.topAnchor.constraint(equalTo: grid.bottomAnchor, constant: 16),
+            buttons.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            buttons.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -14)
+        ])
+        updateRegionalLabels()
+    }
+
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        view.window?.makeFirstResponder(labelField.stringValue.isEmpty ? labelField : line1Field)
+    }
+
+    private var selectedCountryCode: String {
+        countryPopup.selectedItem?.representedObject as? String ?? "US"
+    }
+
+    @objc private func countryChanged() {
+        updateRegionalLabels()
+    }
+
+    private func updateRegionalLabels() {
+        switch selectedCountryCode {
+        case "US":
+            areaLabel.stringValue = "State"
+            postalLabel.stringValue = "ZIP code"
+        case "CA":
+            areaLabel.stringValue = "Province"
+            postalLabel.stringValue = "Postal code"
+        case "JP":
+            areaLabel.stringValue = "Prefecture"
+            postalLabel.stringValue = "Postal code"
+        default:
+            areaLabel.stringValue = "State / province / region"
+            postalLabel.stringValue = "Postal code"
+        }
+    }
+
+    @objc private func cancelPressed() {
+        view.window?.close()
+    }
+
+    @objc private func savePressed() {
+        let label = labelField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let line1 = line1Field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !label.isEmpty else {
+            NSSound.beep()
+            view.window?.makeFirstResponder(labelField)
+            return
+        }
+        guard !line1.isEmpty else {
+            NSSound.beep()
+            view.window?.makeFirstResponder(line1Field)
+            return
+        }
+        var address: [String: Any] = [
+            "version": 1,
+            "countryCode": selectedCountryCode,
+            "countryName": countryPopup.titleOfSelectedItem ?? selectedCountryCode,
+            "addressLine1": line1
+        ]
+        let optional = [
+            "addressLine2": line2Field.stringValue,
+            "locality": localityField.stringValue,
+            "administrativeArea": areaField.stringValue,
+            "postalCode": postalField.stringValue
+        ]
+        for (key, raw) in optional {
+            let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !value.isEmpty { address[key] = value }
+        }
+        onSave?(label, address)
+        view.window?.close()
     }
 }
 
@@ -778,11 +944,12 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     private let table = NSTableView()
     private let deleteButton = NSButton()
     private let addButton = NSButton()
+    private let addAddressButton = NSButton()
     private var answers: [[String: Any]] = []
     private var draftAnswer: [String: Any]?
     private var navigatingCells = false
-    private static let answerTypes = ["", "date", "gender", "phone"]
-    private static let typeTitles = ["Auto", "Date", "Gender", "Phone"]
+    private static let answerTypes = ["", "address", "date", "gender", "phone"]
+    private static let typeTitles = ["Auto", "Address", "Date", "Gender", "Phone"]
 
     override func loadView() {
         view = settingsPaneView()
@@ -820,17 +987,21 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         addButton.target = self
         addButton.action = #selector(addAnswer)
         addButton.bezelStyle = .rounded
+        addAddressButton.title = "Add Address…"
+        addAddressButton.target = self
+        addAddressButton.action = #selector(addAddress)
+        addAddressButton.bezelStyle = .rounded
         deleteButton.title = "Delete"
         deleteButton.target = self
         deleteButton.action = #selector(deleteSelected)
         deleteButton.bezelStyle = .rounded
         deleteButton.isEnabled = false
         let clear = NSButton(title: "Clear All Answers…", target: self, action: #selector(clearAll))
-        let buttons = NSStackView(views: [addButton, deleteButton, NSView(), clear])
+        let buttons = NSStackView(views: [addButton, addAddressButton, deleteButton, NSView(), clear])
         buttons.orientation = .horizontal
         buttons.spacing = 8
 
-        let stack = paneStack(title: "Saved Data", description: "Double-click a label or value to edit; click a type to change it. Use Phone for numbers — Ume fills country-code fields automatically. Changes save automatically.")
+        let stack = paneStack(title: "Saved Data", description: "Double-click a label or value to edit; click a type to change it. Phone and Address use structured editors so Ume can fill related fields automatically.")
         stack.addArrangedSubview(scroll)
         stack.addArrangedSubview(buttons)
         view.addSubview(stack)
@@ -900,7 +1071,9 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         guard displayedAnswers.indices.contains(row) else { return }
         let answer = displayedAnswers[row]
         let type = answer["answerType"] as? String ?? detectedType(answer)
-        if column == 1, type == "phone" {
+        if column == 1, type == "address" {
+            presentAddressEditor(row: row)
+        } else if column == 1, type == "phone" {
             presentPhonePopover(row: row)
         } else if column == 1, type == "date" {
             presentDatePopover(row: row)
@@ -930,6 +1103,18 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         guard displayedAnswers.indices.contains(row),
               Self.answerTypes.indices.contains(sender.indexOfSelectedItem) else { return }
         let type = Self.answerTypes[sender.indexOfSelectedItem]
+        let currentType = displayedAnswers[row]["answerType"] as? String ?? detectedType(displayedAnswers[row])
+        if type == "address" {
+            if currentType == "address" { return }
+            table.reloadData()
+            DispatchQueue.main.async { self.presentAddressEditor(row: row) }
+            return
+        }
+        if currentType == "address" {
+            NSSound.beep()
+            table.reloadData()
+            return
+        }
         if row == answers.count {
             draftAnswer?["answerType"] = type.isEmpty ? nil : type
             return
@@ -984,6 +1169,36 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         popover.contentViewController = controller
         popover.behavior = .transient
         popover.show(relativeTo: anchorCellView(row: row, column: column).bounds, of: anchorCellView(row: row, column: column), preferredEdge: .maxY)
+    }
+
+    private func presentAddressEditor(row: Int) {
+        guard let answer = answerForRow(row) else { return }
+        let address = answer["value"] as? [String: Any] ?? [:]
+        let existingLabel = answer["userLabel"] as? String
+            ?? answer["accessibleName"] as? String
+            ?? answer["label"] as? String
+            ?? ""
+        let controller = AddressEditorViewController(label: existingLabel, address: address)
+        controller.onSave = { [weak self] label, address in
+            guard let self else { return }
+            do {
+                if self.answers.indices.contains(row), let id = self.answers[row]["answerID"] as? String {
+                    try AnswerStore.updateAddress(id: id, userLabel: label, value: address)
+                } else {
+                    try AnswerStore.addAddress(userLabel: label, value: address)
+                    self.draftAnswer = nil
+                }
+                self.reload()
+                if !self.answers.isEmpty {
+                    let selected = min(row, self.answers.count - 1)
+                    self.table.selectRowIndexes(IndexSet(integer: selected), byExtendingSelection: false)
+                }
+            } catch {
+                self.present(error)
+                self.reload()
+            }
+        }
+        present(controller, row: row)
     }
 
     private func presentPhonePopover(row: Int) {
@@ -1141,6 +1356,12 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     }
 
     private func displayValue(_ answer: [String: Any]) -> String {
+        if detectedType(answer) == "address", let address = answer["value"] as? [String: Any] {
+            return ["addressLine1", "addressLine2", "locality", "administrativeArea", "postalCode", "countryName"]
+                .compactMap { address[$0] as? String }
+                .filter { !$0.isEmpty }
+                .joined(separator: ", ")
+        }
         let value = valueString(answer["value"])
         guard detectedType(answer) == "phone",
               let code = answer["countryCode"] as? String else { return value }
@@ -1234,6 +1455,20 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
             field.isEditable = false
             present(error)
         }
+    }
+
+    @objc private func addAddress() {
+        guard draftAnswer == nil else { NSSound.beep(); return }
+        draftAnswer = [
+            "answerID": UUID().uuidString,
+            "answerType": "address",
+            "kind": "aggregate",
+            "inputType": ""
+        ]
+        table.reloadData()
+        let row = answers.count
+        table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        DispatchQueue.main.async { self.presentAddressEditor(row: row) }
     }
 
     @objc private func addAnswer() {

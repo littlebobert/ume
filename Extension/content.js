@@ -1,6 +1,9 @@
 (() => {
   "use strict";
 
+  if (globalThis.__umeContentLoaded) return;
+  globalThis.__umeContentLoaded = true;
+
   const api = browser;
   const BLOCKED_TYPES = new Set(["button", "file", "hidden", "image", "password", "reset", "submit"]);
   const SENSITIVE_HINT = /\b(card(?:holder)?|credit card|cvc|cvv|password|passcode|security code|secret|social security|ssn|token)\b/i;
@@ -172,6 +175,8 @@
       tableHeaders: tableHeadersFor(element)
     };
     if (element instanceof HTMLSelectElement) descriptor.optionLabel = optionLabelFor(element);
+    const addressPart = UmeMatcher.addressFieldPart(descriptor);
+    if (addressPart) descriptor.addressPart = addressPart;
     if (element.type === "radio") {
       descriptor.optionLabel = compactText([labelFor(element), element.value].filter(Boolean).join(" "));
       descriptor.groupName = compactText(radioGroupName(element));
@@ -217,8 +222,9 @@
   }
 
   function isCountryCodeField(element) {
+    if (UmeMatcher.addressFieldPart(describe(element)) === "country") return false;
     const text = UmeMatcher.normalize([
-      element.id, element.name, element.placeholder, labelFor(element), accessibleNameFor(element)
+      element.id, element.name, element.placeholder, element.autocomplete, labelFor(element), accessibleNameFor(element)
     ].filter(Boolean).join(" "));
     return /(?:^| )(?:country (?:phone )?code|phone country|calling code|dial code|international code|country dialing)(?: |$)/.test(text);
   }
@@ -275,6 +281,43 @@
       })
       || candidates.find((candidate) => UmeMatcher.normalize(candidate.text).split(" ").includes(normalized));
     return selectOption(element, option);
+  }
+
+  function applyAddress(element, saved) {
+    const descriptor = describe(element);
+    const part = UmeMatcher.addressFieldPart(descriptor);
+    const address = saved?.value;
+    if (!part || !address || typeof address !== "object" || Array.isArray(address)) return false;
+
+    if (part === "country") {
+      const code = UmeMatcher.normalize(address.countryCode);
+      const name = UmeMatcher.normalize(address.countryName);
+      if (element instanceof HTMLSelectElement) {
+        const option = [...element.options].find((candidate) => {
+          const optionValue = UmeMatcher.normalize(candidate.value);
+          const optionText = UmeMatcher.normalize(candidate.text);
+          const optionTextWithoutDialingCode = optionText.replace(/ \d{1,3}$/, "");
+          return Boolean((code && (optionValue === code || optionText === code)) || (name && (optionValue === name || optionText === name || optionTextWithoutDialingCode === name)));
+        });
+        return selectOption(element, option);
+      }
+      const autocomplete = String(element.autocomplete || "").toLowerCase().split(/\s+/);
+      const requestsCode = autocomplete.includes("country") || /(?:^| )(?:country code|iso country)(?: |$)/.test(UmeMatcher.normalize([descriptor.label, descriptor.name].join(" ")));
+      const country = requestsCode ? address.countryCode : (address.countryName || address.countryCode);
+      if (!country) return false;
+      setNativeValue(element, country);
+      dispatchValueEvents(element);
+      return String(element.value) === String(country);
+    }
+
+    const value = part === "streetAddress" && !(element instanceof HTMLTextAreaElement)
+      ? address.addressLine1
+      : UmeMatcher.addressValue(saved, part);
+    if (!value) return false;
+    if (element instanceof HTMLSelectElement) return applySelect(element, value);
+    setNativeValue(element, value);
+    dispatchValueEvents(element);
+    return String(element.value) === String(value);
   }
 
   function genderValue(value) {
@@ -398,6 +441,7 @@
     if (element.type === "radio") return applyRadio(saved || { value }, element);
 
     const type = UmeMatcher.answerType(saved);
+    if (type === "address") return applyAddress(element, saved);
     if (type === "gender") {
       if (element instanceof HTMLSelectElement && applyGenderSelect(element, saved)) return true;
       if (applySegmentedGender(saved)) return true;
@@ -495,8 +539,10 @@
   }
 
   function unmatchedSchemas(savedEntries) {
+    const hasAddress = (savedEntries || []).some((entry) => UmeMatcher.answerType(entry) === "address");
     return eligibleElements().flatMap((element, index) => {
       const descriptor = describe(element);
+      if (hasAddress && UmeMatcher.addressFieldPart(descriptor)) return [];
       if (!failedApplications.has(element) && matchForElement(savedEntries, element)) return [];
       const options = element instanceof HTMLSelectElement
         ? [...element.options].map((option) => compactText(option.text)).filter(Boolean).slice(0, 50)
@@ -513,13 +559,14 @@
       const index = Number(String(mapping.field || "").replace("field-", ""));
       const element = elements[index];
       const saved = savedByKey.get(mapping.key);
-      if (!element || !saved || !UmeMatcher.compatible(saved, describe(element))) continue;
+      if (!element || !saved || UmeMatcher.answerType(saved) === "address" || !UmeMatcher.compatible(saved, describe(element))) continue;
       if (applyValue(element, saved.value, saved)) filled += 1;
     }
     return { filled };
   }
 
   api.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === "UME_PING") sendResponse({ ready: true });
     if (message?.type === "UME_COLLECT") sendResponse({ answers: collectAnswers() });
     if (message?.type === "UME_FILL") sendResponse(fillAnswers(message.answers || [], Boolean(message.diagnostics)));
     if (message?.type === "UME_SCHEMAS") sendResponse({ fields: unmatchedSchemas(message.answers || []) });

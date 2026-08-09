@@ -19,12 +19,48 @@
   const debugLogText = document.getElementById("debug-log-text");
   const DEBUG_LOG_KEY = "ume-extension-debug-log";
   const DEBUG_LOG_LIMIT = 64_000;
+  const CONTENT_SCRIPT_FILES = ["lib/matcher.js", "lib/dom.js", "lib/date.js", "lib/phone.js", "content.js"];
+  const AI_SCHEMA_KEYS = [
+    "accessibleDescription", "accessibleName", "answerType", "autocomplete", "form", "group",
+    "groupName", "id", "inputType", "kind", "label", "name", "options", "placeholder",
+    "required", "section", "tableHeaders", "userLabel"
+  ];
   let debugLoggingEnabled = false;
   let busy = false;
   let cachedAnswers = [];
 
+  async function injectContentScript(tabId) {
+    if (api.scripting?.executeScript) {
+      await api.scripting.executeScript({
+        target: { tabId, frameIds: [0] },
+        files: CONTENT_SCRIPT_FILES
+      });
+      return;
+    }
+    if (api.tabs.executeScript) {
+      for (const file of CONTENT_SCRIPT_FILES) {
+        await api.tabs.executeScript(tabId, { file, frameId: 0 });
+      }
+      return;
+    }
+    throw new Error("This version of Safari does not support on-demand extension access.");
+  }
+
+  async function ensureContentScript(tabId) {
+    try {
+      const response = await api.tabs.sendMessage(tabId, { type: "UME_PING" }, { frameId: 0 });
+      if (response?.ready) return;
+    } catch (_error) {
+      // The script is intentionally absent until the user invokes Ume on this tab.
+    }
+    await injectContentScript(tabId);
+    const response = await api.tabs.sendMessage(tabId, { type: "UME_PING" }, { frameId: 0 });
+    if (!response?.ready) throw new Error("Ume could not start on this page.");
+  }
+
   async function sendMessage(tabId, message) {
     try {
+      await ensureContentScript(tabId);
       return await api.tabs.sendMessage(tabId, message, { frameId: 0 });
     } catch (error) {
       throw new Error(`Ume could not communicate with this page. Reload it and try again. ${error.message || ""}`.trim());
@@ -50,6 +86,14 @@
   async function refreshDebugLog() {
     const stored = await api.storage.local.get(DEBUG_LOG_KEY);
     debugLogText.value = stored[DEBUG_LOG_KEY] || "No extension debug entries yet.";
+  }
+
+  function schemaForAI(source, identityKey, identityValue) {
+    const result = { [identityKey]: identityValue };
+    for (const key of AI_SCHEMA_KEYS) {
+      if (source?.[key] !== undefined) result[key] = source[key];
+    }
+    return result;
   }
 
   async function activeTab() {
@@ -185,8 +229,13 @@
       }
 
       setActivity("Asking your AI provider about unmatched fields…");
-      const saved = answers.map(({ value: _value, ...descriptor }, index) => ({ key: `saved-${index}`, ...descriptor }));
-      const nativeResult = await sendNative({ type: "UME_MAP_FIELDS", saved, fields });
+      const saved = answers.flatMap((answer, index) => {
+        return UmeMatcher.answerType(answer) === "address"
+          ? []
+          : [schemaForAI(answer, "key", `saved-${index}`)];
+      });
+      const sanitizedFields = fields.map((field) => schemaForAI(field, "field", field.field));
+      const nativeResult = await sendNative({ type: "UME_MAP_FIELDS", saved, fields: sanitizedFields });
       await appendDebug("NATIVE AI RESPONSE", {
         ok: nativeResult?.ok,
         error: nativeResult?.error || null,

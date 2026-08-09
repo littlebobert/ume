@@ -61,8 +61,47 @@
     ].filter(Boolean).join(" "));
   }
 
+  function addressFieldPart(entry) {
+    const autocomplete = String(entry?.autocomplete || "").toLowerCase().split(/\s+/);
+    if (autocomplete.includes("tel-country-code")) return "";
+    for (const token of autocomplete.reverse()) {
+      if (token === "address-line1") return "addressLine1";
+      if (token === "address-line2") return "addressLine2";
+      if (token === "street-address") return "streetAddress";
+      if (token === "address-level2") return "locality";
+      if (token === "address-level1") return "administrativeArea";
+      if (token === "postal-code") return "postalCode";
+      if (token === "country" || token === "country-name") return "country";
+    }
+
+    const text = semanticText(entry);
+    const names = [entry?.userLabel, entry?.accessibleName, entry?.label, entry?.placeholder].map(normalize).filter(Boolean);
+    const machineNames = [entry?.name, entry?.id].filter((value) => value && !looksGenerated(value)).map(normalize);
+    const hasExactName = (...values) => names.some((name) => values.includes(name));
+    const hasLine2Name = names.some((name) => /^(?:address line 2|address 2|street 2|(?:apartment|apt|suite|unit|building)(?: (?:apartment|apt|suite|unit|building|or|number|no|optional|etc))*)$/.test(name));
+    const hasLine2MachineName = machineNames.some((name) => /^(?:(?:shipping|billing) )?(?:address line ?2|address ?2|street ?2)$/.test(name));
+    if (/(?:^| )(?:email|e mail|ip|internet|web|website) address(?: |$)/.test(text)) return "";
+    if (hasLine2Name || hasLine2MachineName) return "addressLine2";
+    if (/(?:^| )(?:address line 1|address 1|street address|mailing address)(?: |$)/.test(text)) return "addressLine1";
+    if (/(?:^| )(?:postal code|postcode|post code|zip|zip code)(?: |$)/.test(text)) return "postalCode";
+    if (hasExactName("city", "town", "locality") || /(?:^| )(?:address city|shipping city|billing city)(?: |$)/.test(text)) return "locality";
+    if (hasExactName("state", "province", "prefecture", "region") || /(?:^| )(?:address|shipping|billing) (?:state|province|prefecture|region)(?: |$)/.test(text)) return "administrativeArea";
+    if (hasExactName("country", "country region") || /(?:^| )(?:address|shipping|billing) country(?: |$)/.test(text)) return "country";
+    return "";
+  }
+
+  function addressValue(saved, field) {
+    const address = saved?.value;
+    if (!address || typeof address !== "object" || Array.isArray(address)) return "";
+    const part = typeof field === "string" ? field : addressFieldPart(field);
+    if (part === "streetAddress") return [address.addressLine1, address.addressLine2].filter(Boolean).join("\n");
+    if (part === "country") return address.countryName || address.countryCode || "";
+    return typeof address[part] === "string" ? address[part] : "";
+  }
+
   function semanticCategory(entry) {
     const text = semanticText(entry);
+    if (addressFieldPart(entry)) return "address";
     if (/(?:^| )(?:country (?:phone )?code|phone country|calling code|dial code|international code|country dialing)(?: |$)/.test(text)) return "phone";
     if (/(?:^| )(?:phone|telephone|tel|mobile|cell)(?: |$)/.test(text)) return "phone";
     if (/(?:^| )(?:gender|sex)(?: |$)/.test(text)) return "gender";
@@ -73,7 +112,7 @@
     return "";
   }
 
-  const VALID_TYPES = new Set(["date", "gender", "phone"]);
+  const VALID_TYPES = new Set(["address", "date", "gender", "phone"]);
   const FIELD_CATEGORIES = { date: "date", gender: "gender", phone: "phone" };
 
   function answerType(entry) {
@@ -87,6 +126,7 @@
     if (!saved || !field) return false;
     const savedType = answerType(saved);
     const fieldCategory = semanticCategory(field);
+    if (savedType === "address") return fieldCategory === "address" && Boolean(addressValue(saved, field));
     if (savedType && field.kind === "radio") {
       if (savedType === "gender") {
         const text = normalize([field.accessibleName, field.label, field.group, field.name, field.value].filter(Boolean).join(" "));
@@ -99,6 +139,7 @@
       const callingCode = /(?:^| )(?:country (?:phone )?code|phone country|calling code|dial code|international code|country dialing)(?: |$)/.test(fieldText);
       const datePart = /(?:^| )(?:month|mm|day|dd|year|yyyy|yy)(?: |$)/.test(fieldText);
       const crossKind = (savedType === "gender")
+        || (savedType === "address" && fieldCategory === "address")
         || (savedType === "date" && (fieldCategory === "date" || datePart))
         || (savedType === "phone" && callingCode);
       if (!crossKind) return false;
@@ -149,6 +190,12 @@
   }
 
   function bestMatch(savedEntries, field, minimumScore) {
+    const addressPart = addressFieldPart(field);
+    if (addressPart) {
+      const addresses = (savedEntries || []).filter((entry) => answerType(entry) === "address" && addressValue(entry, addressPart));
+      if (addresses.length) return addresses.length === 1 ? addresses[0] : null;
+    }
+
     const threshold = minimumScore == null ? 35 : minimumScore;
     let best = null;
     let bestScore = threshold;
@@ -187,5 +234,5 @@
     return result;
   }
 
-  return { answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, overlap, score };
+  return { addressFieldPart, addressValue, answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, overlap, score };
 });

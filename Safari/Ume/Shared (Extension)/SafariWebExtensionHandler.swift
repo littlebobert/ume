@@ -78,15 +78,32 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         }
     }
 
+    private static let schemaKeys: Set<String> = [
+        "accessibleDescription", "accessibleName", "answerType", "autocomplete", "form", "group",
+        "groupName", "id", "inputType", "kind", "label", "name", "options", "placeholder",
+        "required", "section", "tableHeaders", "userLabel"
+    ]
+
+    private static func sanitizedSchema(_ source: [String: Any], identityKey: String) -> [String: Any]? {
+        guard let identity = source[identityKey] as? String, !identity.isEmpty else { return nil }
+        var result: [String: Any] = [identityKey: identity]
+        for key in schemaKeys where source[key] != nil { result[key] = source[key] }
+        return result
+    }
+
     private func mapFields(_ payload: [String: Any]) async throws -> [[String: String]] {
         guard let settings = SettingsStore.load(), ["openai", "anthropic"].contains(settings.provider), !settings.apiKey.isEmpty else {
             throw MappingError.message("Open the Ume app and add an OpenAI or Anthropic API key first.")
         }
-        guard let saved = payload["saved"] as? [[String: Any]],
-              let fields = payload["fields"] as? [[String: Any]],
-              saved.count <= 200, fields.count <= 200 else {
+        guard let rawSaved = payload["saved"] as? [[String: Any]],
+              let rawFields = payload["fields"] as? [[String: Any]],
+              rawSaved.count <= 200, rawFields.count <= 200 else {
             throw MappingError.message("The form mapping request was invalid or too large.")
         }
+        let saved = rawSaved
+            .filter { ($0["answerType"] as? String) != "address" }
+            .compactMap { Self.sanitizedSchema($0, identityKey: "key") }
+        let fields = rawFields.compactMap { Self.sanitizedSchema($0, identityKey: "field") }
 
         let savedIDs = Set(saved.compactMap { $0["key"] as? String })
         let fieldIDs = Set(fields.compactMap { $0["field"] as? String })

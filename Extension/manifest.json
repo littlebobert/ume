@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Ume",
   "version": "0.1.0",
-  "description": "Remember answers securely and fill similar forms in seconds.",
-  "permissions": ["storage", "activeTab", "nativeMessaging"],
+  "description": "Autofill everything, securely.",
+  "permissions": ["storage", "activeTab", "nativeMessaging", "scripting"],
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -23,14 +23,5 @@
       "48": "icons/icon-48.png",
       "64": "icons/icon-64.png"
     }
-  },
-  "content_scripts": [
-    {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["lib/matcher.js", "lib/dom.js", "lib/date.js", "lib/phone.js", "content.js"],
-      "run_at": "document_idle",
-      "all_frames": false
-    }
-  ],
-  "host_permissions": ["http://*/*", "https://*/*"]
+  }
 }

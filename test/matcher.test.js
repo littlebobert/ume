@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, score } = require("../Extension/lib/matcher.js");
+const { addressFieldPart, addressValue, answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, score } = require("../Extension/lib/matcher.js");
 
 const entry = (overrides = {}) => ({
   accessibleDescription: "",
@@ -122,6 +122,7 @@ test("answerType falls back to semantic detection and validates explicit values"
   assert.equal(answerType(entry({ accessibleName: "Calling code" })), "phone");
   assert.equal(answerType(entry({ accessibleName: "First name" })), "");
   assert.equal(answerType(entry({ accessibleName: "Contact", answerType: "gender" })), "gender");
+  assert.equal(answerType(entry({ accessibleName: "Home", answerType: "address", kind: "aggregate" })), "address");
   assert.equal(answerType(entry({ accessibleName: "Contact", answerType: "bogus" })), "");
 });
 
@@ -220,6 +221,85 @@ test("typed special answers require a positively identified destination", () => 
 test("full birthday controls are recognized through autocomplete", () => {
   const birthday = entry({ answerType: "date", accessibleName: "Date of birth", value: "1962-04-18" });
   assert.equal(compatible(birthday, entry({ autocomplete: "bday", inputType: "date" })), true);
+});
+
+test("structured addresses match standard address components", () => {
+  const address = entry({
+    answerType: "address",
+    accessibleName: "Home address",
+    inputType: "",
+    kind: "aggregate",
+    value: {
+      addressLine1: "123 Main Street",
+      addressLine2: "Apt 4B",
+      locality: "Tampa",
+      administrativeArea: "FL",
+      postalCode: "33602",
+      countryCode: "US",
+      countryName: "United States"
+    }
+  });
+  const fields = [
+    ["address-line1", "addressLine1", "123 Main Street"],
+    ["address-line2", "addressLine2", "Apt 4B"],
+    ["address-level2", "locality", "Tampa"],
+    ["address-level1", "administrativeArea", "FL"],
+    ["postal-code", "postalCode", "33602"],
+    ["country-name", "country", "United States"]
+  ];
+  for (const [autocomplete, part, value] of fields) {
+    const field = entry({ autocomplete, inputType: autocomplete === "country-name" ? "select-one" : "text", kind: autocomplete === "country-name" ? "select" : "text" });
+    assert.equal(addressFieldPart(field), part);
+    assert.equal(addressValue(address, field), value);
+    assert.equal(bestMatch([address], field), address);
+  }
+});
+
+test("structured addresses fill street-address textareas and skip empty optional components", () => {
+  const address = entry({
+    answerType: "address",
+    kind: "aggregate",
+    value: { addressLine1: "東京都渋谷区神宮前1-2-3", addressLine2: "梅ビル405", countryCode: "JP", countryName: "Japan" }
+  });
+  assert.equal(addressValue(address, entry({ autocomplete: "street-address", kind: "textarea" })), "東京都渋谷区神宮前1-2-3\n梅ビル405");
+  address.value.addressLine2 = "";
+  assert.equal(bestMatch([address], entry({ autocomplete: "address-line2" })), null);
+});
+
+test("address country autocomplete is not treated as a phone field", () => {
+  const address = entry({ answerType: "address", kind: "aggregate", value: { countryCode: "US", countryName: "United States" } });
+  const country = entry({ accessibleName: "Country code", autocomplete: "country", kind: "select", inputType: "select-one" });
+  assert.equal(addressFieldPart(country), "country");
+  assert.equal(compatible(address, country), true);
+  assert.equal(answerType(country), "");
+});
+
+test("generic address labels remain recognizable with generated control IDs", () => {
+  assert.equal(addressFieldPart(entry({ accessibleName: "City", id: "f47ac10b-58cc-4372-a567-0e02b2c3d479" })), "locality");
+  assert.equal(addressFieldPart(entry({ accessibleName: "State", id: "adc-input-S-23BB9102" })), "administrativeArea");
+  assert.equal(addressFieldPart(entry({ accessibleName: "Country", id: "control-1749285123456" })), "country");
+});
+
+test("unrelated address labels and phone country codes are not address components", () => {
+  assert.equal(addressFieldPart(entry({ accessibleName: "Email address" })), "");
+  assert.equal(addressFieldPart(entry({ accessibleName: "IP address" })), "");
+  assert.equal(addressFieldPart(entry({ accessibleName: "Country code" })), "");
+  assert.equal(addressFieldPart(entry({ accessibleName: "Country", autocomplete: "tel-country-code", kind: "select" })), "");
+  assert.equal(addressFieldPart(entry({ accessibleName: "Business unit" })), "");
+  assert.equal(addressFieldPart(entry({ accessibleName: "Unit price" })), "");
+  assert.equal(addressFieldPart(entry({ accessibleName: "Apartment type" })), "");
+  assert.equal(addressFieldPart(entry({ accessibleName: "Building access code" })), "");
+});
+
+test("secondary address fallbacks require a dedicated line-two label or name", () => {
+  assert.equal(addressFieldPart(entry({ accessibleName: "Apartment, suite, building, etc." })), "addressLine2");
+  assert.equal(addressFieldPart(entry({ name: "shippingAddressLine2" })), "addressLine2");
+});
+
+test("multiple structured addresses are treated as ambiguous", () => {
+  const first = entry({ answerType: "address", kind: "aggregate", value: { locality: "Tokyo" } });
+  const second = entry({ answerType: "address", kind: "aggregate", value: { locality: "Tampa" } });
+  assert.equal(bestMatch([first, second], entry({ autocomplete: "address-level2" })), null);
 });
 
 test("confirmation fields reuse their corresponding saved answer", () => {

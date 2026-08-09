@@ -249,8 +249,42 @@ enum AnswerStore {
         return migrated
     }
 
+    private static func validatedAddress(_ raw: [String: Any]) throws -> [String: Any] {
+        let limits = [
+            "addressLine1": 240,
+            "addressLine2": 240,
+            "locality": 120,
+            "administrativeArea": 120,
+            "postalCode": 32,
+            "countryCode": 2,
+            "countryName": 120
+        ]
+        var address: [String: Any] = ["version": 1]
+        for (key, limit) in limits {
+            let value = (raw[key] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard value.count <= limit else { throw StoreError.message("The saved address was too long.") }
+            if !value.isEmpty { address[key] = value }
+        }
+        let line1 = address["addressLine1"] as? String ?? ""
+        let countryCode = (address["countryCode"] as? String ?? "").uppercased()
+        guard !line1.isEmpty else { throw StoreError.message("Enter a street address.") }
+        guard countryCode.range(of: #"^[A-Z]{2}$"#, options: .regularExpression) != nil else {
+            throw StoreError.message("Choose a country or region.")
+        }
+        address["countryCode"] = countryCode
+        return address
+    }
+
     static func save(_ answers: [[String: Any]]) throws {
-        let (answers, _) = normalized(answers)
+        var (answers, _) = normalized(answers)
+        for index in answers.indices where answers[index]["answerType"] as? String == "address" {
+            guard let raw = answers[index]["value"] as? [String: Any] else {
+                throw StoreError.message("The saved address was invalid.")
+            }
+            answers[index]["value"] = try validatedAddress(raw)
+            answers[index]["kind"] = "aggregate"
+            answers[index]["inputType"] = ""
+        }
         guard answers.count <= maximumCount, JSONSerialization.isValidJSONObject(answers) else {
             throw StoreError.message("The saved answer data was invalid or too large.")
         }
@@ -297,6 +331,42 @@ enum AnswerStore {
         }
         var answers = try load()
         answers.append(answer)
+        try save(answers)
+    }
+
+    static func addAddress(userLabel: String, value: [String: Any]) throws {
+        let label = userLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !label.isEmpty else { throw StoreError.message("Enter an address label.") }
+        let address = try validatedAddress(value)
+        var answers = try load()
+        answers.append([
+            "answerID": UUID().uuidString,
+            "answerType": "address",
+            "userLabel": label,
+            "accessibleName": label,
+            "label": label,
+            "kind": "aggregate",
+            "inputType": "",
+            "value": address
+        ])
+        try save(answers)
+    }
+
+    static func updateAddress(id: String, userLabel: String, value: [String: Any]) throws {
+        let label = userLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !label.isEmpty else { throw StoreError.message("Enter an address label.") }
+        let address = try validatedAddress(value)
+        var answers = try load()
+        guard let index = answers.firstIndex(where: { $0["answerID"] as? String == id }) else {
+            throw StoreError.message("That saved address no longer exists.")
+        }
+        answers[index]["answerType"] = "address"
+        answers[index]["userLabel"] = label
+        answers[index]["accessibleName"] = label
+        answers[index]["label"] = label
+        answers[index]["kind"] = "aggregate"
+        answers[index]["inputType"] = ""
+        answers[index]["value"] = address
         try save(answers)
     }
 

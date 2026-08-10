@@ -21,7 +21,7 @@
 
   const { deepQuerySelectorAll } = UmeDOM;
   const { formatDateParts, parseDateParts } = UmeDate;
-  const { countryCodeDigits, digitsOnly, localNumberDigits, valueForField: phoneValueForField } = UmePhone;
+  const { callingCodeFromOption, countryCodeDigits, digitsOnly, resolveCountryCode, valueForField: phoneValueForField } = UmePhone;
 
   function elementById(element, id) {
     const root = element.getRootNode?.();
@@ -196,16 +196,25 @@
   function collectAnswers() {
     const answers = [];
     const seenRadios = new Set();
-    for (const element of deepQuerySelectorAll("input, select, textarea")) {
-      if (!isEligible(element)) continue;
+    const elements = deepQuerySelectorAll("input, select, textarea").filter(isEligible);
+    for (const element of elements) {
+      if (isCountryCodeField(element)) continue;
+      const descriptor = describe(element);
       if (element.type === "radio" && element.checked) {
-        const key = element.name || `${describe(element).groupName}`;
+        const key = element.name || `${descriptor.groupName}`;
         if (seenRadios.has(key)) continue;
         seenRadios.add(key);
       }
       const value = readValue(element);
       if (value === "" || value == null) continue;
-      answers.push({ ...describe(element), value });
+      const answer = { ...descriptor, value };
+      if (UmeMatcher.answerType(descriptor) === "phone") {
+        const codeElement = relatedCountryCodeElement(element, elements);
+        const code = selectedCountryCode(codeElement);
+        answer.answerType = "phone";
+        if (code) answer.countryCode = code;
+      }
+      answers.push(answer);
     }
     return answers;
   }
@@ -229,11 +238,38 @@
     return /(?:^| )(?:country (?:phone )?code|phone country|calling code|dial code|international code|country dialing)(?: |$)/.test(text);
   }
 
-  function countryCodeResolution(savedEntries, element) {
-    if (!isCountryCodeField(element)) return { codes: [], saved: null };
-    const phones = (savedEntries || []).filter((saved) => UmeMatcher.answerType(saved) === "phone" && countryCodeDigits(saved));
-    const codes = [...new Set(phones.map(countryCodeDigits))];
-    return { codes, saved: codes.length === 1 ? phones[0] : null };
+  function nearestRelatedElement(element, elements, predicate) {
+    const index = elements.indexOf(element);
+    let candidates = elements.filter((candidate) => candidate !== element && predicate(candidate));
+    const sameForm = candidates.filter((candidate) => candidate.form && candidate.form === element.form);
+    if (sameForm.length) candidates = sameForm;
+    candidates.sort((left, right) => Math.abs(elements.indexOf(left) - index) - Math.abs(elements.indexOf(right) - index));
+    return candidates[0] || null;
+  }
+
+  function relatedPhoneElement(element, elements) {
+    return nearestRelatedElement(element, elements, (candidate) => {
+      return !isCountryCodeField(candidate) && UmeMatcher.answerType(describe(candidate)) === "phone";
+    });
+  }
+
+  function relatedCountryCodeElement(element, elements) {
+    return nearestRelatedElement(element, elements, isCountryCodeField);
+  }
+
+  function selectedCountryCode(element) {
+    if (!element) return "";
+    if (element instanceof HTMLSelectElement) {
+      const option = element.selectedOptions?.[0];
+      return callingCodeFromOption(option?.value, option?.text);
+    }
+    return callingCodeFromOption(element.value, element.value);
+  }
+
+  function countryCodeResolution(savedEntries, element, elements = eligibleElements()) {
+    if (!isCountryCodeField(element)) return { codes: [], saved: null, result: "not a country code field" };
+    const related = relatedPhoneElement(element, elements);
+    return resolveCountryCode(savedEntries, related ? describe(related) : null);
   }
 
   function matchForElement(savedEntries, element) {
@@ -260,7 +296,7 @@
     const target = digitsOnly(code);
     if (!target) return false;
     const candidates = [...element.options].filter((option) => compactText(option.text) || String(option.value || "").trim());
-    const option = candidates.find((candidate) => digitsOnly(candidate.value) === target)
+    const option = candidates.find((candidate) => callingCodeFromOption(candidate.value, candidate.text) === target)
       || candidates.find((candidate) => new RegExp(`\\+${target}(?:\\D|$)`).test(compactText(candidate.text)))
       || candidates.find((candidate) => {
         const groups = compactText(candidate.text).match(/\+\d{1,3}/g) || [];
@@ -487,14 +523,14 @@
     let matchedButNotApplied = 0;
     for (const element of elements) {
       const isCallingCode = isCountryCodeField(element);
-      const resolution = isCallingCode ? countryCodeResolution(savedEntries, element) : null;
-      const match = matchForElement(savedEntries, element);
+      const resolution = isCallingCode ? countryCodeResolution(savedEntries, element, elements) : null;
+      const match = isCallingCode ? resolution.saved : matchForElement(savedEntries, element);
       if (!match) {
         unmatched += 1;
         if (isCallingCode && diagnosticsEnabled) {
           countryCodeDiagnostics.push({
             availableSavedCodes: resolution.codes,
-            result: resolution.codes.length ? "conflicting saved country codes" : "no saved phone country code",
+            result: resolution.result,
             selectedBefore: optionLabelFor(element)
           });
         }

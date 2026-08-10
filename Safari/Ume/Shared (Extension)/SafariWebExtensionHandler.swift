@@ -39,10 +39,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                 return
             }
             #if os(macOS)
-            let opened = NSWorkspace.shared.open(url)
-            complete(context, opened
-                ? ["ok": true]
-                : ["ok": false, "error": "Ume Settings could not be opened."])
+            openContainingApp(url, from: context)
             #else
             context.open(url) { [weak self] opened in
                 self?.complete(context, opened
@@ -77,6 +74,28 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             complete(context, ["ok": false, "error": "Unsupported native message."])
         }
     }
+
+    #if os(macOS)
+    private func openContainingApp(_ url: URL, from context: NSExtensionContext) {
+        let appURL = Bundle.main.bundleURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+
+        guard appURL.pathExtension == "app" else {
+            complete(context, ["ok": false, "error": "Ume Settings could not be opened."])
+            return
+        }
+
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        NSWorkspace.shared.open([url], withApplicationAt: appURL, configuration: configuration) { [weak self] app, _ in
+            self?.complete(context, app != nil
+                ? ["ok": true]
+                : ["ok": false, "error": "Ume Settings could not be opened."])
+        }
+    }
+    #endif
 
     private static let schemaKeys: Set<String> = [
         "accessibleDescription", "accessibleName", "answerType", "autocomplete", "form", "group",

@@ -20,6 +20,29 @@ private func descriptionLabel(_ text: String) -> NSTextField {
 
 private let settingsPaneSize = NSSize(width: 720, height: 500)
 
+private func openSafariExtensionSettings(completion: @escaping (Error?) -> Void) {
+    let safariURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Safari")
+        ?? URL(fileURLWithPath: "/Applications/Safari.app")
+    let configuration = NSWorkspace.OpenConfiguration()
+    configuration.activates = true
+
+    NSWorkspace.shared.openApplication(at: safariURL, configuration: configuration) { app, launchError in
+        guard launchError == nil else {
+            DispatchQueue.main.async { completion(launchError) }
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            SFSafariApplication.showPreferencesForExtension(withIdentifier: extensionBundleIdentifier) { settingsError in
+                DispatchQueue.main.async {
+                    app?.activate(options: [.activateAllWindows])
+                    completion(settingsError)
+                }
+            }
+        }
+    }
+}
+
 private extension Array {
     subscript(safe index: Int) -> Element? {
         indices.contains(index) ? self[index] : nil
@@ -641,18 +664,9 @@ final class OnboardingViewController: NSViewController {
         safariSettingsButton.keyEquivalent = ""
         nextButton.isEnabled = true
         nextButton.keyEquivalent = "\r"
-        let configuration = NSWorkspace.OpenConfiguration()
-        NSWorkspace.shared.openApplication(
-            at: URL(fileURLWithPath: "/Applications/Safari.app"),
-            configuration: configuration
-        ) { _, _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                SFSafariApplication.showPreferencesForExtension(withIdentifier: extensionBundleIdentifier) { error in
-                    if error != nil {
-                        NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Safari").first?
-                            .activate(options: [.activateAllWindows])
-                    }
-                }
+        openSafariExtensionSettings { [weak self] error in
+            if error != nil {
+                self?.status.stringValue = "Safari opened. Choose Safari → Settings → Extensions and enable Ume."
             }
         }
     }
@@ -768,7 +782,15 @@ final class GeneralSettingsViewController: NSViewController {
     }
 
     @objc private func openSafariSettings() {
-        SFSafariApplication.showPreferencesForExtension(withIdentifier: extensionBundleIdentifier) { _ in }
+        stateLabel.stringValue = "Opening Safari extension settings…"
+        openSafariExtensionSettings { [weak self] error in
+            guard let self else { return }
+            if error != nil {
+                self.stateLabel.stringValue = "Safari opened. Choose Safari → Settings → Extensions and enable Ume."
+            } else {
+                self.refreshState()
+            }
+        }
     }
 }
 

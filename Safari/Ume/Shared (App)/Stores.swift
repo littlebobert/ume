@@ -2,14 +2,15 @@ import Foundation
 import Security
 import CryptoKit
 
+#if os(macOS)
+let extensionBundleIdentifier = "\(Bundle.main.bundleIdentifier ?? "com.justin.ume").Extension"
+#else
 let extensionBundleIdentifier = "com.justin.ume.Extension"
+#endif
 private let keychainService = "com.justin.ume.ai-settings"
 private let answerKeyService = "com.justin.ume.answer-encryption"
-#if os(macOS)
-private let appGroupIdentifier = "XDWKSAH7W3.group.com.justin.ume.shared"
-#else
-private let appGroupIdentifier = "group.com.justin.ume.shared"
-#endif
+private let appGroupIdentifier = Bundle.main.object(forInfoDictionaryKey: "UmeAppGroupIdentifier") as? String
+    ?? "group.com.justin.ume.shared"
 
 struct AISettings: Codable {
     var provider: String

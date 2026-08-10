@@ -67,8 +67,12 @@
     }
   }
 
-  function sendNative(message) {
-    return api.runtime.sendNativeMessage("com.justin.ume", message);
+  const nativeAppIdentifier = api.runtime.getPlatformInfo().then(({ os }) =>
+    os === "ios" ? "com.justin.henry.ume.ios" : "com.justin.henry.ume"
+  );
+
+  async function sendNative(message) {
+    return api.runtime.sendNativeMessage(await nativeAppIdentifier, message);
   }
 
   async function appendDebug(event, details = {}) {

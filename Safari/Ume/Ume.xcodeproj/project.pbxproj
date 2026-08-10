@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10000010000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
+		A10000020000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
+		A10000030000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
+		A10000040000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
+		A10000050000000000000001 /* SettingsViewControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000110000000000000001 /* SettingsViewControllers.swift */; };
+		A10000060000000000000001 /* AboutPrivacyWindowControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000120000000000000001 /* AboutPrivacyWindowControllers.swift */; };
+		A10000070000000000000001 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = A10000130000000000000001 /* icons */; };
+		A10000080000000000000001 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = A10000130000000000000001 /* icons */; };
 		D0A1D2E3301B98AE0082FD16 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2E2301B98AE0082FD16 /* AppDelegate.swift */; };
 		D0A1D2E5301B98AE0082FD16 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2E4301B98AE0082FD16 /* SceneDelegate.swift */; };
 		D0A1D2E8301B98AE0082FD16 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2E6301B98AE0082FD16 /* LaunchScreen.storyboard */; };
@@ -16,15 +24,11 @@
 		D0A1D2FE301B98AE0082FD16 /* Ume Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D0A1D2FD301B98AE0082FD16 /* Ume Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D0A1D308301B98AE0082FD16 /* Ume Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D0A1D307301B98AE0082FD16 /* Ume Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D0A1D30D301B98AE0082FD16 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D2301B98AD0082FD16 /* Main.html */; };
-		D0A1D30E301B98AE0082FD16 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D2301B98AD0082FD16 /* Main.html */; };
 		D0A1D30F301B98AE0082FD16 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D4301B98AD0082FD16 /* Icon.png */; };
 		D0A1D310301B98AE0082FD16 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D4301B98AD0082FD16 /* Icon.png */; };
 		D0A1D311301B98AE0082FD16 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D5301B98AD0082FD16 /* Style.css */; };
-		D0A1D312301B98AE0082FD16 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D5301B98AD0082FD16 /* Style.css */; };
 		D0A1D313301B98AE0082FD16 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D6301B98AD0082FD16 /* Script.js */; };
-		D0A1D314301B98AE0082FD16 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D6301B98AD0082FD16 /* Script.js */; };
 		D0A1D315301B98AE0082FD16 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2D7301B98AD0082FD16 /* ViewController.swift */; };
-		D0A1D316301B98AE0082FD16 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2D7301B98AD0082FD16 /* ViewController.swift */; };
 		D0A1D317301B98AE0082FD16 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D8301B98AE0082FD16 /* Assets.xcassets */; };
 		D0A1D318301B98AE0082FD16 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D2D8301B98AE0082FD16 /* Assets.xcassets */; };
 		D0A1D319301B98AE0082FD16 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A1D2DA301B98AE0082FD16 /* SafariWebExtensionHandler.swift */; };
@@ -41,14 +45,6 @@
 		D0A1D33B301B98AE0082FD16 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32F301B98AE0082FD16 /* lib */; };
 		D0A1D33C301B98AE0082FD16 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D330301B98AE0082FD16 /* popup.css */; };
 		D0A1D33D301B98AE0082FD16 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D331301B98AE0082FD16 /* content.js */; };
-		A10000010000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
-		A10000020000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
-		A10000030000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
-		A10000040000000000000001 /* Stores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000100000000000000001 /* Stores.swift */; };
-		A10000050000000000000001 /* SettingsViewControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000110000000000000001 /* SettingsViewControllers.swift */; };
-		A10000060000000000000001 /* AboutPrivacyWindowControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000120000000000000001 /* AboutPrivacyWindowControllers.swift */; };
-		A10000070000000000000001 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = A10000130000000000000001 /* icons */; };
-		A10000080000000000000001 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = A10000130000000000000001 /* icons */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +86,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A10000100000000000000001 /* Stores.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stores.swift; sourceTree = "<group>"; };
+		A10000110000000000000001 /* SettingsViewControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewControllers.swift; sourceTree = "<group>"; };
+		A10000120000000000000001 /* AboutPrivacyWindowControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutPrivacyWindowControllers.swift; sourceTree = "<group>"; };
+		A10000130000000000000001 /* icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = icons; path = ../../../Extension/icons; sourceTree = "<group>"; };
 		D0A1D2D3301B98AD0082FD16 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
 		D0A1D2D4301B98AD0082FD16 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		D0A1D2D5301B98AD0082FD16 /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
@@ -117,10 +117,6 @@
 		D0A1D32F301B98AE0082FD16 /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = ../../../Extension/lib; sourceTree = "<group>"; };
 		D0A1D330301B98AE0082FD16 /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; name = popup.css; path = ../../../Extension/popup.css; sourceTree = "<group>"; };
 		D0A1D331301B98AE0082FD16 /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = content.js; path = ../../../Extension/content.js; sourceTree = "<group>"; };
-		A10000100000000000000001 /* Stores.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stores.swift; sourceTree = "<group>"; };
-		A10000110000000000000001 /* SettingsViewControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewControllers.swift; sourceTree = "<group>"; };
-		A10000120000000000000001 /* AboutPrivacyWindowControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutPrivacyWindowControllers.swift; sourceTree = "<group>"; };
-		A10000130000000000000001 /* icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = icons; path = ../../../Extension/icons; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -625,6 +621,7 @@
 				CODE_SIGN_ENTITLEMENTS = "iOS (Extension)/Ume Extension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XDWKSAH7W3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Ume Extension";
@@ -641,7 +638,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume.ios.extension;
 				PRODUCT_NAME = "Ume Extension";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -660,6 +657,7 @@
 				CODE_SIGN_ENTITLEMENTS = "iOS (Extension)/Ume Extension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XDWKSAH7W3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Ume Extension";
@@ -676,7 +674,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume.ios.extension;
 				PRODUCT_NAME = "Ume Extension";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -698,15 +696,16 @@
 				CODE_SIGN_ENTITLEMENTS = "iOS (App)/Ume.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XDWKSAH7W3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (App)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Ume;
-				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -719,7 +718,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume;
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume.ios;
 				PRODUCT_NAME = Ume;
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -740,15 +739,16 @@
 				CODE_SIGN_ENTITLEMENTS = "iOS (App)/Ume.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XDWKSAH7W3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (App)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Ume;
-				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -761,7 +761,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume;
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume.ios;
 				PRODUCT_NAME = Ume;
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -802,7 +802,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume.Extension;
 				PRODUCT_NAME = "Ume Extension";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
@@ -841,7 +841,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume.Extension;
 				PRODUCT_NAME = "Ume Extension";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
@@ -869,9 +869,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "macOS (App)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Ume;
-				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -884,7 +884,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume;
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume;
 				PRODUCT_NAME = Ume;
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -913,9 +913,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "macOS (App)/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Ume;
-				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				INFOPLIST_KEY_UmeKeychainAccessGroup = "$(AppIdentifierPrefix)com.justin.ume.shared";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -928,7 +928,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.justin.ume;
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume;
 				PRODUCT_NAME = Ume;
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;

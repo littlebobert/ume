@@ -1,0 +1,75 @@
+name: Build Apple apps
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-apple-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: xcode-27
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: iOS
+            scheme: Ume (iOS)
+            sdk: iphonesimulator
+            destination: generic/platform=iOS Simulator
+            products-directory: Debug-iphonesimulator
+            artifact-name: Ume-iOS-Simulator
+          - name: macOS
+            scheme: Ume (macOS)
+            sdk: macosx
+            destination: generic/platform=macOS
+            products-directory: Debug
+            artifact-name: Ume-macOS
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build ${{ matrix.name }} app
+        env:
+          DERIVED_DATA: ${{ runner.temp }}/DerivedData-${{ matrix.artifact-name }}
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Safari/Ume/Ume.xcodeproj \
+            -scheme "${{ matrix.scheme }}" \
+            -configuration Debug \
+            -sdk "${{ matrix.sdk }}" \
+            -destination "${{ matrix.destination }}" \
+            -derivedDataPath "$DERIVED_DATA" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Package unsigned ${{ matrix.name }} app
+        env:
+          DERIVED_DATA: ${{ runner.temp }}/DerivedData-${{ matrix.artifact-name }}
+          ARCHIVE_PATH: ${{ runner.temp }}/${{ matrix.artifact-name }}.zip
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$DERIVED_DATA/Build/Products/${{ matrix.products-directory }}/Ume.app" \
+            "$ARCHIVE_PATH"
+
+      - name: Upload ${{ matrix.name }} artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ runner.temp }}/${{ matrix.artifact-name }}.zip
+          if-no-files-found: error
+          retention-days: 14

@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-	<dict>
-	<key>UmeAppGroupIdentifier</key>
-	<string>$(TeamIdentifierPrefix)group.com.justin.ume.shared</string>
-	<key>UmeKeychainAccessGroup</key>
-	<string>$(AppIdentifierPrefix)com.justin.ume.shared</string>
+<dict>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>
@@ -13,5 +9,9 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).SafariWebExtensionHandler</string>
 	</dict>
+	<key>UmeAppGroupIdentifier</key>
+	<string>$(TeamIdentifierPrefix)group.com.justin.ume.shared</string>
+	<key>UmeKeychainAccessGroup</key>
+	<string>$(AppIdentifierPrefix)com.justin.ume.shared</string>
 </dict>
 </plist>

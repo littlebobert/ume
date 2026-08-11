@@ -802,7 +802,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume.extension;
 				PRODUCT_NAME = "Ume Extension";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
@@ -841,7 +841,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.justin.henry.ume.extension;
 				PRODUCT_NAME = "Ume Extension";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;

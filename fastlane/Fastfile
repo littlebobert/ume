@@ -1,0 +1,83 @@
+IOS_BUNDLE_IDENTIFIERS = [
+  "com.justin.henry.ume.ios",
+  "com.justin.henry.ume.ios.extension"
+].freeze
+
+MACOS_BUNDLE_IDENTIFIERS = [
+  "com.justin.henry.ume",
+  "com.justin.henry.ume.Extension"
+].freeze
+
+def required_environment_value(name)
+  value = ENV[name]
+  UI.user_error!("Missing required environment variable #{name}") if value.to_s.empty?
+  value
+end
+
+def app_store_connect_key
+  app_store_connect_api_key(
+    key_id: required_environment_value("APP_STORE_CONNECT_KEY_ID"),
+    issuer_id: required_environment_value("APP_STORE_CONNECT_ISSUER_ID"),
+    key_content: required_environment_value("APP_STORE_CONNECT_PRIVATE_KEY_BASE64"),
+    is_key_content_base64: true,
+    in_house: false
+  )
+end
+
+def signing_assets(type:, platform:, identifiers:, readonly:)
+  setup_ci if is_ci
+
+  match(
+    type: type,
+    platform: platform,
+    app_identifier: identifiers,
+    api_key: app_store_connect_key,
+    readonly: readonly
+  )
+end
+
+platform :ios do
+  desc "Create or repair Ume's App Store signing assets from a trusted Mac"
+  lane :bootstrap_signing do
+    UI.user_error!("Signing bootstrap must run from a trusted local Mac, not CI.") if is_ci
+    signing_assets(
+      type: "appstore",
+      platform: "ios",
+      identifiers: IOS_BUNDLE_IDENTIFIERS,
+      readonly: false
+    )
+  end
+
+  desc "Install Ume's existing App Store signing assets without changing them"
+  lane :sync_signing do
+    signing_assets(
+      type: "appstore",
+      platform: "ios",
+      identifiers: IOS_BUNDLE_IDENTIFIERS,
+      readonly: true
+    )
+  end
+end
+
+platform :mac do
+  desc "Create or repair Ume's Developer ID signing assets from a trusted Mac"
+  lane :bootstrap_signing do
+    UI.user_error!("Signing bootstrap must run from a trusted local Mac, not CI.") if is_ci
+    signing_assets(
+      type: "developer_id",
+      platform: "macos",
+      identifiers: MACOS_BUNDLE_IDENTIFIERS,
+      readonly: false
+    )
+  end
+
+  desc "Install Ume's existing Developer ID signing assets without changing them"
+  lane :sync_signing do
+    signing_assets(
+      type: "developer_id",
+      platform: "macos",
+      identifiers: MACOS_BUNDLE_IDENTIFIERS,
+      readonly: true
+    )
+  end
+end

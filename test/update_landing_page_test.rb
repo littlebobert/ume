@@ -47,6 +47,18 @@ class UpdateLandingPageTest < Minitest::Test
     end
   end
 
+  def test_inserts_japanese_into_an_existing_utf8_page
+    Dir.mktmpdir do |directory|
+      path = File.join(directory, "app.html")
+      File.write(path, fixture.sub("Download", "ダウンロード"), encoding: "UTF-8")
+      _out, error, status = run_update(path)
+      assert status.success?, error
+      html = File.read(path, encoding: "UTF-8")
+      assert_includes html, "ダウンロード"
+      assert_includes html, "選択欄を修正しました。"
+    end
+  end
+
   def test_is_idempotent_for_an_existing_version
     Dir.mktmpdir do |directory|
       path = File.join(directory, "app.html")

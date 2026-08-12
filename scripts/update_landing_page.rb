@@ -25,7 +25,7 @@ uri = URI.parse(download_url)
 abort "Download URL must use HTTPS." unless uri.is_a?(URI::HTTPS) && uri.host == "github.com"
 abort "Release notes must be 1,000 characters or fewer." if [note_en, note_ja].any? { |note| note.length > 1_000 }
 
-html = File.binread(path)
+html = File.read(path, encoding: "UTF-8")
 original = html.dup
 
 download_count = 0
@@ -70,6 +70,6 @@ end
 if html == original
   puts "Landing page is already current."
 else
-  File.binwrite(path, html)
+  File.write(path, html, encoding: "UTF-8")
   puts "Updated #{path} for Ume #{version}."
 end

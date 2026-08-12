@@ -16,6 +16,39 @@ def required_environment_value(name)
   value
 end
 
+def match_profile_name(bundle_identifier:, type:, platform:)
+  components = ["sigh", bundle_identifier, type]
+  components << platform unless platform == "ios"
+  required_environment_value("#{components.join("_")}_profile-name")
+end
+
+def with_manual_release_signing(settings)
+  project_path = "Safari/Ume/Ume.xcodeproj/project.pbxproj"
+  original = File.binread(project_path)
+  updated = original.dup
+
+  settings.each do |setting|
+    configuration_id = Regexp.escape(setting.fetch(:configuration_id))
+    pattern = /(#{configuration_id} \/\* Release configuration[^\n]*\*\/ = \{.*?buildSettings = \{\n)(.*?)(\n\s*\};\n\s*name = Release;)/m
+    match = updated.match(pattern)
+    UI.user_error!("Could not find Release configuration #{setting[:configuration_id]}") unless match
+
+    build_settings = match[2]
+    UI.user_error!("Release configuration #{setting[:configuration_id]} is not using automatic signing") unless build_settings.include?("CODE_SIGN_STYLE = Automatic;")
+
+    replacement = build_settings.sub("CODE_SIGN_STYLE = Automatic;", "CODE_SIGN_STYLE = Manual;")
+    signing_lines = "\t\t\t\tCODE_SIGN_IDENTITY = \"#{setting.fetch(:identity)}\";\n" \
+                    "\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = \"#{setting.fetch(:profile)}\";\n"
+    replacement = replacement.sub(/(\s*CODE_SIGN_ENTITLEMENTS = [^\n]+;\n)/, "\\1#{signing_lines}")
+    updated.sub!(pattern, "\\1#{replacement}\\3")
+  end
+
+  File.binwrite(project_path, updated)
+  yield
+ensure
+  File.binwrite(project_path, original) if original
+end
+
 def app_store_connect_key
   app_store_connect_api_key(
     key_id: required_environment_value("APP_STORE_CONNECT_KEY_ID"),
@@ -76,16 +109,30 @@ platform :ios do
       api_key: api_key
     )
 
-    ipa_path = build_app(
-      project: "Safari/Ume/Ume.xcodeproj",
-      scheme: "Ume (iOS)",
-      configuration: "Release",
-      clean: true,
-      export_method: "app-store",
-      output_directory: "build/ios",
-      output_name: "Ume-#{version}.ipa",
-      xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{build_number}"
-    )
+    ipa_path = nil
+    with_manual_release_signing([
+      {
+        configuration_id: "D0A1D323301B98AE0082FD16",
+        identity: "Apple Distribution",
+        profile: match_profile_name(bundle_identifier: IOS_BUNDLE_IDENTIFIERS[0], type: "appstore", platform: "ios")
+      },
+      {
+        configuration_id: "D0A1D31F301B98AE0082FD16",
+        identity: "Apple Distribution",
+        profile: match_profile_name(bundle_identifier: IOS_BUNDLE_IDENTIFIERS[1], type: "appstore", platform: "ios")
+      }
+    ]) do
+      ipa_path = build_app(
+        project: "Safari/Ume/Ume.xcodeproj",
+        scheme: "Ume (iOS)",
+        configuration: "Release",
+        clean: true,
+        export_method: "app-store",
+        output_directory: "build/ios",
+        output_name: "Ume-#{version}.ipa",
+        xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{build_number}"
+      )
+    end
 
     upload_to_testflight(
       api_key: api_key,
@@ -132,15 +179,28 @@ platform :mac do
       readonly: true
     )
 
-    build_app(
-      project: "Safari/Ume/Ume.xcodeproj",
-      scheme: "Ume (macOS)",
-      configuration: "Release",
-      clean: true,
-      export_method: "developer-id",
-      output_directory: "build/macos",
-      output_name: "Ume",
-      xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{build_number}"
-    )
+    with_manual_release_signing([
+      {
+        configuration_id: "D0A1D32A301B98AE0082FD16",
+        identity: "Developer ID Application",
+        profile: match_profile_name(bundle_identifier: MACOS_BUNDLE_IDENTIFIERS[0], type: "developer_id", platform: "macos")
+      },
+      {
+        configuration_id: "D0A1D326301B98AE0082FD16",
+        identity: "Developer ID Application",
+        profile: match_profile_name(bundle_identifier: MACOS_BUNDLE_IDENTIFIERS[1], type: "developer_id", platform: "macos")
+      }
+    ]) do
+      build_app(
+        project: "Safari/Ume/Ume.xcodeproj",
+        scheme: "Ume (macOS)",
+        configuration: "Release",
+        clean: true,
+        export_method: "developer-id",
+        output_directory: "build/macos",
+        output_name: "Ume",
+        xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{build_number}"
+      )
+    end
   end
 end

@@ -2,11 +2,7 @@ import Foundation
 import Security
 import CryptoKit
 
-#if os(macOS)
-let extensionBundleIdentifier = "\(Bundle.main.bundleIdentifier ?? "com.justin.ume").Extension"
-#else
-let extensionBundleIdentifier = "com.justin.ume.Extension"
-#endif
+let extensionBundleIdentifier = "\(Bundle.main.bundleIdentifier ?? "com.justin.henry.ume").extension"
 private let keychainService = "com.justin.ume.ai-settings"
 private let answerKeyService = "com.justin.ume.answer-encryption"
 private let appGroupIdentifier = Bundle.main.object(forInfoDictionaryKey: "UmeAppGroupIdentifier") as? String

@@ -17,7 +17,7 @@ test("pins Sparkle 2.9.5 on the macOS app target", () => {
 test("configures a signed automatic update feed", () => {
   assert.match(info, /<key>SUFeedURL<\/key>\s*<string>https:\/\/littlebobert\.github\.io\/ume-appcast\.xml<\/string>/);
   assert.match(info, /<key>SUPublicEDKey<\/key>\s*<string>Gjz4eaBW734cY7idF99PyqOWtycJBF4i8wSAUXg2p\+0=<\/string>/);
-  for (const key of ["SURequireSignedFeed", "SUEnableAutomaticChecks", "SUAllowsAutomaticUpdates", "SUAutomaticallyUpdate", "SUEnableInstallerLauncherService"]) {
+  for (const key of ["SURequireSignedFeed", "SUVerifyUpdateBeforeExtraction", "SUEnableAutomaticChecks", "SUAllowsAutomaticUpdates", "SUAutomaticallyUpdate", "SUEnableInstallerLauncherService"]) {
     assert.match(info, new RegExp(`<key>${key}<\\/key>\\s*<true\\/>`));
   }
   assert.doesNotMatch(info, /SUEnableDownloaderService/);

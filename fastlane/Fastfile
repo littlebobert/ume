@@ -23,7 +23,7 @@ def match_profile_name(bundle_identifier:, type:, platform:)
 end
 
 def with_manual_release_signing(settings)
-  project_path = "Safari/Ume/Ume.xcodeproj/project.pbxproj"
+  project_path = File.expand_path("../Safari/Ume/Ume.xcodeproj/project.pbxproj", __dir__)
   original = File.binread(project_path)
   updated = original.dup
 

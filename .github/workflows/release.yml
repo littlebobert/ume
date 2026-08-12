@@ -126,9 +126,20 @@ jobs:
 
           mkdir -p "$dmg_root"
           ditto "$app_path" "$dmg_root/Ume.app"
-          ln -s /Applications "$dmg_root/Applications"
+          ln -s /Applications "$dmg_root/Applications - Drag Ume Here"
+          cat > "$dmg_root/READ ME - Install Ume.txt" <<'INSTRUCTIONS'
+          Install Ume
+          ===========
+
+          1. Drag Ume.app onto "Applications - Drag Ume Here".
+          2. Open Ume from your Applications folder.
+          3. Follow Ume's setup steps to enable the extension in Safari.
+
+          Ume's Safari extension may not appear or open correctly until the app
+          has been moved to Applications and reopened from there.
+          INSTRUCTIONS
           diskutil image create from \
-            --volumeName "Ume $VERSION" \
+            --volumeName "Install Ume" \
             --format UDZO \
             "$dmg_root" \
             "$release_dmg"

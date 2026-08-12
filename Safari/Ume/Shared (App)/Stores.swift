@@ -26,7 +26,7 @@ private func sharedKeychainAccessGroup() -> String? {
     Bundle.main.object(forInfoDictionaryKey: "UmeKeychainAccessGroup") as? String
 }
 
-private func keychainQuery(service: String) -> [String: Any] {
+private func keychainQuery(service: String, usesDataProtection: Bool = true) -> [String: Any] {
     var query: [String: Any] = [
         kSecClass as String: kSecClassGenericPassword,
         kSecAttrService as String: service,
@@ -35,7 +35,57 @@ private func keychainQuery(service: String) -> [String: Any] {
     if let accessGroup = sharedKeychainAccessGroup() {
         query[kSecAttrAccessGroup as String] = accessGroup
     }
+#if os(macOS)
+    if usesDataProtection {
+        query[kSecUseDataProtectionKeychain as String] = true
+    }
+#endif
     return query
+}
+
+private func migratedKeychainData(service: String, accessible: CFString) throws -> Data? {
+    var protectedQuery = keychainQuery(service: service)
+    protectedQuery[kSecReturnData as String] = true
+    protectedQuery[kSecMatchLimit as String] = kSecMatchLimitOne
+    var protectedItem: CFTypeRef?
+    let protectedStatus = SecItemCopyMatching(protectedQuery as CFDictionary, &protectedItem)
+    if protectedStatus == errSecSuccess {
+        return protectedItem as? Data
+    }
+    guard protectedStatus == errSecItemNotFound else {
+        throw StoreError.message("Apple Keychain could not read Ume's protected data.")
+    }
+
+#if os(macOS)
+    var legacyQuery = keychainQuery(service: service, usesDataProtection: false)
+    legacyQuery[kSecReturnData as String] = true
+    legacyQuery[kSecMatchLimit as String] = kSecMatchLimitOne
+    legacyQuery[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUIFail
+    var legacyItem: CFTypeRef?
+    let legacyStatus = SecItemCopyMatching(legacyQuery as CFDictionary, &legacyItem)
+    if legacyStatus == errSecSuccess, let data = legacyItem as? Data {
+        var inserted = keychainQuery(service: service)
+        inserted[kSecValueData as String] = data
+        inserted[kSecAttrAccessible as String] = accessible
+        let addStatus = SecItemAdd(inserted as CFDictionary, nil)
+        guard addStatus == errSecSuccess || addStatus == errSecDuplicateItem else {
+            throw StoreError.message("Apple Keychain could not migrate Ume's protected data.")
+        }
+
+        legacyQuery[kSecReturnData as String] = nil
+        legacyQuery[kSecMatchLimit as String] = nil
+        SecItemDelete(legacyQuery as CFDictionary)
+        return data
+    }
+    if legacyStatus == errSecInteractionNotAllowed || legacyStatus == errSecAuthFailed || legacyStatus == errSecUserCanceled {
+        throw StoreError.message("Ume found protected data from an older build that macOS no longer recognizes. Remove the old Ume keychain items and reopen Ume.")
+    }
+    guard legacyStatus == errSecItemNotFound else {
+        throw StoreError.message("Apple Keychain could not read Ume's older protected data.")
+    }
+#endif
+
+    return nil
 }
 
 enum OnboardingStore {
@@ -60,12 +110,10 @@ enum OnboardingStore {
 
 enum SettingsStore {
     static func load() -> AISettings? {
-        var query = keychainQuery(service: keychainService)
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
+        guard let data = try? migratedKeychainData(
+            service: keychainService,
+            accessible: kSecAttrAccessibleAfterFirstUnlock
+        ) else { return nil }
         return try? JSONDecoder().decode(AISettings.self, from: data)
     }
 
@@ -179,11 +227,10 @@ enum AnswerStore {
     }
 
     private static func encryptionKey() throws -> SymmetricKey {
-        var query = keychainQuery(service: answerKeyService)
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var item: CFTypeRef?
-        if SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess, let data = item as? Data {
+        if let data = try migratedKeychainData(
+            service: answerKeyService,
+            accessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        ) {
             return SymmetricKey(data: data)
         }
 

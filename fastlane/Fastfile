@@ -7,7 +7,7 @@ IOS_BUNDLE_IDENTIFIERS = [
 
 MACOS_BUNDLE_IDENTIFIERS = [
   "com.justin.henry.ume",
-  "com.justin.henry.ume.Extension"
+  "com.justin.henry.ume.extension"
 ].freeze
 
 def required_environment_value(name)

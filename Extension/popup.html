@@ -46,16 +46,20 @@
           <strong>Extension Debug Logs</strong>
           <button id="close-debug-log" class="icon-button" type="button" aria-label="Close">Done</button>
         </div>
-        <p class="debug-log-note">These debugging logs are never sent anywhere automatically.</p>
+        <p class="debug-log-note">Logs can include page URLs and form labels. Review them before sharing; Ume never sends them automatically.</p>
         <textarea id="debug-log-text" readonly spellcheck="false"></textarea>
         <div class="debug-log-actions">
           <button id="delete-debug-log" type="button">Delete Log</button>
-          <button id="copy-debug-log" type="button">Copy</button>
+          <div class="debug-log-share-actions">
+            <button id="copy-debug-log" type="button">Copy</button>
+            <button id="email-debug-log" type="button">Email Logs…</button>
+          </div>
         </div>
       </section>
       </div>
     </main>
     <script src="lib/matcher.js"></script>
+    <script src="lib/debug-email.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

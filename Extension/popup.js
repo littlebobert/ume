@@ -15,6 +15,7 @@
   const closeDebugLogButton = document.getElementById("close-debug-log");
   const deleteDebugLogButton = document.getElementById("delete-debug-log");
   const copyDebugLogButton = document.getElementById("copy-debug-log");
+  const emailDebugLogButton = document.getElementById("email-debug-log");
   const debugLogPanel = document.getElementById("debug-log-panel");
   const debugLogText = document.getElementById("debug-log-text");
   const DEBUG_LOG_KEY = "ume-extension-debug-log";
@@ -290,6 +291,17 @@
     await navigator.clipboard.writeText(debugLogText.value);
     copyDebugLogButton.textContent = "Copied";
     setTimeout(() => { copyDebugLogButton.textContent = "Copy"; }, 1200);
+  });
+  emailDebugLogButton.addEventListener("click", async () => {
+    emailDebugLogButton.disabled = true;
+    try {
+      const { os = "unknown" } = await api.runtime.getPlatformInfo();
+      const version = api.runtime.getManifest()?.version || "unknown";
+      window.location.href = UmeDebugEmail.buildDebugEmail(debugLogText.value, { version, platform: os });
+    } catch (error) {
+      show(error.message || "Ume could not open an email draft.", true);
+      emailDebugLogButton.disabled = false;
+    }
   });
 
   Promise.all([loadOnboardingState(), refreshDebugLoggingState()])

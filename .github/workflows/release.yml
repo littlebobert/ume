@@ -7,6 +7,14 @@ on:
         description: Version to release (for example, 0.1.2). Leave blank to increment the latest release tag's patch version.
         required: false
         type: string
+      changelog_en:
+        description: Short English changelog note for GitHub and the Ume landing page.
+        required: false
+        type: string
+      changelog_ja:
+        description: Optional Japanese note. Leave blank to translate the English note with OpenAI.
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -73,6 +81,25 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "build_number=${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
           echo "Releasing Ume $version"
+
+      - name: Verify landing-page publication access
+        env:
+          WEBSITE_REPO_TOKEN: ${{ secrets.WEBSITE_REPO_TOKEN }}
+        run: |
+          if [[ -z "$WEBSITE_REPO_TOKEN" ]]; then
+            echo "WEBSITE_REPO_TOKEN must be configured in the release environment." >&2
+            exit 1
+          fi
+
+      - name: Prepare localized changelog note
+        id: changelog
+        env:
+          RELEASE_NOTE_EN: ${{ inputs.changelog_en }}
+          RELEASE_NOTE_JA: ${{ inputs.changelog_ja }}
+          CHANGELOG_OPENAI_API_KEY: ${{ secrets.CHANGELOG_OPENAI_API_KEY }}
+          CHANGELOG_OPENAI_MODEL: ${{ vars.CHANGELOG_OPENAI_MODEL || 'gpt-5.6-sol' }}
+          CHANGELOG_OPENAI_REASONING_EFFORT: ${{ vars.CHANGELOG_OPENAI_REASONING_EFFORT || 'medium' }}
+        run: ruby scripts/translate_release_note.rb
 
       - name: Set up Ruby and Fastlane
         uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
@@ -160,6 +187,40 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: Ume ${{ steps.version.outputs.version }}
+          body: ${{ steps.changelog.outputs.release_body }}
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: ${{ steps.macos.outputs.archive }}
+
+      - name: Check out landing-page repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: littlebobert/littlebobert.github.io
+          ref: master
+          token: ${{ secrets.WEBSITE_REPO_TOKEN }}
+          path: website
+
+      - name: Update and publish Ume landing page
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          NOTE_EN: ${{ steps.changelog.outputs.note_en }}
+          NOTE_JA: ${{ steps.changelog.outputs.note_ja }}
+        run: |
+          set -euo pipefail
+          ruby scripts/update_landing_page.rb \
+            --file website/ume.html \
+            --version "$VERSION" \
+            --download-url "https://github.com/littlebobert/ume/releases/download/$TAG/Ume-$VERSION-macOS.dmg" \
+            --note-en "$NOTE_EN" \
+            --note-ja "$NOTE_JA"
+
+          git -C website config user.name "Ume Release Bot"
+          git -C website config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C website add ume.html
+          if git -C website diff --cached --quiet; then
+            echo "Landing page is already current."
+          else
+            git -C website commit -m "Update Ume for $TAG"
+            git -C website push origin HEAD:master
+          fi

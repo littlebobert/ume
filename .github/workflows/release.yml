@@ -82,12 +82,17 @@ jobs:
           echo "build_number=${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
           echo "Releasing Ume $version"
 
-      - name: Verify landing-page publication access
+      - name: Verify publication credentials
         env:
           WEBSITE_REPO_TOKEN: ${{ secrets.WEBSITE_REPO_TOKEN }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           if [[ -z "$WEBSITE_REPO_TOKEN" ]]; then
             echo "WEBSITE_REPO_TOKEN must be configured in the release environment." >&2
+            exit 1
+          fi
+          if [[ -z "$SPARKLE_PRIVATE_KEY" ]]; then
+            echo "SPARKLE_PRIVATE_KEY must be configured for signed macOS updates." >&2
             exit 1
           fi
 
@@ -200,12 +205,14 @@ jobs:
           token: ${{ secrets.WEBSITE_REPO_TOKEN }}
           path: website
 
-      - name: Update and publish Ume landing page
+      - name: Update and publish Ume landing page and appcast
         env:
           VERSION: ${{ steps.version.outputs.version }}
           TAG: ${{ steps.version.outputs.tag }}
           NOTE_EN: ${{ steps.changelog.outputs.note_en }}
           NOTE_JA: ${{ steps.changelog.outputs.note_ja }}
+          DMG_PATH: ${{ steps.macos.outputs.archive }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           set -euo pipefail
           ruby scripts/update_landing_page.rb \
@@ -215,9 +222,38 @@ jobs:
             --note-en "$NOTE_EN" \
             --note-ja "$NOTE_JA"
 
+          sparkle_archive="$RUNNER_TEMP/Sparkle-2.9.5.zip"
+          sparkle_dir="$RUNNER_TEMP/Sparkle-2.9.5"
+          updates_dir="$RUNNER_TEMP/Ume-sparkle-updates"
+          curl -L --fail --silent --show-error \
+            https://github.com/sparkle-project/Sparkle/releases/download/2.9.5/Sparkle-for-Swift-Package-Manager.zip \
+            -o "$sparkle_archive"
+          printf '34b9b2071f3de0012eca3faa3a9290bb94e62131e9a74f6dc91514a000097a6c  %s\n' "$sparkle_archive" | shasum -a 256 -c -
+          mkdir -p "$sparkle_dir" "$updates_dir"
+          unzip -q "$sparkle_archive" -d "$sparkle_dir"
+          cp "$DMG_PATH" "$updates_dir/Ume-$VERSION-macOS.dmg"
+          if [[ -f website/ume-appcast.xml ]]; then
+            cp website/ume-appcast.xml "$updates_dir/ume-appcast.xml"
+          fi
+          {
+            printf '# Ume %s\n\n' "$VERSION"
+            [[ -z "$NOTE_EN" ]] || printf '%s\n\n' "$NOTE_EN"
+            [[ -z "$NOTE_JA" ]] || printf '%s\n' "$NOTE_JA"
+          } > "$updates_dir/Ume-$VERSION-macOS.md"
+          printf '%s' "$SPARKLE_PRIVATE_KEY" | "$sparkle_dir/bin/generate_appcast" \
+            --ed-key-file - \
+            --download-url-prefix "https://github.com/littlebobert/ume/releases/download/$TAG/" \
+            --link https://littlebobert.github.io/ume.html \
+            --embed-release-notes \
+            --maximum-versions 10 \
+            --maximum-deltas 0 \
+            -o "$updates_dir/ume-appcast.xml" \
+            "$updates_dir"
+          cp "$updates_dir/ume-appcast.xml" website/ume-appcast.xml
+
           git -C website config user.name "Ume Release Bot"
           git -C website config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C website add ume.html
+          git -C website add ume.html ume-appcast.xml
           if git -C website diff --cached --quiet; then
             echo "Landing page is already current."
           else

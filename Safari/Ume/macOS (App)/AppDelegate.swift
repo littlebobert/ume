@@ -1,4 +1,5 @@
 import Cocoa
+import Sparkle
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -6,11 +7,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboardingWindowController: OnboardingWindowController?
     private var aboutWindowController: AboutWindowController?
     private var privacyWindowController: PrivacyWindowController?
+    private let updaterController = SPUStandardUpdaterController(
+        startingUpdater: true,
+        updaterDelegate: nil,
+        userDriverDelegate: nil
+    )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installEditMenu()
         installWindowMenu()
         installSettingsShortcut()
+        installUpdateMenu()
         installAboutAction()
         configureSettingsWindow()
     }
@@ -72,6 +79,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         item.target = self
         appMenu.insertItem(item, at: min(2, appMenu.items.count))
         appMenu.insertItem(.separator(), at: min(3, appMenu.items.count))
+    }
+
+    private func installUpdateMenu() {
+        guard let appMenu = NSApp.mainMenu?.items.first?.submenu,
+              !appMenu.items.contains(where: { $0.title == "Check for Updates…" }) else { return }
+        let item = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates(_:)), keyEquivalent: "")
+        item.target = self
+        let settingsIndex = appMenu.items.firstIndex(where: { $0.title == "Settings…" }) ?? 1
+        let insertionIndex = min(settingsIndex + 2, appMenu.items.count)
+        appMenu.insertItem(item, at: insertionIndex)
+        appMenu.insertItem(.separator(), at: min(insertionIndex + 1, appMenu.items.count))
+    }
+
+    @objc private func checkForUpdates(_ sender: Any?) {
+        updaterController.checkForUpdates(sender)
     }
 
     private func installAboutAction() {

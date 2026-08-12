@@ -6,6 +6,22 @@
 	<string>$(TeamIdentifierPrefix)group.com.justin.ume.shared</string>
 	<key>UmeKeychainAccessGroup</key>
 	<string>$(AppIdentifierPrefix)com.justin.ume.shared</string>
+	<key>SUFeedURL</key>
+	<string>https://littlebobert.github.io/ume-appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>Gjz4eaBW734cY7idF99PyqOWtycJBF4i8wSAUXg2p+0=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUAllowsAutomaticUpdates</key>
+	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

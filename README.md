@@ -14,6 +14,7 @@ Ume is a private Safari form filler for iPhone, iPad, and Mac. Complete a form o
 - Matches fields locally using labels, names, placeholders, and `autocomplete` hints.
 - Skips ambiguous and sensitive fields, including passwords and payment details.
 - Never submits a form.
+- Checks for signed macOS updates automatically with Sparkle.
 
 ## Privacy
 

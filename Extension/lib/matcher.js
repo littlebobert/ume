@@ -31,6 +31,21 @@
     return shared / Math.max(a.size, b.size);
   }
 
+  function selectOptionIndex(options, value) {
+    const normalized = normalize(value);
+    if (!normalized) return -1;
+    const candidates = (options || []).map((option, index) => ({
+      index,
+      text: normalize(option?.text),
+      value: normalize(option?.value)
+    })).filter((candidate) => candidate.text);
+    const match = candidates.find((candidate) => candidate.text === normalized)
+      || candidates.find((candidate) => candidate.value === normalized && candidate.value)
+      || candidates.find((candidate) => candidate.text.startsWith(normalized) || normalized.startsWith(candidate.text))
+      || candidates.find((candidate) => candidate.text.split(" ").includes(normalized));
+    return match?.index ?? -1;
+  }
+
   function looksGenerated(value) {
     const raw = String(value || "").trim();
     if (!raw) return false;
@@ -234,5 +249,5 @@
     return result;
   }
 
-  return { addressFieldPart, addressValue, answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, overlap, score };
+  return { addressFieldPart, addressValue, answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, overlap, score, selectOptionIndex };
 });

@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { addressFieldPart, addressValue, answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, score } = require("../Extension/lib/matcher.js");
+const { addressFieldPart, addressValue, answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, score, selectOptionIndex } = require("../Extension/lib/matcher.js");
 
 const entry = (overrides = {}) => ({
   accessibleDescription: "",
@@ -22,6 +22,18 @@ const entry = (overrides = {}) => ({
 
 test("normalizes punctuation, camel case, and diacritics", () => {
   assert.equal(normalize("EmergencyContact E-mail Áddress"), "emergency contact e mail address");
+});
+
+test("select options match country names independently of case and ISO-valued options", () => {
+  const options = [
+    { text: "Select a country", value: "" },
+    { text: "UNITED STATES ", value: "US" },
+    { text: "JAPAN ", value: "JP" }
+  ];
+  assert.equal(selectOptionIndex(options, "United States"), 1);
+  assert.equal(selectOptionIndex(options, "US"), 1);
+  assert.equal(selectOptionIndex(options, "Japan"), 2);
+  assert.equal(selectOptionIndex(options, "Not a country"), -1);
 });
 
 test("autocomplete creates a strong match", () => {

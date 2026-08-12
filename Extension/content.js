@@ -306,17 +306,9 @@
   }
 
   function applySelect(element, value) {
-    const normalized = UmeMatcher.normalize(value);
-    if (!normalized) return false;
-    const candidates = [...element.options].filter((option) => UmeMatcher.normalize(option.text) !== "");
-    const option = candidates.find((candidate) => UmeMatcher.normalize(candidate.text) === normalized)
-      || candidates.find((candidate) => UmeMatcher.normalize(candidate.value) === normalized && UmeMatcher.normalize(candidate.value) !== "")
-      || candidates.find((candidate) => {
-        const text = UmeMatcher.normalize(candidate.text);
-        return text.startsWith(normalized) || normalized.startsWith(text);
-      })
-      || candidates.find((candidate) => UmeMatcher.normalize(candidate.text).split(" ").includes(normalized));
-    return selectOption(element, option);
+    const options = [...element.options];
+    const index = UmeMatcher.selectOptionIndex(options, value);
+    return selectOption(element, index >= 0 ? options[index] : null);
   }
 
   function applyAddress(element, saved) {
@@ -595,7 +587,7 @@
       const index = Number(String(mapping.field || "").replace("field-", ""));
       const element = elements[index];
       const saved = savedByKey.get(mapping.key);
-      if (!element || !saved || UmeMatcher.answerType(saved) === "address" || !UmeMatcher.compatible(saved, describe(element))) continue;
+      if (!element || !saved || UmeMatcher.answerType(saved) === "address") continue;
       if (applyValue(element, saved.value, saved)) filled += 1;
     }
     return { filled };

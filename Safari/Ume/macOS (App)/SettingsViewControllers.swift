@@ -20,7 +20,32 @@ private func descriptionLabel(_ text: String) -> NSTextField {
 
 private let settingsPaneSize = NSSize(width: 720, height: 500)
 
+private enum SafariSettingsError: LocalizedError {
+    case appNotInApplications
+
+    var errorDescription: String? {
+        "Move Ume to Applications, reopen it, then try again."
+    }
+}
+
+private var isInstalledInApplicationsDirectory: Bool {
+#if DEBUG
+    true
+#else
+    let appPath = Bundle.main.bundleURL.standardizedFileURL.path
+    let domains: [FileManager.SearchPathDomainMask] = [.localDomainMask, .userDomainMask]
+    return domains
+        .flatMap { FileManager.default.urls(for: .applicationDirectory, in: $0) }
+        .map { $0.standardizedFileURL.path + "/" }
+        .contains { appPath.hasPrefix($0) }
+#endif
+}
+
 private func openSafariExtensionSettings(completion: @escaping (Error?) -> Void) {
+    guard isInstalledInApplicationsDirectory else {
+        completion(SafariSettingsError.appNotInApplications)
+        return
+    }
     let safariURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Safari")
         ?? URL(fileURLWithPath: "/Applications/Safari.app")
     let configuration = NSWorkspace.OpenConfiguration()
@@ -665,8 +690,8 @@ final class OnboardingViewController: NSViewController {
         nextButton.isEnabled = true
         nextButton.keyEquivalent = "\r"
         openSafariExtensionSettings { [weak self] error in
-            if error != nil {
-                self?.status.stringValue = "Safari opened. Choose Safari → Settings → Extensions and enable Ume."
+            if let error {
+                self?.status.stringValue = error.localizedDescription
             }
         }
     }
@@ -764,6 +789,12 @@ final class GeneralSettingsViewController: NSViewController {
 
     private func refreshState() {
         stateIcon.image = nil
+        guard isInstalledInApplicationsDirectory else {
+            stateLabel.stringValue = SafariSettingsError.appNotInApplications.localizedDescription
+            stateIcon.image = NSImage(systemSymbolName: "folder.fill.badge.questionmark", accessibilityDescription: "Move to Applications")
+            stateIcon.contentTintColor = .systemOrange
+            return
+        }
         stateLabel.stringValue = "Checking Safari extension status…"
         SFSafariExtensionManager.getStateOfSafariExtension(withIdentifier: extensionBundleIdentifier) { [weak self] state, _ in
             DispatchQueue.main.async {
@@ -785,8 +816,8 @@ final class GeneralSettingsViewController: NSViewController {
         stateLabel.stringValue = "Opening Safari extension settings…"
         openSafariExtensionSettings { [weak self] error in
             guard let self else { return }
-            if error != nil {
-                self.stateLabel.stringValue = "Safari opened. Choose Safari → Settings → Extensions and enable Ume."
+            if let error {
+                self.stateLabel.stringValue = error.localizedDescription
             } else {
                 self.refreshState()
             }

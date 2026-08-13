@@ -1,6 +1,7 @@
 .DS_Store
 node_modules/
 *.log
+.match-certs/
 
 # Xcode generated build and per-user state
 **/DerivedData/

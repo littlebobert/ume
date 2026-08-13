@@ -831,7 +831,7 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
     private let apiKey = NSSecureTextField()
     private let status = descriptionLabel("")
     private let debugLogging = NSButton(checkboxWithTitle: "Enable logging for bug reports", target: nil, action: nil)
-    private let debugNote = descriptionLabel("Your logs are never sent automatically. They are only sent if you manually send them in via the Report a Bug button.")
+    private let debugNote = descriptionLabel("Your logs are never sent automatically. Open Debug Logs… in the Safari extension to review or email them.")
     private let hideSensitive = NSButton(checkboxWithTitle: "Hide potentially sensitive info in AI debug logs", target: nil, action: nil)
     private let debugButtons = NSStackView()
 
@@ -1001,6 +1001,8 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     private var answers: [[String: Any]] = []
     private var draftAnswer: [String: Any]?
     private var navigatingCells = false
+    private var discardingDraft = false
+    private var keyMonitor: Any?
     private static let answerTypes = ["", "address", "date", "gender", "phone"]
     private static let typeTitles = ["Auto", "Address", "Date", "Gender", "Phone"]
 
@@ -1026,7 +1028,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         table.target = self
         table.doubleAction = #selector(beginInlineEditing)
         table.rowHeight = 24
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, self.handleTableKey(event) else { return event }
             return nil
         }
@@ -1070,6 +1072,12 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         reload()
     }
 
+    deinit {
+        if let keyMonitor {
+            NSEvent.removeMonitor(keyMonitor)
+        }
+    }
+
     private func reload() {
         answers = (try? AnswerStore.load()) ?? []
         table.reloadData()
@@ -1087,19 +1095,46 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     func numberOfRows(in tableView: NSTableView) -> Int { displayedAnswers.count }
 
     func tableViewSelectionDidChange(_ notification: Notification) {
-        deleteButton.isEnabled = answers.indices.contains(table.selectedRow)
+        updateDeleteButton()
         if !navigatingCells && draftAnswer != nil && table.selectedRow != answers.count && table.selectedRow >= 0 {
             discardEmptyDraft()
         }
     }
 
-    private func discardEmptyDraft() {
-        guard let draft = draftAnswer else { return }
+    private func updateDeleteButton() {
+        deleteButton.isEnabled = table.selectedRow >= 0 && displayedAnswers.indices.contains(table.selectedRow)
+    }
+
+    private func isDraftEmpty(_ draft: [String: Any]) -> Bool {
         let label = (draft["userLabel"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let value = (draft["value"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if label.isEmpty && value.isEmpty {
-            draftAnswer = nil
-            table.reloadData()
+        return label.isEmpty && value.isEmpty
+    }
+
+    private func discardEmptyDraft() {
+        guard let draft = draftAnswer, isDraftEmpty(draft) else { return }
+        discardDraft()
+    }
+
+    private func discardDraft() {
+        guard draftAnswer != nil else { return }
+        discardingDraft = true
+        draftAnswer = nil
+        view.window?.makeFirstResponder(table)
+        table.reloadData()
+        discardingDraft = false
+        updateDeleteButton()
+    }
+
+    private func focusDraft() {
+        let row = answers.count
+        guard draftAnswer != nil, displayedAnswers.indices.contains(row) else { return }
+        table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        table.scrollRowToVisible(row)
+        if draftAnswer?["answerType"] as? String == "address" {
+            presentAddressEditor(row: row)
+        } else {
+            startEditing(row: row, column: 0)
         }
     }
 
@@ -1424,8 +1459,21 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        guard commandSelector == #selector(NSResponder.insertTab(_:)),
-              let field = control as? NSTextField else { return false }
+        guard let field = control as? NSTextField else { return false }
+        if field.tag == answers.count, draftAnswer != nil {
+            if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+                discardDraft()
+                return true
+            }
+            if commandSelector == #selector(NSResponder.deleteBackward(_:))
+                || commandSelector == #selector(NSResponder.deleteForward(_:)),
+               field.stringValue.isEmpty,
+               let draft = draftAnswer, isDraftEmpty(draft) {
+                discardDraft()
+                return true
+            }
+        }
+        guard commandSelector == #selector(NSResponder.insertTab(_:)) else { return false }
         let row: Int
         let current: Int
         guard displayedAnswers.indices.contains(field.tag),
@@ -1444,8 +1492,12 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     }
 
     func controlTextDidEndEditing(_ notification: Notification) {
-        guard let field = notification.object as? NSTextField,
-              displayedAnswers.indices.contains(field.tag) else { return }
+        guard let field = notification.object as? NSTextField else { return }
+        if discardingDraft {
+            field.isEditable = false
+            return
+        }
+        guard displayedAnswers.indices.contains(field.tag) else { return }
         if field.tag == answers.count, var draft = draftAnswer {
             let editedLabel = field.identifier?.rawValue == "label"
             let text = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1511,7 +1563,10 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     }
 
     @objc private func addAddress() {
-        guard draftAnswer == nil else { NSSound.beep(); return }
+        if draftAnswer != nil {
+            focusDraft()
+            return
+        }
         draftAnswer = [
             "answerID": UUID().uuidString,
             "answerType": "address",
@@ -1525,7 +1580,10 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     }
 
     @objc private func addAnswer() {
-        guard draftAnswer == nil else { return }
+        if draftAnswer != nil {
+            focusDraft()
+            return
+        }
         draftAnswer = [
             "answerID": UUID().uuidString,
             "kind": "text",
@@ -1545,7 +1603,11 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
 
     @objc private func deleteSelected() {
         let row = table.selectedRow
-        guard answers.indices.contains(row), let id = answers[row]["answerID"] as? String else { NSSound.beep(); return }
+        if draftAnswer != nil && row == answers.count {
+            discardDraft()
+            return
+        }
+        guard answers.indices.contains(row), let id = answers[row]["answerID"] as? String else { return }
         do { try AnswerStore.delete(id: id); reload() } catch { present(error) }
     }
 

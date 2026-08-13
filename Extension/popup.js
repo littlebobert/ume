@@ -90,7 +90,14 @@
 
   async function refreshDebugLog() {
     const stored = await api.storage.local.get(DEBUG_LOG_KEY);
-    debugLogText.value = stored[DEBUG_LOG_KEY] || "No extension debug entries yet.";
+    const existing = stored[DEBUG_LOG_KEY] || "";
+    if (!debugLoggingEnabled) {
+      debugLogText.value = existing
+        ? `${existing}\n\nLogging is currently off. Enable it in Ume Settings → AI Provider to capture new entries.`
+        : "Logging is off. Enable it in Ume Settings → AI Provider → Enable logging for bug reports, then reproduce the problem.";
+      return;
+    }
+    debugLogText.value = existing || "No extension debug entries yet.";
   }
 
   function schemaForAI(source, identityKey, identityValue) {
@@ -131,13 +138,13 @@
   }
 
   async function refreshDebugLoggingState() {
-    const result = await sendNative({ type: "UME_GET_DEBUG_LOGGING_STATE" });
-    debugLoggingEnabled = Boolean(result?.ok && result.enabled);
-    openDebugLogButton.hidden = !debugLoggingEnabled;
-    if (!debugLoggingEnabled) {
-      debugLogPanel.hidden = true;
-      await api.storage.local.remove(DEBUG_LOG_KEY);
+    try {
+      const result = await sendNative({ type: "UME_GET_DEBUG_LOGGING_STATE" });
+      debugLoggingEnabled = Boolean(result?.ok && result.enabled);
+    } catch (_error) {
+      debugLoggingEnabled = false;
     }
+    openDebugLogButton.hidden = false;
   }
 
   async function openCompanionApp() {

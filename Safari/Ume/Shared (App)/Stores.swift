@@ -184,7 +184,7 @@ enum AIDebugLogStore {
         do {
             let url = try fileURL()
             let timestamp = ISO8601DateFormatter().string(from: Date())
-            let entry = "[\(timestamp)] \(event)\n\(details)\n\n"
+            let entry = "[\(timestamp)] \(event)\n\(Self.compactedDetails(details))\n\n"
             var existing = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
             existing.append(entry)
             if existing.utf8.count > maximumBytes {
@@ -204,6 +204,33 @@ enum AIDebugLogStore {
     static func read() -> String {
         guard let url = try? fileURL() else { return "" }
         return (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+    }
+
+    private static func compactedDetails(_ details: String) -> String {
+        guard let data = details.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data),
+              JSONSerialization.isValidJSONObject(object),
+              let compacted = try? JSONSerialization.data(withJSONObject: compactOptions(object), options: [.sortedKeys]),
+              let string = String(data: compacted, encoding: .utf8) else { return details }
+        return string
+    }
+
+    private static func compactOptions(_ value: Any) -> Any {
+        if let dict = value as? [String: Any] {
+            var result: [String: Any] = [:]
+            for (key, child) in dict {
+                if key == "options", let options = child as? [Any], options.count > 8 {
+                    result[key] = Array(options.prefix(6)) + ["…+\(options.count - 6) more"]
+                } else {
+                    result[key] = compactOptions(child)
+                }
+            }
+            return result
+        }
+        if let array = value as? [Any] {
+            return array.map { compactOptions($0) }
+        }
+        return value
     }
 
     static func clear() throws {
@@ -244,7 +271,13 @@ enum SupportDiagnostics {
             answersStatus = "error: \(error.localizedDescription)"
         }
         let diagnostics = read()
-        let aiLog = AIDebugLogStore.read()
+        let logLimit = 12_000
+        var aiLog = AIDebugLogStore.read()
+        var truncationNote: String?
+        if aiLog.count > logLimit {
+            aiLog = String(aiLog.suffix(logLimit))
+            truncationNote = "The AI debug log was truncated to the most recent \(logLimit) characters. Use View Log… in Settings → AI Provider for the complete file."
+        }
         let aiError = AIDebugLogStore.lastError
         return [
             "Hi Justin,",
@@ -258,6 +291,7 @@ enum SupportDiagnostics {
             diagnostics.isEmpty ? "No app diagnostics yet." : diagnostics,
             "",
             "--- AI Debug Log ---",
+            truncationNote,
             aiError.map { "Last AI log error: \($0)" },
             aiLog.isEmpty ? "No AI debug log. Enable logging in Settings → AI Provider to capture fill requests." : aiLog
         ].compactMap { $0 }.joined(separator: "\n")

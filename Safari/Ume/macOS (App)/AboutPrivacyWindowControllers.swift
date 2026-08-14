@@ -132,10 +132,7 @@ private final class LinkTarget: NSObject {
     @objc func reportBug() {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
         let platform = "macOS \(ProcessInfo.processInfo.operatingSystemVersionString)"
-        var body = SupportDiagnostics.bugReportBody(version: version, platform: platform)
-        if body.count > 16_000 {
-            body = String(body.suffix(16_000))
-        }
+        let body = SupportDiagnostics.bugReportBody(version: version, platform: platform)
         var components = URLComponents()
         components.scheme = "mailto"
         components.path = "justin.garcia@gmail.com"

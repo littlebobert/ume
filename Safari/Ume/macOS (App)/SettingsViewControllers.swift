@@ -1116,6 +1116,32 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         discardDraft()
     }
 
+    @discardableResult
+    private func commitDraftIfComplete() -> Bool {
+        guard let draft = draftAnswer, draft["answerType"] as? String != "address" else { return false }
+        let label = (draft["userLabel"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let value = (draft["value"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !label.isEmpty, !value.isEmpty else { return false }
+        do {
+            let type = draft["answerType"] as? String
+            try AnswerStore.add(userLabel: label, value: value, answerType: type?.isEmpty == false ? type : nil)
+            if let code = draft["countryCode"] as? String, !code.isEmpty {
+                var all = try AnswerStore.load()
+                if let last = all.indices.last { all[last]["countryCode"] = code }
+                try AnswerStore.save(all)
+            }
+            draftAnswer = nil
+            reload()
+            if !answers.isEmpty {
+                table.selectRowIndexes(IndexSet(integer: answers.count - 1), byExtendingSelection: false)
+            }
+            return true
+        } catch {
+            present(error)
+            return false
+        }
+    }
+
     private func discardDraft() {
         guard draftAnswer != nil else { return }
         discardingDraft = true
@@ -1229,7 +1255,9 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
             guard var draft = draftAnswer else { return }
             mutate(&draft)
             draftAnswer = draft
-            table.reloadData()
+            if !commitDraftIfComplete() {
+                table.reloadData()
+            }
             return
         }
         guard answers.indices.contains(row), let id = answers[row]["answerID"] as? String else { return }
@@ -1509,26 +1537,8 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
                 draft["value"] = text
             }
             draftAnswer = draft
-
-            let label = (draft["userLabel"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            let value = (draft["value"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             field.isEditable = false
-            if !label.isEmpty && !value.isEmpty {
-                do {
-                    let type = draft["answerType"] as? String
-                    try AnswerStore.add(userLabel: label, value: value, answerType: type?.isEmpty == false ? type : nil)
-                    if let code = draft["countryCode"] as? String, !code.isEmpty {
-                        var all = try AnswerStore.load()
-                        if let last = all.indices.last { all[last]["countryCode"] = code }
-                        try AnswerStore.save(all)
-                    }
-                    draftAnswer = nil
-                    reload()
-                    table.selectRowIndexes(IndexSet(integer: answers.count - 1), byExtendingSelection: false)
-                } catch {
-                    present(error)
-                }
-            }
+            commitDraftIfComplete()
             return
         }
 
@@ -1563,7 +1573,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     }
 
     @objc private func addAddress() {
-        if draftAnswer != nil {
+        if draftAnswer != nil && !commitDraftIfComplete() {
             focusDraft()
             return
         }
@@ -1580,7 +1590,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     }
 
     @objc private func addAnswer() {
-        if draftAnswer != nil {
+        if draftAnswer != nil && !commitDraftIfComplete() {
             focusDraft()
             return
         }

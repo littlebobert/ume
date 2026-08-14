@@ -101,8 +101,79 @@
     if (/(?:^| )(?:postal code|postcode|post code|zip|zip code)(?: |$)/.test(text)) return "postalCode";
     if (hasExactName("city", "town", "locality") || /(?:^| )(?:address city|shipping city|billing city)(?: |$)/.test(text)) return "locality";
     if (hasExactName("state", "province", "prefecture", "region") || /(?:^| )(?:address|shipping|billing) (?:state|province|prefecture|region)(?: |$)/.test(text)) return "administrativeArea";
-    if (hasExactName("country", "country region") || /(?:^| )(?:address|shipping|billing) country(?: |$)/.test(text)) return "country";
+    if (hasExactName("country", "country region")
+        || /(?:^| )(?:address|shipping|billing) country(?: |$)/.test(text)
+        || /(?:^| )(?:country|region) of residence|residence (?:country|region)(?: |$)/.test(text)) {
+      return "country";
+    }
     return "";
+  }
+
+  function nameFieldPart(entry) {
+    const autocomplete = String(entry?.autocomplete || "").toLowerCase().split(/\s+/);
+    if (autocomplete.includes("username") || autocomplete.includes("nickname") || autocomplete.includes("organization")) return "";
+    if (autocomplete.includes("given-name")) return "given";
+    if (autocomplete.includes("family-name")) return "family";
+    if (autocomplete.includes("additional-name")) return "middle";
+    if (autocomplete.includes("cc-name") || autocomplete.includes("name")) return "full";
+
+    const labels = [entry?.userLabel, entry?.accessibleName, entry?.label, entry?.placeholder].map(normalize).filter(Boolean);
+    const text = ` ${labels.join(" ")} `;
+    if (/(?:^| )(?:user ?name|login|company|business|organization|file|display|middle)(?: |$)/.test(text)) return "";
+    if (/(?:^| )(?:first name|given name|forename)(?: |$)/.test(text) || labels.some((label) => label === "first" || label === "given")) return "given";
+    if (/(?:^| )(?:last name|family name|surname|last name)(?: |$)/.test(text) || labels.some((label) => label === "last" || label === "family" || label === "surname")) return "family";
+    if (/(?:^| )(?:full name|complete name|legal name|passenger name|traveler name|cardholder name|name on card)(?: |$)/.test(text)) return "full";
+    if (labels.some((label) => label === "name" || label === "your name")) return "full";
+    return "";
+  }
+
+  function namePartValue(entry) {
+    return typeof entry?.value === "string" ? entry.value.trim() : "";
+  }
+
+  function pickNamePart(savedEntries, field, part) {
+    const candidates = (savedEntries || []).filter((entry) => nameFieldPart(entry) === part && namePartValue(entry));
+    if (candidates.length === 1) return candidates[0];
+    if (!candidates.length) return null;
+    const fieldContext = contextText(field);
+    let best = null;
+    let bestScore = -1;
+    let tied = false;
+    for (const candidate of candidates) {
+      const candidateScore = overlap(contextText(candidate), fieldContext) * 40 + overlap(nameText(candidate), nameText(field));
+      if (candidateScore > bestScore) {
+        best = candidate;
+        bestScore = candidateScore;
+        tied = false;
+      } else if (candidateScore === bestScore) {
+        tied = true;
+      }
+    }
+    return tied ? null : best;
+  }
+
+  function familyNameFirst(given, family) {
+    if (/[\u3000-\u9fff]/.test(`${given}${family}`)) return true;
+    const language = typeof navigator !== "undefined" ? String(navigator.language || "").toLowerCase() : "";
+    return /^(?:ja|zh|ko)(?:-|_|$)/.test(language);
+  }
+
+  function composedFullName(savedEntries, field) {
+    const given = pickNamePart(savedEntries, field, "given");
+    const family = pickNamePart(savedEntries, field, "family");
+    const givenValue = namePartValue(given);
+    const familyValue = namePartValue(family);
+    if (!givenValue || !familyValue) return null;
+    const middle = namePartValue(pickNamePart(savedEntries, field, "middle"));
+    const parts = familyNameFirst(givenValue, familyValue)
+      ? [familyValue, givenValue]
+      : [givenValue, middle, familyValue].filter(Boolean);
+    return {
+      accessibleName: "Full name",
+      kind: field?.kind || "text",
+      inputType: field?.inputType || "text",
+      value: parts.join(" ")
+    };
   }
 
   function addressValue(saved, field) {
@@ -204,13 +275,7 @@
     return total;
   }
 
-  function bestMatch(savedEntries, field, minimumScore) {
-    const addressPart = addressFieldPart(field);
-    if (addressPart) {
-      const addresses = (savedEntries || []).filter((entry) => answerType(entry) === "address" && addressValue(entry, addressPart));
-      if (addresses.length) return addresses.length === 1 ? addresses[0] : null;
-    }
-
+  function scoredBestMatch(savedEntries, field, minimumScore) {
     const threshold = minimumScore == null ? 35 : minimumScore;
     let best = null;
     let bestScore = threshold;
@@ -228,6 +293,21 @@
     }
 
     return tied && answerType(field) !== "date" ? null : best;
+  }
+
+  function bestMatch(savedEntries, field, minimumScore) {
+    const addressPart = addressFieldPart(field);
+    if (addressPart) {
+      const addresses = (savedEntries || []).filter((entry) => answerType(entry) === "address" && addressValue(entry, addressPart));
+      if (addresses.length) return addresses.length === 1 ? addresses[0] : null;
+    }
+
+    if (nameFieldPart(field) === "full") {
+      const explicit = (savedEntries || []).filter((entry) => nameFieldPart(entry) === "full" && namePartValue(entry));
+      return scoredBestMatch(explicit, field, minimumScore) || composedFullName(savedEntries, field);
+    }
+
+    return scoredBestMatch(savedEntries, field, minimumScore);
   }
 
   function mergeEntries(existing, incoming) {
@@ -249,5 +329,5 @@
     return result;
   }
 
-  return { addressFieldPart, addressValue, answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, overlap, score, selectOptionIndex };
+  return { addressFieldPart, addressValue, answerType, bestMatch, composedFullName, compatible, looksGenerated, mergeEntries, nameFieldPart, normalize, overlap, score, selectOptionIndex };
 });

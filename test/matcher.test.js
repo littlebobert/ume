@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { addressFieldPart, addressValue, answerType, bestMatch, compatible, looksGenerated, mergeEntries, normalize, score, selectOptionIndex } = require("../Extension/lib/matcher.js");
+const { addressFieldPart, addressValue, answerType, bestMatch, compatible, looksGenerated, mergeEntries, nameFieldPart, normalize, score, selectOptionIndex } = require("../Extension/lib/matcher.js");
 
 const entry = (overrides = {}) => ({
   accessibleDescription: "",
@@ -292,6 +292,25 @@ test("generic address labels remain recognizable with generated control IDs", ()
   assert.equal(addressFieldPart(entry({ accessibleName: "Country", id: "control-1749285123456" })), "country");
 });
 
+test("country of residence uses the saved address country", () => {
+  const address = entry({
+    answerType: "address",
+    kind: "aggregate",
+    value: { addressLine1: "1-2-3 Jingumae", countryCode: "JP", countryName: "Japan" }
+  });
+  for (const label of ["Country of residence", "Country / region of residence", "Residence country"]) {
+    const field = entry({ accessibleName: label, kind: "select", inputType: "select-one" });
+    assert.equal(addressFieldPart(field), "country");
+    assert.equal(bestMatch([address], field), address);
+  }
+});
+
+test("nationality and country of birth are not treated as the address country", () => {
+  assert.equal(addressFieldPart(entry({ accessibleName: "Nationality" })), "");
+  assert.equal(addressFieldPart(entry({ accessibleName: "Country of citizenship" })), "");
+  assert.equal(addressFieldPart(entry({ accessibleName: "Country of birth" })), "");
+});
+
 test("unrelated address labels and phone country codes are not address components", () => {
   assert.equal(addressFieldPart(entry({ accessibleName: "Email address" })), "");
   assert.equal(addressFieldPart(entry({ accessibleName: "IP address" })), "");
@@ -325,4 +344,41 @@ test("confirmation matching preserves the underlying field identity", () => {
   const email = entry({ accessibleName: "Email address", inputType: "email", value: "hanako@example.com" });
   const phone = entry({ answerType: "phone", accessibleName: "Phone number", value: "09012345678" });
   assert.equal(bestMatch([email, phone], entry({ accessibleName: "Confirm email address", inputType: "email" })), email);
+});
+
+test("name field parts are recognized from labels and autocomplete", () => {
+  assert.equal(nameFieldPart(entry({ accessibleName: "First name" })), "given");
+  assert.equal(nameFieldPart(entry({ accessibleName: "Last name" })), "family");
+  assert.equal(nameFieldPart(entry({ accessibleName: "Full name" })), "full");
+  assert.equal(nameFieldPart(entry({ accessibleName: "Name" })), "full");
+  assert.equal(nameFieldPart(entry({ autocomplete: "name" })), "full");
+  assert.equal(nameFieldPart(entry({ accessibleName: "Username" })), "");
+});
+
+test("full name fields are composed from first and last names", () => {
+  const first = entry({ accessibleName: "First name", value: "Justin" });
+  const last = entry({ accessibleName: "Last name", value: "Garcia" });
+  const match = bestMatch([first, last], entry({ accessibleName: "Full name" }));
+  assert.equal(match.value, "Justin Garcia");
+});
+
+test("an explicit full name answer is preferred over composing parts", () => {
+  const first = entry({ accessibleName: "First name", value: "Justin" });
+  const last = entry({ accessibleName: "Last name", value: "Garcia" });
+  const full = entry({ accessibleName: "Full name", value: "J. Garcia" });
+  assert.equal(bestMatch([first, last, full], entry({ accessibleName: "Full name" })), full);
+});
+
+test("full name fields are not filled from only a first name", () => {
+  const first = entry({ accessibleName: "First name", value: "Justin" });
+  assert.equal(bestMatch([first], entry({ accessibleName: "Full name" })), null);
+});
+
+test("grouped first and last names compose the matching full name", () => {
+  const first = entry({ accessibleName: "First name", group: "Traveler", value: "Justin" });
+  const last = entry({ accessibleName: "Last name", group: "Traveler", value: "Garcia" });
+  const otherFirst = entry({ accessibleName: "First name", group: "Emergency contact", value: "Jane" });
+  const otherLast = entry({ accessibleName: "Last name", group: "Emergency contact", value: "Doe" });
+  const match = bestMatch([first, last, otherFirst, otherLast], entry({ accessibleName: "Full name", section: "Traveler" }));
+  assert.equal(match.value, "Justin Garcia");
 });

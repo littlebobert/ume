@@ -678,7 +678,7 @@ final class OnboardingViewController: NSViewController {
     }
 
     private var selectedProvider: String { provider.indexOfSelectedItem == 1 ? "anthropic" : "openai" }
-    private var defaultModel: String { selectedProvider == "anthropic" ? "claude-opus-5" : "gpt-5.6-terra" }
+    private var defaultModel: String { selectedProvider == "anthropic" ? "claude-opus-5" : "gpt-5.6-sol" }
 
     @objc private func providerChanged() {
         model.stringValue = defaultModel
@@ -918,10 +918,10 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
     }
 
     private var selectedProvider: String { provider.indexOfSelectedItem == 1 ? "anthropic" : "openai" }
-    private var defaultModel: String { selectedProvider == "anthropic" ? "claude-opus-5" : "gpt-5.6-terra" }
+    private var defaultModel: String { selectedProvider == "anthropic" ? "claude-opus-5" : "gpt-5.6-sol" }
 
     @objc private func providerChanged() {
-        if model.stringValue.isEmpty || ["gpt-5.6-terra", "claude-haiku-4-5", "claude-opus-5"].contains(model.stringValue) {
+        if model.stringValue.isEmpty || ["gpt-5.6-terra", "gpt-5.6-sol", "claude-haiku-4-5", "claude-opus-5"].contains(model.stringValue) {
             model.stringValue = defaultModel
         }
         autosave()
@@ -1017,9 +1017,9 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         let typeColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("type"))
         typeColumn.title = "Type"
         typeColumn.width = 110
+        table.addTableColumn(typeColumn)
         table.addTableColumn(labelColumn)
         table.addTableColumn(valueColumn)
-        table.addTableColumn(typeColumn)
         table.headerView = NSTableHeaderView()
         table.usesAlternatingRowBackgroundColors = true
         table.allowsMultipleSelection = false
@@ -1160,8 +1160,17 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         if draftAnswer?["answerType"] as? String == "address" {
             presentAddressEditor(row: row)
         } else {
-            startEditing(row: row, column: 0)
+            startEditing(row: row, column: columnIndex("label"))
         }
+    }
+
+    private func columnIndex(_ identifier: String) -> Int {
+        table.tableColumns.firstIndex { $0.identifier.rawValue == identifier } ?? 0
+    }
+
+    private func columnIdentifier(_ column: Int) -> String {
+        guard table.tableColumns.indices.contains(column) else { return "" }
+        return table.tableColumns[column].identifier.rawValue
     }
 
     private func handleTableKey(_ event: NSEvent) -> Bool {
@@ -1174,7 +1183,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
             deleteSelected()
             return true
         case 36, 76:
-            startEditing(row: row, column: 0)
+            startEditing(row: row, column: columnIndex("label"))
             return true
         default:
             return false
@@ -1185,11 +1194,13 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         guard displayedAnswers.indices.contains(row) else { return }
         let answer = displayedAnswers[row]
         let type = answer["answerType"] as? String ?? detectedType(answer)
-        if column == 1, type == "address" {
+        let identifier = columnIdentifier(column)
+        if identifier == "type" { return }
+        if identifier == "value", type == "address" {
             presentAddressEditor(row: row)
-        } else if column == 1, type == "phone" {
+        } else if identifier == "value", type == "phone" {
             presentPhonePopover(row: row)
-        } else if column == 1, type == "date" {
+        } else if identifier == "value", type == "date" {
             presentDatePopover(row: row)
         } else {
             editCell(row: row, column: column)
@@ -1197,14 +1208,14 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     }
 
     @objc private func beginInlineEditing() {
-        let column = table.clickedColumn == 2 ? 0 : table.clickedColumn
-        startEditing(row: table.clickedRow, column: column)
+        startEditing(row: table.clickedRow, column: table.clickedColumn)
     }
 
     private func editCell(row: Int, column: Int) {
         guard displayedAnswers.indices.contains(row), column >= 0, column < table.numberOfColumns,
+              ["label", "value"].contains(columnIdentifier(column)),
               let cell = table.view(atColumn: column, row: row, makeIfNecessary: true) as? NSTableCellView else { return }
-        guard column < 2, let field = cell.textField else { return }
+        guard let field = cell.textField else { return }
         field.isEditable = true
         table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
         table.scrollRowToVisible(row)
@@ -1278,7 +1289,8 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         table.view(atColumn: column, row: row, makeIfNecessary: true) ?? table
     }
 
-    private func present(_ controller: NSViewController, row: Int, column: Int = 1) {
+    private func present(_ controller: NSViewController, row: Int, column: Int? = nil) {
+        let column = column ?? columnIndex("value")
         table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
         table.scrollRowToVisible(row)
         let popover = NSPopover()
@@ -1321,7 +1333,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         guard let answer = answerForRow(row) else { return }
         let countryField = NSTextField()
         countryField.placeholderString = "e.g. 81"
-        countryField.stringValue = answer["countryCode"] as? String ?? ""
+        countryField.stringValue = Self.inferredCallingCode(from: answer)
         let numberField = NSTextField()
         numberField.placeholderString = "Local number"
         numberField.stringValue = answer["value"] as? String ?? ""
@@ -1370,6 +1382,49 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         dateFormatter.string(from: date)
     }
 
+    private static func inferredCallingCode(from answer: [String: Any]) -> String {
+        let stored = (answer["countryCode"] as? String ?? "").filter { $0.isNumber }
+        if !stored.isEmpty { return stored }
+        if let value = answer["value"] as? String {
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.hasPrefix("+") {
+                let digits = trimmed.dropFirst().prefix(while: \.isNumber)
+                if (1...3).contains(digits.count) { return String(digits) }
+            }
+        }
+        return regionCallingCode()
+    }
+
+    private static func regionCallingCode() -> String {
+        let region: String
+        if #available(macOS 13.0, *) {
+            region = Locale.current.region?.identifier ?? ""
+        } else {
+            region = Locale.current.regionCode ?? ""
+        }
+        return callingCodeDigits(forRegion: region)
+    }
+
+    private static func callingCodeDigits(forRegion region: String) -> String {
+        let code = region.uppercased()
+        if ["US", "CA", "AG", "AI", "AS", "BB", "BM", "BS", "DM", "DO", "GD", "GU", "JM", "KN", "KY", "LC", "MP", "MS", "PR", "SX", "TC", "TT", "VC", "VG", "VI"].contains(code) {
+            return "1"
+        }
+        let codes: [String: String] = [
+            "JP": "81", "KR": "82", "CN": "86", "TW": "886", "HK": "852", "MO": "853",
+            "GB": "44", "IE": "353", "FR": "33", "DE": "49", "IT": "39", "ES": "34", "PT": "351",
+            "NL": "31", "BE": "32", "LU": "352", "CH": "41", "AT": "43", "SE": "46", "NO": "47",
+            "DK": "45", "FI": "358", "IS": "354", "PL": "48", "CZ": "420", "SK": "421", "HU": "36",
+            "RO": "40", "BG": "359", "GR": "30", "TR": "90", "RU": "7", "UA": "380",
+            "AU": "61", "NZ": "64", "IN": "91", "ID": "62", "MY": "60", "SG": "65", "TH": "66",
+            "VN": "84", "PH": "63", "PK": "92", "BD": "880", "LK": "94", "NP": "977",
+            "AE": "971", "SA": "966", "IL": "972", "QA": "974", "KW": "965", "BH": "973", "OM": "968",
+            "EG": "20", "ZA": "27", "NG": "234", "KE": "254", "MA": "212",
+            "BR": "55", "MX": "52", "AR": "54", "CL": "56", "CO": "57", "PE": "51"
+        ]
+        return codes[code] ?? ""
+    }
+
     private func detectedType(_ answer: [String: Any]) -> String {
         if let explicit = answer["answerType"] as? String, Self.answerTypes.contains(explicit) { return explicit }
         let text = " " + ([answer["userLabel"], answer["accessibleName"], answer["label"], answer["name"], answer["autocomplete"]]
@@ -1386,10 +1441,10 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     private func advance(from row: Int, current: Int) {
         if current == 0 {
             view.window?.makeFirstResponder(nil)
-            startEditing(row: row, column: 1)
+            startEditing(row: row, column: columnIndex("value"))
         } else if row + 1 < displayedAnswers.count {
             view.window?.makeFirstResponder(nil)
-            startEditing(row: row + 1, column: 0)
+            startEditing(row: row + 1, column: columnIndex("label"))
         } else {
             view.window?.makeFirstResponder(nil)
         }
@@ -1414,8 +1469,8 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
                 cell.identifier = identifier
                 cell.addSubview(button)
                 NSLayoutConstraint.activate([
-                    button.leadingAnchor.constraint(greaterThanOrEqualTo: cell.leadingAnchor),
-                    button.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: 2),
+                    button.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 2),
+                    button.trailingAnchor.constraint(lessThanOrEqualTo: cell.trailingAnchor, constant: 2),
                     button.centerYAnchor.constraint(equalTo: cell.centerYAnchor)
                 ])
                 popup = button
@@ -1604,7 +1659,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
         table.scrollRowToVisible(row)
         DispatchQueue.main.async {
-            guard let cell = self.table.view(atColumn: 0, row: row, makeIfNecessary: true) as? NSTableCellView,
+            guard let cell = self.table.view(atColumn: self.columnIndex("label"), row: row, makeIfNecessary: true) as? NSTableCellView,
                   let field = cell.textField else { return }
             field.isEditable = true
             self.view.window?.makeFirstResponder(field)

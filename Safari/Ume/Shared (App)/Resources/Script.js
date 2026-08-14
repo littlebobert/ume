@@ -7,7 +7,7 @@ const answerSummary = document.getElementById("answer-summary");
 const answerList = document.getElementById("answer-list");
 const tabs = [...document.querySelectorAll("[role='tab']")];
 const panels = [...document.querySelectorAll("[role='tabpanel']")];
-const defaults = { openai: "gpt-5.6-terra", anthropic: "claude-opus-5" };
+const defaults = { openai: "gpt-5.6-sol", anthropic: "claude-opus-5" };
 const onboarding = document.getElementById("onboarding");
 const settingsContent = document.getElementById("settings-content");
 const onboardingProvider = document.getElementById("onboarding-provider");

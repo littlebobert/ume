@@ -235,14 +235,15 @@ jobs:
           if [[ -f website/ume-appcast.xml ]]; then
             cp website/ume-appcast.xml "$updates_dir/ume-appcast.xml"
           fi
-          {
-            printf '# Ume %s\n\n' "$VERSION"
-            [[ -z "$NOTE_EN" ]] || printf '%s\n\n' "$NOTE_EN"
-            [[ -z "$NOTE_JA" ]] || printf '%s\n' "$NOTE_JA"
-          } > "$updates_dir/Ume-$VERSION-macOS.md"
+          ruby scripts/write_sparkle_release_notes.rb \
+            --dir "$updates_dir" \
+            --version "$VERSION" \
+            --note-en "$NOTE_EN" \
+            --note-ja "$NOTE_JA"
           printf '%s' "$SPARKLE_PRIVATE_KEY" | "$sparkle_dir/bin/generate_appcast" \
             --ed-key-file - \
             --download-url-prefix "https://github.com/littlebobert/ume/releases/download/$TAG/" \
+            --release-notes-url-prefix https://littlebobert.github.io/ \
             --link https://littlebobert.github.io/ume.html \
             --embed-release-notes \
             --maximum-versions 10 \
@@ -250,10 +251,15 @@ jobs:
             -o "$updates_dir/ume-appcast.xml" \
             "$updates_dir"
           cp "$updates_dir/ume-appcast.xml" website/ume-appcast.xml
+          website_notes=()
+          if [[ -f "$updates_dir/Ume-$VERSION-macOS.ja.md" ]]; then
+            cp "$updates_dir/Ume-$VERSION-macOS.ja.md" "website/Ume-$VERSION-macOS.ja.md"
+            website_notes+=("Ume-$VERSION-macOS.ja.md")
+          fi
 
           git -C website config user.name "Ume Release Bot"
           git -C website config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C website add ume.html ume-appcast.xml
+          git -C website add ume.html ume-appcast.xml "${website_notes[@]}"
           if git -C website diff --cached --quiet; then
             echo "Landing page is already current."
           else

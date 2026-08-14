@@ -181,6 +181,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         let schema = mappingSchema()
         let body: [String: Any] = [
             "model": settings.model,
+            "reasoning": ["effort": "high"],
             "instructions": systemPrompt,
             "input": inputJSON,
             "store": false,

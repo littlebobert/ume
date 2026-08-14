@@ -130,10 +130,19 @@ private final class LinkTarget: NSObject {
     }
 
     @objc func reportBug() {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
+        let platform = "macOS \(ProcessInfo.processInfo.operatingSystemVersionString)"
+        var body = SupportDiagnostics.bugReportBody(version: version, platform: platform)
+        if body.count > 16_000 {
+            body = String(body.suffix(16_000))
+        }
         var components = URLComponents()
         components.scheme = "mailto"
         components.path = "justin.garcia@gmail.com"
-        components.queryItems = [URLQueryItem(name: "subject", value: "Ume Bug Report")]
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "Ume Bug Report"),
+            URLQueryItem(name: "body", value: body)
+        ]
         if let url = components.url { NSWorkspace.shared.open(url) }
     }
 }

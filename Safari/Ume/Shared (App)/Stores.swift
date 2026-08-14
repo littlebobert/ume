@@ -216,6 +216,54 @@ enum AIDebugLogStore {
     }
 }
 
+enum SupportDiagnostics {
+    private static let key = "support-diagnostics"
+    private static let limit = 8_000
+
+    static func record(_ event: String) {
+        let defaults = UserDefaults(suiteName: appGroupIdentifier)
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        var existing = defaults?.string(forKey: key) ?? ""
+        existing += "[" + timestamp + "] " + event + "\n"
+        if existing.utf8.count > limit {
+            existing = String(decoding: existing.utf8.suffix(limit), as: UTF8.self)
+        }
+        defaults?.set(existing, forKey: key)
+    }
+
+    static func read() -> String {
+        UserDefaults(suiteName: appGroupIdentifier)?.string(forKey: key) ?? ""
+    }
+
+    static func bugReportBody(version: String, platform: String) -> String {
+        let answersStatus: String
+        do {
+            let answers = try AnswerStore.load()
+            answersStatus = "readable, \(answers.count) saved"
+        } catch {
+            answersStatus = "error: \(error.localizedDescription)"
+        }
+        let diagnostics = read()
+        let aiLog = AIDebugLogStore.read()
+        let aiError = AIDebugLogStore.lastError
+        return [
+            "Hi Justin,",
+            "",
+            "I'm reporting a bug in Ume.",
+            "Ume version: \(version)",
+            "Platform: \(platform)",
+            "Saved answers: \(answersStatus)",
+            "",
+            "--- Diagnostics ---",
+            diagnostics.isEmpty ? "No app diagnostics yet." : diagnostics,
+            "",
+            "--- AI Debug Log ---",
+            aiError.map { "Last AI log error: \($0)" },
+            aiLog.isEmpty ? "No AI debug log. Enable logging in Settings → AI Provider to capture fill requests." : aiLog
+        ].compactMap { $0 }.joined(separator: "\n")
+    }
+}
+
 enum AnswerStore {
     private static let maximumCount = 2_000
 
@@ -231,7 +279,14 @@ enum AnswerStore {
             service: answerKeyService,
             accessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         ) {
-            return SymmetricKey(data: data)
+            if data.count == 32 {
+                return SymmetricKey(data: data)
+            }
+            SupportDiagnostics.record("Replaced invalid answer encryption key (\(data.count) bytes).")
+            SecItemDelete(keychainQuery(service: answerKeyService) as CFDictionary)
+#if os(macOS)
+            SecItemDelete(keychainQuery(service: answerKeyService, usesDataProtection: false) as CFDictionary)
+#endif
         }
 
         let key = SymmetricKey(size: .bits256)
@@ -251,12 +306,20 @@ enum AnswerStore {
 
     private static func decrypt(from url: URL) throws -> [[String: Any]] {
         guard FileManager.default.fileExists(atPath: url.path) else { return [] }
-        let box = try AES.GCM.SealedBox(combined: Data(contentsOf: url))
-        let data = try AES.GCM.open(box, using: encryptionKey())
-        guard let answers = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            throw StoreError.message("Saved answers could not be read.")
+        let contents = try Data(contentsOf: url)
+        guard !contents.isEmpty else { return [] }
+        do {
+            let box = try AES.GCM.SealedBox(combined: contents)
+            let data = try AES.GCM.open(box, using: encryptionKey())
+            guard let answers = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+                throw StoreError.message("Saved answers could not be read.")
+            }
+            return answers
+        } catch is CryptoKitError {
+            SupportDiagnostics.record("Discarded unreadable answers file (\(contents.count) bytes).")
+            try FileManager.default.removeItem(at: url)
+            return []
         }
-        return answers
     }
 
     private static func normalized(_ answers: [[String: Any]]) -> ([[String: Any]], Bool) {

@@ -252,10 +252,12 @@ jobs:
             "$updates_dir"
           cp "$updates_dir/ume-appcast.xml" website/ume-appcast.xml
           website_notes=()
-          if [[ -f "$updates_dir/Ume-$VERSION-macOS.ja.md" ]]; then
-            cp "$updates_dir/Ume-$VERSION-macOS.ja.md" "website/Ume-$VERSION-macOS.ja.md"
-            website_notes+=("Ume-$VERSION-macOS.ja.md")
-          fi
+          for note in "$updates_dir"/Ume-"$VERSION"-macOS.*.md; do
+            [[ -f "$note" ]] || continue
+            note_name="${note##*/}"
+            cp "$note" "website/$note_name"
+            website_notes+=("$note_name")
+          done
 
           git -C website config user.name "Ume Release Bot"
           git -C website config user.email "41898282+github-actions[bot]@users.noreply.github.com"

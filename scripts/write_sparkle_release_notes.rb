@@ -25,6 +25,7 @@ end
 
 basename = File.join(directory, "Ume-#{version}-macOS")
 write_notes("#{basename}.md", version, note_en)
+write_notes("#{basename}.en.md", version, note_en)
 if note_ja.empty?
   File.delete("#{basename}.ja.md") if File.exist?("#{basename}.ja.md")
 else

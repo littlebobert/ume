@@ -21,7 +21,9 @@ class WriteSparkleReleaseNotesTest < Minitest::Test
     Dir.mktmpdir do |directory|
       _out, error, status = run_write(directory)
       assert status.success?, error
-      assert_equal "# Ume 0.1.12\n\nFixed Add.\n", File.read(File.join(directory, "Ume-0.1.12-macOS.md"))
+      english = "# Ume 0.1.12\n\nFixed Add.\n"
+      assert_equal english, File.read(File.join(directory, "Ume-0.1.12-macOS.md"))
+      assert_equal english, File.read(File.join(directory, "Ume-0.1.12-macOS.en.md"))
       assert_equal "# Ume 0.1.12\n\n追加を修正しました。\n", File.read(File.join(directory, "Ume-0.1.12-macOS.ja.md"))
     end
   end
@@ -32,6 +34,7 @@ class WriteSparkleReleaseNotesTest < Minitest::Test
       _out, error, status = run_write(directory, note_ja: "")
       assert status.success?, error
       assert File.exist?(File.join(directory, "Ume-0.1.12-macOS.md"))
+      assert File.exist?(File.join(directory, "Ume-0.1.12-macOS.en.md"))
       refute File.exist?(File.join(directory, "Ume-0.1.12-macOS.ja.md"))
     end
   end

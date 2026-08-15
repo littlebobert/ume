@@ -244,6 +244,7 @@ jobs:
             --ed-key-file - \
             --download-url-prefix "https://github.com/littlebobert/ume/releases/download/$TAG/" \
             --release-notes-url-prefix https://littlebobert.github.io/ \
+            --full-release-notes-url https://littlebobert.github.io/ume.html#changelog \
             --link https://littlebobert.github.io/ume.html \
             --embed-release-notes \
             --maximum-versions 10 \

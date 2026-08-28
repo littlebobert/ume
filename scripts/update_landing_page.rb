@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "cgi"
+require "date"
 require "optparse"
 require "uri"
 
@@ -58,8 +59,12 @@ unless note_en.empty? || html.include?("data-ume-release=\"#{escaped_version}\""
   note_ja = note_en if note_ja.empty?
   escaped_note_en = CGI.escapeHTML(note_en)
   escaped_note_ja = CGI.escapeHTML(note_ja)
+  today = Date.today
+  date_en = today.strftime("%B %-d, %Y")
+  date_ja = "#{today.year}年#{today.month}月#{today.day}日"
   entry = <<~HTML.chomp
         <h2 data-ume-release="#{escaped_version}">#{escaped_version}</h2>
+        <span class="release-date" data-label-en="#{date_en}" data-label-ja="#{date_ja}">#{date_en}</span>
         <ul>
           <li data-label-en="#{escaped_note_en}" data-label-ja="#{escaped_note_ja}">#{escaped_note_en}</li>
         </ul>

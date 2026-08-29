@@ -26,11 +26,12 @@ concurrency:
 jobs:
   release:
     name: Sign and release Ume
-    runs-on: xcode-27
+    runs-on: macos-26
     timeout-minutes: 60
     environment: release
 
     env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
       MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
       MATCH_GIT_PRIVATE_KEY: ${{ secrets.MATCH_GIT_PRIVATE_KEY }}
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
@@ -112,8 +113,19 @@ jobs:
           ruby-version: "3.3"
           bundler-cache: true
 
-      - name: Show Xcode version
-        run: xcodebuild -version
+      - name: Verify pinned Xcode
+        run: |
+          set -euo pipefail
+          if [[ ! -d "$DEVELOPER_DIR" ]]; then
+            echo "Pinned Xcode is not on this runner image. Repoint DEVELOPER_DIR at an available stable Xcode:" >&2
+            ls -d /Applications/Xcode*.app >&2
+            exit 1
+          fi
+          if [[ "$DEVELOPER_DIR" == *beta* ]]; then
+            echo "DEVELOPER_DIR points at a beta Xcode; App Store Connect rejects beta-built releases." >&2
+            exit 1
+          fi
+          xcodebuild -version
 
       - name: Build and upload iOS app to TestFlight
         run: >-

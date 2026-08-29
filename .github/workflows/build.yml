@@ -15,8 +15,11 @@ concurrency:
 jobs:
   build:
     name: Build ${{ matrix.name }}
-    runs-on: xcode-27
+    runs-on: macos-26
     timeout-minutes: 30
+
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
 
     strategy:
       fail-fast: false
@@ -39,8 +42,19 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Show Xcode version
-        run: xcodebuild -version
+      - name: Verify pinned Xcode
+        run: |
+          set -euo pipefail
+          if [[ ! -d "$DEVELOPER_DIR" ]]; then
+            echo "Pinned Xcode is not on this runner image. Repoint DEVELOPER_DIR at an available stable Xcode:" >&2
+            ls -d /Applications/Xcode*.app >&2
+            exit 1
+          fi
+          if [[ "$DEVELOPER_DIR" == *beta* ]]; then
+            echo "DEVELOPER_DIR points at a beta Xcode." >&2
+            exit 1
+          fi
+          xcodebuild -version
 
       - name: Build ${{ matrix.name }} app
         env:

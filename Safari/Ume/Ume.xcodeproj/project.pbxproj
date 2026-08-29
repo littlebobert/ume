@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 110;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -68,21 +68,25 @@
 /* Begin PBXCopyFilesBuildPhase section */
 		D0A1D320301B98AE0082FD16 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
 			dstPath = "";
-			dstSubfolder = PlugIns;
+			dstSubfolderSpec = 13;
 			files = (
 				D0A1D2FE301B98AE0082FD16 /* Ume Extension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 		D0A1D327301B98AE0082FD16 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
 			dstPath = "";
-			dstSubfolder = PlugIns;
+			dstSubfolderSpec = 13;
 			files = (
 				D0A1D308301B98AE0082FD16 /* Ume Extension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -123,22 +127,30 @@
 /* Begin PBXFrameworksBuildPhase section */
 		D0A1D2DC301B98AE0082FD16 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 			);
 		};
 		D0A1D2EE301B98AE0082FD16 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				A20000010000000000000001 /* Sparkle in Frameworks */,
 			);
 		};
 		D0A1D2FA301B98AE0082FD16 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 			);
 		};
 		D0A1D304301B98AE0082FD16 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 			);
 		};
@@ -381,6 +393,8 @@
 /* Begin PBXResourcesBuildPhase section */
 		D0A1D2DD301B98AE0082FD16 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				D0A1D30F301B98AE0082FD16 /* Icon.png in Resources */,
 				D0A1D2E8301B98AE0082FD16 /* LaunchScreen.storyboard in Resources */,
@@ -393,6 +407,8 @@
 		};
 		D0A1D2EF301B98AE0082FD16 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				D0A1D310301B98AE0082FD16 /* Icon.png in Resources */,
 				D0A1D2F7301B98AE0082FD16 /* Main.storyboard in Resources */,
@@ -401,6 +417,8 @@
 		};
 		D0A1D2FB301B98AE0082FD16 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				D0A1D33D301B98AE0082FD16 /* content.js in Resources */,
 				D0A1D33C301B98AE0082FD16 /* popup.css in Resources */,
@@ -413,6 +431,8 @@
 		};
 		D0A1D305301B98AE0082FD16 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				D0A1D337301B98AE0082FD16 /* content.js in Resources */,
 				D0A1D336301B98AE0082FD16 /* popup.css in Resources */,
@@ -428,6 +448,8 @@
 /* Begin PBXSourcesBuildPhase section */
 		D0A1D2DB301B98AE0082FD16 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				D0A1D315301B98AE0082FD16 /* ViewController.swift in Sources */,
 				A10000010000000000000001 /* Stores.swift in Sources */,
@@ -437,6 +459,8 @@
 		};
 		D0A1D2ED301B98AE0082FD16 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				A10000020000000000000001 /* Stores.swift in Sources */,
 				A10000050000000000000001 /* SettingsViewControllers.swift in Sources */,
@@ -446,6 +470,8 @@
 		};
 		D0A1D2F9301B98AE0082FD16 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				D0A1D319301B98AE0082FD16 /* SafariWebExtensionHandler.swift in Sources */,
 				A10000030000000000000001 /* Stores.swift in Sources */,
@@ -453,6 +479,8 @@
 		};
 		D0A1D303301B98AE0082FD16 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				D0A1D31A301B98AE0082FD16 /* SafariWebExtensionHandler.swift in Sources */,
 				A10000040000000000000001 /* Stores.swift in Sources */,

@@ -19,6 +19,7 @@ xcodebuild build \
   -scheme "$SCHEME" \
   -configuration "$CONFIGURATION" \
   -quiet \
+  -allowProvisioningUpdates \
   "$@"
 
 settings=$(xcodebuild -showBuildSettings \

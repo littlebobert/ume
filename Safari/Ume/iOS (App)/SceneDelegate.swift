@@ -13,6 +13,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let _ = (scene as? UIWindowScene) else { return }
+        NotificationCenter.default.addObserver(forName: AnswerStore.didChangeLocally, object: nil, queue: .main) { _ in
+            CloudSync.shared.syncInBackground(reason: .localChange)
+        }
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        CloudSync.shared.syncInBackground(reason: .activate)
     }
 
 }

@@ -90,6 +90,21 @@
                 <div class="settings-group">
                     <div class="setting-row">
                         <div>
+                            <strong>Sync with iCloud</strong>
+                            <span id="sync-status">Checking iCloud…</span>
+                        </div>
+                        <label class="switch-label"><input id="sync-enabled" type="checkbox" checked><span>On</span></label>
+                    </div>
+                    <div class="setting-row">
+                        <div>
+                            <span>Saved answers are encrypted on your devices with a key that lives only in your iCloud Keychain. Apple cannot read them.</span>
+                        </div>
+                        <button id="sync-now" class="secondary inline-button" type="button">Sync Now</button>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <div class="setting-row">
+                        <div>
                             <strong>How Ume fills forms</strong>
                             <span>Ume tries private, on-device matching first. AI mapping is used only when local matching is not confident.</span>
                         </div>

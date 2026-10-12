@@ -10,6 +10,11 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
         webView.scrollView.isScrollEnabled = true
         webView.configuration.userContentController.add(self, name: "controller")
         webView.loadFileURL(Bundle.main.url(forResource: "Main", withExtension: "html")!, allowingReadAccessTo: Bundle.main.resourceURL!)
+        for name in [CloudSync.didApplyRemoteChanges, CloudSync.didFinishSync] {
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                self?.sendSettings()
+            }
+        }
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -31,9 +36,30 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
         case "forget-everything":
             do {
                 try AnswerStore.clear()
-                sendResult(ok: true, message: "All saved answers were deleted. Your AI settings were kept.")
+                sendResult(ok: true, message: CloudSync.isEnabled
+                    ? "All saved answers were deleted from this device and will be removed from your other devices. Your AI settings were kept."
+                    : "All saved answers were deleted. Your AI settings were kept.")
             } catch {
                 sendResult(ok: false, message: "Ume could not delete all saved answers.")
+            }
+        case "set-sync-enabled":
+            CloudSync.isEnabled = body["enabled"] as? Bool ?? true
+            if CloudSync.isEnabled {
+                Task {
+                    _ = try? await CloudSync.shared.sync(reason: .manual)
+                    sendResult(ok: true, message: "iCloud sync is on.")
+                }
+            } else {
+                sendResult(ok: true, message: "iCloud sync is off. Saved answers stay on this device.")
+            }
+        case "sync-now":
+            Task {
+                do {
+                    _ = try await CloudSync.shared.sync(reason: .manual)
+                    sendResult(ok: true, message: "Synced with iCloud.")
+                } catch {
+                    sendResult(ok: false, message: await CloudSync.shared.statusDescription())
+                }
             }
         default:
             break
@@ -58,23 +84,29 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
         }
     }
 
-    private func settingsPayload() -> [String: Any] {
+    private func settingsPayload() async -> [String: Any] {
         let settings = SettingsStore.load()
         return [
             "provider": ["openai", "anthropic"].contains(settings?.provider ?? "") ? settings!.provider : "openai",
             "model": settings?.model ?? "",
             "hasKey": !(settings?.apiKey.isEmpty ?? true),
             "onboardingComplete": OnboardingStore.isComplete,
-            "answers": (try? AnswerStore.load()) ?? []
+            "answers": (try? AnswerStore.load()) ?? [],
+            "syncEnabled": CloudSync.isEnabled,
+            "syncStatus": await CloudSync.shared.statusDescription()
         ]
     }
 
     private func sendSettings() {
-        sendJavaScript(function: "receiveSettings", payload: settingsPayload())
+        Task { @MainActor in
+            sendJavaScript(function: "receiveSettings", payload: await settingsPayload())
+        }
     }
 
     private func sendResult(ok: Bool, message: String) {
-        sendJavaScript(function: "receiveResult", payload: ["ok": ok, "message": message, "settings": settingsPayload()])
+        Task { @MainActor in
+            sendJavaScript(function: "receiveResult", payload: ["ok": ok, "message": message, "settings": await settingsPayload()])
+        }
     }
 
     private func sendJavaScript(function: String, payload: [String: Any]) {

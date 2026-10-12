@@ -48,18 +48,27 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             }
             #endif
         case "UME_GET_ANSWERS":
-            do {
-                complete(context, ["ok": true, "answers": try AnswerStore.load()])
-            } catch {
-                complete(context, ["ok": false, "error": error.localizedDescription])
+            Task {
+                // Pick up changes from other devices first, but never make the popup wait long.
+                _ = await CloudSync.shared.sync(reason: .extensionRead, timeout: 3, pullMinimumInterval: 20)
+                do {
+                    complete(context, ["ok": true, "answers": try AnswerStore.load()])
+                } catch {
+                    complete(context, ["ok": false, "error": error.localizedDescription])
+                }
             }
         case "UME_SAVE_ANSWERS":
             do {
                 let answers = payload["answers"] as? [[String: Any]] ?? []
                 try AnswerStore.save(answers)
-                complete(context, ["ok": true])
             } catch {
                 complete(context, ["ok": false, "error": error.localizedDescription])
+                return
+            }
+            Task {
+                // Upload before replying; the extension process may not outlive the request.
+                _ = await CloudSync.shared.sync(reason: .extensionWrite, timeout: 5)
+                complete(context, ["ok": true])
             }
         case "UME_MAP_FIELDS":
             Task {

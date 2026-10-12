@@ -923,6 +923,10 @@ final class SettingsTabViewController: NSTabViewController {
 final class GeneralSettingsViewController: NSViewController {
     private let stateIcon = NSImageView()
     private let stateLabel = descriptionLabel("Checking Safari extension status…")
+    private let syncToggle = NSButton(checkboxWithTitle: "Sync saved answers across your devices with iCloud", target: nil, action: nil)
+    private let syncStatus = descriptionLabel("Checking iCloud…")
+    private let syncNowButton = NSButton(title: "Sync Now", target: nil, action: nil)
+    private var syncObservers: [NSObjectProtocol] = []
 
     override func loadView() {
         view = settingsPaneView()
@@ -941,20 +945,84 @@ final class GeneralSettingsViewController: NSViewController {
         extensionRow.alignment = .leading
         extensionRow.spacing = 7
 
-        extensionRow.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(extensionRow)
+        let syncTitle = titleLabel("iCloud Sync")
+        syncTitle.font = .systemFont(ofSize: 13, weight: .semibold)
+        syncToggle.target = self
+        syncToggle.action = #selector(syncToggled)
+        syncToggle.state = CloudSync.isEnabled ? .on : .off
+        let syncNote = descriptionLabel("Answers are encrypted on your devices with a key that lives only in your iCloud Keychain. Apple cannot read them.")
+        syncNote.lineBreakMode = .byWordWrapping
+        syncNote.maximumNumberOfLines = 0
+        syncNowButton.target = self
+        syncNowButton.action = #selector(syncNow)
+        syncNowButton.bezelStyle = .rounded
+        syncNowButton.isEnabled = CloudSync.isEnabled
+        let syncRow = NSStackView(views: [syncTitle, syncToggle, syncNote, syncStatus, syncNowButton])
+        syncRow.orientation = .vertical
+        syncRow.alignment = .leading
+        syncRow.spacing = 7
+
+        let column = NSStackView(views: [extensionRow, syncRow])
+        column.orientation = .vertical
+        column.alignment = .leading
+        column.spacing = 26
+        column.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(column)
         NSLayoutConstraint.activate([
-            extensionRow.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 30),
-            extensionRow.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -30),
-            extensionRow.topAnchor.constraint(equalTo: view.topAnchor, constant: 28),
+            column.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 30),
+            column.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -30),
+            column.topAnchor.constraint(equalTo: view.topAnchor, constant: 28),
+            syncNote.widthAnchor.constraint(equalTo: column.widthAnchor),
+            syncStatus.widthAnchor.constraint(equalTo: column.widthAnchor),
             stateIcon.widthAnchor.constraint(equalToConstant: 15),
             stateIcon.heightAnchor.constraint(equalToConstant: 15)
         ])
+        syncStatus.lineBreakMode = .byWordWrapping
+        syncStatus.maximumNumberOfLines = 0
+        syncObservers = [CloudSync.didFinishSync, CloudSync.didApplyRemoteChanges].map { name in
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                self?.refreshSyncStatus()
+            }
+        }
+    }
+
+    deinit {
+        syncObservers.forEach(NotificationCenter.default.removeObserver)
     }
 
     override func viewWillAppear() {
         super.viewWillAppear()
         refreshState()
+        refreshSyncStatus()
+    }
+
+    private func refreshSyncStatus() {
+        syncToggle.state = CloudSync.isEnabled ? .on : .off
+        syncNowButton.isEnabled = CloudSync.isEnabled
+        Task { @MainActor in
+            syncStatus.stringValue = await CloudSync.shared.statusDescription()
+        }
+    }
+
+    @objc private func syncToggled() {
+        CloudSync.isEnabled = syncToggle.state == .on
+        syncNowButton.isEnabled = CloudSync.isEnabled
+        if CloudSync.isEnabled {
+            syncStatus.stringValue = "Syncing…"
+            CloudSync.shared.syncInBackground(reason: .manual)
+        } else {
+            refreshSyncStatus()
+        }
+    }
+
+    @objc private func syncNow() {
+        syncStatus.stringValue = "Syncing…"
+        syncNowButton.isEnabled = false
+        Task { @MainActor in
+            _ = try? await CloudSync.shared.sync(reason: .manual)
+            syncNowButton.isEnabled = CloudSync.isEnabled
+            refreshSyncStatus()
+        }
     }
 
     private func refreshState() {
@@ -1173,6 +1241,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     private var discardingDraft = false
     private var keyMonitor: Any?
     private var draftEditorObserver: NSObjectProtocol?
+    private var remoteChangeObserver: NSObjectProtocol?
     private static let answerTypes = ["", "address", "contact", "date", "gender", "phone"]
     private static let typeTitles = ["Auto", "Address", "Contact", "Date", "Gender", "Phone"]
     private static let aggregateTypes = AnswerStore.aggregateTypes
@@ -1202,6 +1271,11 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, self.handleTableKey(event) else { return event }
             return nil
+        }
+        remoteChangeObserver = NotificationCenter.default.addObserver(forName: CloudSync.didApplyRemoteChanges, object: nil, queue: .main) { [weak self] _ in
+            // Don't yank the table out from under an in-progress edit.
+            guard let self, self.draftAnswer == nil, !(self.view.window?.firstResponder is NSTextView) else { return }
+            self.reload()
         }
 
         let scroll = NSScrollView()
@@ -1251,6 +1325,9 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     deinit {
         if let keyMonitor {
             NSEvent.removeMonitor(keyMonitor)
+        }
+        if let remoteChangeObserver {
+            NotificationCenter.default.removeObserver(remoteChangeObserver)
         }
     }
 
@@ -1947,8 +2024,10 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
 
     @objc private func clearAll() {
         let alert = NSAlert()
-        alert.messageText = "Clear all saved answers?"
-        alert.informativeText = "Your AI provider, model, and API key will be kept. This cannot be undone."
+        alert.messageText = CloudSync.isEnabled ? "Clear all saved answers on all your devices?" : "Clear all saved answers?"
+        alert.informativeText = CloudSync.isEnabled
+            ? "Answers synced through iCloud will be removed from your other devices too. Your AI provider, model, and API key will be kept. This cannot be undone."
+            : "Your AI provider, model, and API key will be kept. This cannot be undone."
         alert.alertStyle = .warning
         alert.addButton(withTitle: "Clear All Answers")
         alert.addButton(withTitle: "Cancel")

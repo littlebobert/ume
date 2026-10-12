@@ -10,5 +10,13 @@
 	<array>
 		<string>$(AppIdentifierPrefix)com.justin.ume.shared</string>
 	</array>
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.justin.henry.ume</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
 </dict>
 </plist>

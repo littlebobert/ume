@@ -5,7 +5,8 @@ import CryptoKit
 let extensionBundleIdentifier = "\(Bundle.main.bundleIdentifier ?? "com.justin.henry.ume").extension"
 private let keychainService = "com.justin.ume.ai-settings"
 private let answerKeyService = "com.justin.ume.answer-encryption"
-private let appGroupIdentifier = Bundle.main.object(forInfoDictionaryKey: "UmeAppGroupIdentifier") as? String
+private let syncKeyService = "com.justin.ume.answer-encryption.sync"
+let appGroupIdentifier = Bundle.main.object(forInfoDictionaryKey: "UmeAppGroupIdentifier") as? String
     ?? "group.com.justin.ume.shared"
 
 struct AISettings: Codable {
@@ -308,7 +309,45 @@ enum AnswerStore {
         return container.appendingPathComponent("answers.encrypted", isDirectory: false)
     }
 
-    private static func encryptionKey() throws -> SymmetricKey {
+    // MARK: Encryption keys
+    //
+    // Two keys can exist. The legacy key is device-only and predates sync. The
+    // sync key lives in iCloud Keychain so every device can read shared records.
+    // Once a sync key exists it is always the current key; the legacy key is kept
+    // only to read older local files and records this device uploaded before.
+
+    private static func syncKeyQuery() -> [String: Any] {
+        var query = keychainQuery(service: syncKeyService)
+        query[kSecAttrSynchronizable as String] = true
+        return query
+    }
+
+    private static func syncKey() -> SymmetricKey? {
+        var query = syncKeyQuery()
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var item: CFTypeRef?
+        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+              let data = item as? Data, data.count == 32 else { return nil }
+        return SymmetricKey(data: data)
+    }
+
+    private static func storeSyncKey(_ key: SymmetricKey) -> SymmetricKey {
+        var inserted = syncKeyQuery()
+        inserted[kSecValueData as String] = key.withUnsafeBytes { Data($0) }
+        inserted[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        let status = SecItemAdd(inserted as CFDictionary, nil)
+        if status == errSecDuplicateItem, let existing = syncKey() {
+            // Another device stored the shared key first. Use theirs.
+            return existing
+        }
+        if status != errSecSuccess {
+            SupportDiagnostics.record("Could not store the iCloud answer key (status \(status)).")
+        }
+        return syncKey() ?? key
+    }
+
+    private static func legacyKey(createIfMissing: Bool) throws -> SymmetricKey? {
         if let data = try migratedKeychainData(
             service: answerKeyService,
             accessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
@@ -322,6 +361,7 @@ enum AnswerStore {
             SecItemDelete(keychainQuery(service: answerKeyService, usesDataProtection: false) as CFDictionary)
 #endif
         }
+        guard createIfMissing else { return nil }
 
         let key = SymmetricKey(size: .bits256)
         let data = key.withUnsafeBytes { Data($0) }
@@ -330,7 +370,7 @@ enum AnswerStore {
         inserted[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         let status = SecItemAdd(inserted as CFDictionary, nil)
         if status == errSecDuplicateItem {
-            return try encryptionKey()
+            return try legacyKey(createIfMissing: true)
         }
         guard status == errSecSuccess else {
             throw StoreError.message("Apple Keychain could not protect saved answers.")
@@ -338,22 +378,171 @@ enum AnswerStore {
         return key
     }
 
-    private static func decrypt(from url: URL) throws -> [[String: Any]] {
-        guard FileManager.default.fileExists(atPath: url.path) else { return [] }
+    private static func encryptionKey() throws -> SymmetricKey {
+        if let key = syncKey() { return key }
+        if CloudSync.isEnabled {
+            // Promote this device's key so other devices can decrypt what it uploads.
+            if let legacy = try legacyKey(createIfMissing: false) { return storeSyncKey(legacy) }
+            return storeSyncKey(SymmetricKey(size: .bits256))
+        }
+        guard let key = try legacyKey(createIfMissing: true) else {
+            throw StoreError.message("Apple Keychain could not protect saved answers.")
+        }
+        return key
+    }
+
+    private static func keyID(_ key: SymmetricKey) -> String {
+        let digest = SHA256.hash(data: key.withUnsafeBytes { Data($0) })
+        return digest.prefix(8).map { String(format: "%02x", $0) }.joined()
+    }
+
+    static var currentKeyID: String? {
+        (try? encryptionKey()).map(keyID)
+    }
+
+    /// Decrypts the local file with the current key, falling back to the legacy
+    /// device key after a sync key arrived from another device.
+    private static func decrypt(from url: URL) throws -> (answers: [[String: Any]], usedLegacyKey: Bool) {
+        guard FileManager.default.fileExists(atPath: url.path) else { return ([], false) }
         let contents = try Data(contentsOf: url)
-        guard !contents.isEmpty else { return [] }
-        do {
-            let box = try AES.GCM.SealedBox(combined: contents)
-            let data = try AES.GCM.open(box, using: encryptionKey())
+        guard !contents.isEmpty else { return ([], false) }
+        let box = try AES.GCM.SealedBox(combined: contents)
+        let current = try encryptionKey()
+        var candidates: [(SymmetricKey, Bool)] = [(current, false)]
+        if let legacy = try legacyKey(createIfMissing: false), keyID(legacy) != keyID(current) {
+            candidates.append((legacy, true))
+        }
+        for (key, isLegacy) in candidates {
+            guard let data = try? AES.GCM.open(box, using: key) else { continue }
             guard let answers = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
                 throw StoreError.message("Saved answers could not be read.")
             }
-            return answers
-        } catch is CryptoKitError {
-            SupportDiagnostics.record("Discarded unreadable answers file (\(contents.count) bytes).")
-            try FileManager.default.removeItem(at: url)
-            return []
+            return (answers, isLegacy)
         }
+        SupportDiagnostics.record("Discarded unreadable answers file (\(contents.count) bytes).")
+        try FileManager.default.removeItem(at: url)
+        return ([], false)
+    }
+
+    // MARK: Sync support
+
+    static let didChangeLocally = Notification.Name("UmeAnswerStoreDidChangeLocally")
+
+    enum SyncedPayload {
+        case current([String: Any])
+        case legacy([String: Any])
+        case unreadable
+    }
+
+    /// Answers as stored, without triggering migrations or saves. Used by the sync engine.
+    static func loadForSync() throws -> [[String: Any]] {
+        try decryptCoordinated().answers
+    }
+
+    static func sealForSync(_ answer: [String: Any]) throws -> (payload: Data, keyID: String) {
+        let key = try encryptionKey()
+        let data = try JSONSerialization.data(withJSONObject: answer, options: [.sortedKeys])
+        guard let combined = try AES.GCM.seal(data, using: key).combined else {
+            throw StoreError.message("A saved answer could not be encrypted for iCloud.")
+        }
+        return (combined, keyID(key))
+    }
+
+    static func openSynced(payload: Data, keyID recordKeyID: String) throws -> SyncedPayload {
+        let current = try encryptionKey()
+        var candidates: [(SymmetricKey, Bool)] = [(current, false)]
+        if let legacy = try legacyKey(createIfMissing: false), keyID(legacy) != keyID(current) {
+            candidates.append((legacy, true))
+        }
+        let ordered = candidates.sorted { lhs, _ in keyID(lhs.0) == recordKeyID }
+        guard let box = try? AES.GCM.SealedBox(combined: payload) else { return .unreadable }
+        for (key, isLegacy) in ordered {
+            guard let data = try? AES.GCM.open(box, using: key),
+                  let answer = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { continue }
+            return isLegacy ? .legacy(answer) : .current(answer)
+        }
+        return .unreadable
+    }
+
+    static func markAllPendingUpload() {
+        let ids = ((try? loadForSync()) ?? []).compactMap { $0["answerID"] as? String }
+        SyncState.update { state in
+            state.pendingUploads.formUnion(ids)
+            state.localKeyID = currentKeyID
+        }
+    }
+
+    /// The answer without sync bookkeeping, serialized for change detection.
+    private static func comparable(_ answer: [String: Any]) -> Data? {
+        var copy = answer
+        copy.removeValue(forKey: "modifiedAt")
+        return try? JSONSerialization.data(withJSONObject: copy, options: [.sortedKeys])
+    }
+
+    private static func isStorable(_ answer: [String: Any]) -> Bool {
+        guard answer["answerID"] is String else { return false }
+        guard let type = answer["answerType"] as? String, aggregateTypes.contains(type) else { return true }
+        guard let raw = answer["value"] as? [String: Any] else { return false }
+        return (try? (type == "address" ? validatedAddress(raw) : validatedContact(raw))) != nil
+    }
+
+    /// Merge answers fetched from iCloud. Local answers that are newer and still
+    /// waiting to upload win; everything else takes the remote version. Returns
+    /// true when the local file changed.
+    static func applyRemote(changed: [[String: Any]], deletedIDs: [String]) throws -> Bool {
+        var answers = try decryptCoordinated().answers
+        var changedAny = false
+        var state = SyncState.load()
+        for remote in changed {
+            guard let id = remote["answerID"] as? String else { continue }
+            guard isStorable(remote) else {
+                SupportDiagnostics.record("Skipped an iCloud answer that failed validation.")
+                continue
+            }
+            let remoteTime = remote["modifiedAt"] as? Double ?? 0
+            if let index = answers.firstIndex(where: { $0["answerID"] as? String == id }) {
+                let localTime = answers[index]["modifiedAt"] as? Double ?? 0
+                if state.pendingUploads.contains(id) && localTime >= remoteTime { continue }
+                if comparable(answers[index]) != comparable(remote) {
+                    answers[index] = remote
+                    changedAny = true
+                } else if answers[index]["modifiedAt"] as? Double != remoteTime {
+                    answers[index]["modifiedAt"] = remoteTime
+                    changedAny = true
+                }
+            } else if !state.pendingDeletes.contains(id) {
+                answers.append(remote)
+                changedAny = true
+            }
+            state.pendingUploads.remove(id)
+        }
+        for id in deletedIDs {
+            if let index = answers.firstIndex(where: { $0["answerID"] as? String == id }) {
+                answers.remove(at: index)
+                changedAny = true
+            }
+            state.pendingUploads.remove(id)
+            state.pendingDeletes.remove(id)
+        }
+        let pendingUploads = state.pendingUploads
+        let pendingDeletes = state.pendingDeletes
+        SyncState.update { current in
+            current.pendingUploads = pendingUploads
+            current.pendingDeletes = pendingDeletes
+        }
+        if changedAny { try save(answers, markingChanges: false) }
+        return changedAny
+    }
+
+    private static func decryptCoordinated() throws -> (answers: [[String: Any]], usedLegacyKey: Bool) {
+        let url = try fileURL()
+        var coordinatedError: NSError?
+        var result: Result<(answers: [[String: Any]], usedLegacyKey: Bool), Error> = .success(([], false))
+        NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &coordinatedError) { coordinatedURL in
+            result = Result { try decrypt(from: coordinatedURL) }
+        }
+        if let coordinatedError { throw coordinatedError }
+        return try result.get()
     }
 
     private static func normalized(_ answers: [[String: Any]]) -> ([[String: Any]], Bool) {
@@ -377,16 +566,18 @@ enum AnswerStore {
     }
 
     static func load() throws -> [[String: Any]] {
-        let url = try fileURL()
-        var coordinatedError: NSError?
-        var result: Result<[[String: Any]], Error> = .success([])
-        NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &coordinatedError) { coordinatedURL in
-            result = Result { try decrypt(from: coordinatedURL) }
-        }
-        if let coordinatedError { throw coordinatedError }
-        let answers = try result.get()
+        let (answers, usedLegacyKey) = try decryptCoordinated()
         let (migrated, changed) = normalized(answers)
-        if changed { try save(migrated) }
+        if changed {
+            try save(migrated)
+        } else if usedLegacyKey {
+            // Re-encrypt with the shared key now that one exists.
+            try save(migrated, markingChanges: false)
+        }
+        if CloudSync.isEnabled, let keyID = currentKeyID, SyncState.load().localKeyID != keyID {
+            // First run with sync, or the shared key changed: everything here must be (re)uploaded.
+            markAllPendingUpload()
+        }
         return migrated
     }
 
@@ -442,8 +633,36 @@ enum AnswerStore {
         return contact
     }
 
-    static func save(_ answers: [[String: Any]]) throws {
+    /// Persist answers. With `markingChanges`, answers that differ from the stored
+    /// copy get a fresh modification time and are queued for iCloud upload, and
+    /// removed answers are queued for deletion. Sync applies remote changes with
+    /// `markingChanges: false` so they are not echoed back.
+    static func save(_ answers: [[String: Any]], markingChanges: Bool = true) throws {
         var (answers, _) = normalized(answers)
+        if markingChanges {
+            let previous = (try? decryptCoordinated().answers) ?? []
+            let previousByID = Dictionary(previous.compactMap { answer in (answer["answerID"] as? String).map { ($0, answer) } }, uniquingKeysWith: { $1 })
+            let now = Date().timeIntervalSince1970
+            var uploads: [String] = []
+            var seen = Set<String>()
+            for index in answers.indices {
+                guard let id = answers[index]["answerID"] as? String else { continue }
+                seen.insert(id)
+                if let prior = previousByID[id], comparable(prior) == comparable(answers[index]) {
+                    answers[index]["modifiedAt"] = prior["modifiedAt"] ?? now
+                } else {
+                    answers[index]["modifiedAt"] = now
+                    uploads.append(id)
+                }
+            }
+            let deletes = previousByID.keys.filter { !seen.contains($0) }
+            if !uploads.isEmpty || !deletes.isEmpty {
+                SyncState.update { state in
+                    uploads.forEach { state.pendingUploads.insert($0); state.pendingDeletes.remove($0) }
+                    deletes.forEach { state.pendingDeletes.insert($0); state.pendingUploads.remove($0) }
+                }
+            }
+        }
         for index in answers.indices {
             guard let type = answers[index]["answerType"] as? String, aggregateTypes.contains(type) else { continue }
             guard let raw = answers[index]["value"] as? [String: Any] else {
@@ -477,6 +696,9 @@ enum AnswerStore {
         }
         if let coordinatedError { throw coordinatedError }
         if let writeError { throw writeError }
+        if markingChanges {
+            NotificationCenter.default.post(name: didChangeLocally, object: nil)
+        }
     }
 
     static func add(userLabel: String, value: String, answerType: String? = nil) throws {

@@ -13,6 +13,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         userDriverDelegate: nil
     )
 
+    private var syncTimer: Timer?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         installEditMenu()
         installWindowMenu()
@@ -20,6 +22,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         installUpdateMenu()
         installAboutAction()
         configureSettingsWindow()
+        startCloudSync()
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        CloudSync.shared.syncInBackground(reason: .activate)
+    }
+
+    private func startCloudSync() {
+        CloudSync.shared.syncInBackground(reason: .launch)
+        NotificationCenter.default.addObserver(forName: AnswerStore.didChangeLocally, object: nil, queue: .main) { _ in
+            CloudSync.shared.syncInBackground(reason: .localChange)
+        }
+        syncTimer = Timer.scheduledTimer(withTimeInterval: 90, repeats: true) { _ in
+            guard NSApp.isActive || NSApp.windows.contains(where: { $0.isVisible }) else { return }
+            CloudSync.shared.syncInBackground(reason: .timer)
+        }
     }
 
     private func configureSettingsWindow() {

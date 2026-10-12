@@ -19,7 +19,9 @@ Ume is a private Safari form filler for iPhone, iPad, and Mac. Complete a form o
 
 ## Privacy
 
-Saved answers are encrypted with AES-GCM. The device-only encryption key is stored in Apple Keychain. Ume collects no analytics and reads form controls only when you ask it to remember or fill a form.
+Saved answers are encrypted with AES-GCM. The encryption key is stored in your iCloud Keychain so that your own devices can share it, and Apple never sees it. Ume collects no analytics and reads form controls only when you ask it to remember or fill a form.
+
+Saved answers sync between your Mac, iPhone, and iPad through your iCloud account. Each answer is stored in your private CloudKit database already encrypted, so Apple cannot read it. You can turn sync off in Settings → General, after which answers stay on each device.
 
 Optionally, you can turn on a toolbar badge from the extension popup. Ume then checks each page you open for forms it can fill and shows the count on its icon. This check runs entirely on your device, reads field labels but never field values, and requires granting Ume access to all websites in Safari. It is off by default.
 

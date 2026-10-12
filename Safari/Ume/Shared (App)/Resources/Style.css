@@ -98,3 +98,6 @@ body:not(.state-on, .state-off) :is(.state-on, .state-off), body.state-on :is(.s
   button.danger { border-color: #75444d; background: #353535; color: #f08da0; }
   .danger-section { border-color: #505050; }
 }
+
+.switch-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
+.switch-label input { width: 18px; height: 18px; margin: 0; }

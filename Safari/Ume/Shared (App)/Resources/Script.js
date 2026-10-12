@@ -13,6 +13,9 @@ const settingsContent = document.getElementById("settings-content");
 const onboardingProvider = document.getElementById("onboarding-provider");
 const onboardingModel = document.getElementById("onboarding-model");
 const onboardingAPIKey = document.getElementById("onboarding-api-key");
+const syncEnabled = document.getElementById("sync-enabled");
+const syncStatus = document.getElementById("sync-status");
+const syncNow = document.getElementById("sync-now");
 
 function post(action, extra = {}) {
     webkit.messageHandlers.controller.postMessage({ action, ...extra });
@@ -98,6 +101,9 @@ function receiveSettings(settings) {
     keyState.textContent = settings.hasKey ? "A key is saved securely in Apple Keychain." : "No key saved.";
     document.getElementById("delete-key").disabled = !settings.hasKey;
     renderAnswers(settings.answers || []);
+    if (typeof settings.syncEnabled === "boolean") syncEnabled.checked = settings.syncEnabled;
+    syncStatus.textContent = settings.syncStatus || "";
+    syncNow.disabled = !syncEnabled.checked;
 }
 
 function receiveResult(result) {
@@ -146,7 +152,17 @@ document.getElementById("save").addEventListener("click", () => {
 
 document.getElementById("delete-key").addEventListener("click", () => post("delete-key"));
 document.getElementById("forget-everything").addEventListener("click", () => {
-    if (confirm("Delete every saved answer? Your AI settings and API key will be kept. This cannot be undone.")) post("forget-everything");
+    const scope = syncEnabled.checked ? "on all your devices" : "on this device";
+    if (confirm(`Delete every saved answer ${scope}? Your AI settings and API key will be kept. This cannot be undone.`)) post("forget-everything");
+});
+syncEnabled.addEventListener("change", () => {
+    syncNow.disabled = !syncEnabled.checked;
+    syncStatus.textContent = syncEnabled.checked ? "Syncing…" : "";
+    post("set-sync-enabled", { enabled: syncEnabled.checked });
+});
+syncNow.addEventListener("click", () => {
+    syncStatus.textContent = "Syncing…";
+    post("sync-now");
 });
 const preferences = document.querySelector("button.open-preferences");
 if (preferences) preferences.addEventListener("click", () => post("open-preferences"));

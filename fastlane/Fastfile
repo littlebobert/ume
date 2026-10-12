@@ -167,10 +167,14 @@ platform :ios do
       )
     end
 
+    # "What to Test" for testers. With a note, fastlane waits only until App Store
+    # Connect registers the build, sets the note, then skips the rest of processing.
+    what_to_test = ENV["TESTFLIGHT_WHAT_TO_TEST"].to_s.strip
     upload_to_testflight(
       api_key: api_key,
       ipa: ipa_path,
-      skip_waiting_for_build_processing: true
+      skip_waiting_for_build_processing: true,
+      changelog: what_to_test.empty? ? nil : what_to_test
     )
   end
 end

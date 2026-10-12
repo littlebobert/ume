@@ -17,7 +17,7 @@ on:
         required: false
         type: string
       changelog_en:
-        description: Short English changelog note for GitHub and the Umete landing page.
+        description: Short English changelog note for GitHub, the Umete landing page, and TestFlight's "What to Test".
         required: false
         type: string
       changelog_ja:
@@ -145,6 +145,8 @@ jobs:
           xcodebuild -version
 
       - name: Build and upload iOS app to TestFlight
+        env:
+          TESTFLIGHT_WHAT_TO_TEST: ${{ inputs.changelog_en }}
         run: >-
           bundle exec fastlane ios release
           version:${{ steps.version.outputs.version }}

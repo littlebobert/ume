@@ -54,7 +54,7 @@ private func migratedKeychainData(service: String, accessible: CFString) throws 
         return protectedItem as? Data
     }
     guard protectedStatus == errSecItemNotFound else {
-        throw StoreError.message("Apple Keychain could not read Ume's protected data.")
+        throw StoreError.message("Apple Keychain could not read Umete's protected data.")
     }
 
 #if os(macOS)
@@ -70,7 +70,7 @@ private func migratedKeychainData(service: String, accessible: CFString) throws 
         inserted[kSecAttrAccessible as String] = accessible
         let addStatus = SecItemAdd(inserted as CFDictionary, nil)
         guard addStatus == errSecSuccess || addStatus == errSecDuplicateItem else {
-            throw StoreError.message("Apple Keychain could not migrate Ume's protected data.")
+            throw StoreError.message("Apple Keychain could not migrate Umete's protected data.")
         }
 
         legacyQuery[kSecReturnData as String] = nil
@@ -79,10 +79,10 @@ private func migratedKeychainData(service: String, accessible: CFString) throws 
         return data
     }
     if legacyStatus == errSecInteractionNotAllowed || legacyStatus == errSecAuthFailed || legacyStatus == errSecUserCanceled {
-        throw StoreError.message("Ume found protected data from an older build that macOS no longer recognizes. Remove the old Ume keychain items and reopen Ume.")
+        throw StoreError.message("Umete found protected data from an older build that macOS no longer recognizes. Remove the old Umete keychain items and reopen Umete.")
     }
     guard legacyStatus == errSecItemNotFound else {
-        throw StoreError.message("Apple Keychain could not read Ume's older protected data.")
+        throw StoreError.message("Apple Keychain could not read Umete's older protected data.")
     }
 #endif
 
@@ -165,7 +165,7 @@ enum AIDebugLogStore {
 
     private static func fileURL() throws -> URL {
         guard let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) else {
-            throw StoreError.message("Ume could not access its shared data container.")
+            throw StoreError.message("Umete could not access its shared data container.")
         }
         return container.appendingPathComponent("ai-debug.log", isDirectory: false)
     }
@@ -283,8 +283,8 @@ enum SupportDiagnostics {
         return [
             "Hi Justin,",
             "",
-            "I'm reporting a bug in Ume.",
-            "Ume version: \(version)",
+            "I'm reporting a bug in Umete.",
+            "Umete version: \(version)",
             "Platform: \(platform)",
             "Saved answers: \(answersStatus)",
             "",
@@ -304,7 +304,7 @@ enum AnswerStore {
 
     private static func fileURL() throws -> URL {
         guard let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) else {
-            throw StoreError.message("Ume could not access its shared data container.")
+            throw StoreError.message("Umete could not access its shared data container.")
         }
         return container.appendingPathComponent("answers.encrypted", isDirectory: false)
     }

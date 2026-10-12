@@ -14,9 +14,9 @@ function parsedEmail(log, options = {}) {
 test("drafts a reviewable support email with log and app context", () => {
   const email = parsedEmail("[2026-08-12] FILL ERROR\nSomething failed", { version: "0.1.6", platform: "mac" });
   assert.equal(email.recipient, "justin.garcia@gmail.com");
-  assert.equal(email.subject, "Ume debug logs");
+  assert.equal(email.subject, "Umete debug logs");
   assert.match(email.body, /Hi Justin,/);
-  assert.match(email.body, /Ume version: 0\.1\.6/);
+  assert.match(email.body, /Umete version: 0\.1\.6/);
   assert.match(email.body, /Platform: mac/);
   assert.match(email.body, /FILL ERROR/);
 });
@@ -31,5 +31,5 @@ test("limits mailto size and keeps the newest log content", () => {
   assert.doesNotMatch(email.body, /old-/);
   assert.match(email.body, /-new/);
   assert.match(email.body, /most recent 10 characters/);
-  assert.match(email.body, /use Copy in Ume for the complete log/);
+  assert.match(email.body, /use Copy in Umete for the complete log/);
 });

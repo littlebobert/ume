@@ -177,7 +177,7 @@ final class CloudSync {
         case .restricted:
             return "iCloud is restricted on this device, so answers stay here."
         default:
-            return "iCloud is unavailable right now. Ume will retry."
+            return "iCloud is unavailable right now. Umete will retry."
         }
         let state = SyncState.load()
         if let error = state.lastError, !error.isEmpty { return "Sync problem: \(error)" }
@@ -358,7 +358,7 @@ final class CloudSync {
             case .networkUnavailable, .networkFailure: return "You appear to be offline."
             case .notAuthenticated: return "Sign in to iCloud to sync."
             case .quotaExceeded: return "Your iCloud storage is full."
-            case .serviceUnavailable, .requestRateLimited, .zoneBusy: return "iCloud is busy. Ume will retry."
+            case .serviceUnavailable, .requestRateLimited, .zoneBusy: return "iCloud is busy. Umete will retry."
             default: break
             }
         }

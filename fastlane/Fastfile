@@ -105,7 +105,7 @@ def signing_assets(type:, platform:, identifiers:, readonly:, api_key: app_store
 end
 
 platform :ios do
-  desc "Create or repair Ume's App Store signing assets from a trusted Mac"
+  desc "Create or repair Umete's App Store signing assets from a trusted Mac"
   lane :bootstrap_signing do
     UI.user_error!("Signing bootstrap must run from a trusted local Mac, not CI.") if is_ci
     signing_assets(
@@ -116,7 +116,7 @@ platform :ios do
     )
   end
 
-  desc "Install Ume's existing App Store signing assets without changing them"
+  desc "Install Umete's existing App Store signing assets without changing them"
   lane :sync_signing do
     signing_assets(
       type: "appstore",
@@ -162,7 +162,7 @@ platform :ios do
         clean: true,
         export_method: "app-store",
         output_directory: "build/ios",
-        output_name: "Ume-#{version}.ipa",
+        output_name: "Umete-#{version}.ipa",
         xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{build_number}"
       )
     end
@@ -176,19 +176,23 @@ platform :ios do
 end
 
 platform :mac do
-  desc "Create or repair Ume's Developer ID signing assets from a trusted Mac"
+  desc "Create or repair Umete's Developer ID signing assets from a trusted Mac"
   lane :bootstrap_signing do
     UI.user_error!("Signing bootstrap must run from a trusted local Mac, not CI.") if is_ci
+    # Creating a Developer ID certificate needs an Apple ID sign-in, but once the
+    # certificate exists the profiles can be created with the API key, which
+    # avoids Apple's web login. Use the key when it is in the environment.
+    has_api_key = %w[APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_PRIVATE_KEY_BASE64].all? { |name| !ENV[name].to_s.empty? }
     signing_assets(
       type: "developer_id",
       platform: "macos",
       identifiers: MACOS_BUNDLE_IDENTIFIERS,
       readonly: false,
-      api_key: nil
+      api_key: has_api_key ? app_store_connect_key : nil
     )
   end
 
-  desc "Install Ume's existing Developer ID signing assets without changing them"
+  desc "Install Umete's existing Developer ID signing assets without changing them"
   lane :sync_signing do
     signing_assets(
       type: "developer_id",
@@ -231,7 +235,7 @@ platform :mac do
         clean: true,
         export_method: "developer-id",
         output_directory: "build/macos",
-        output_name: "Ume",
+        output_name: "Umete",
         xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{build_number}"
       )
     end

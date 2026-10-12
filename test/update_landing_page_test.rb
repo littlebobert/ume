@@ -10,7 +10,7 @@ class UpdateLandingPageTest < Minitest::Test
   def fixture
     <<~HTML
       <a data-ume-download href="old.dmg">Download</a>
-      <span data-ume-version>0.1.0</span>
+      <span data-ume-version data-label-en="(version 0.1.0)" data-label-ja="（バージョン 0.1.0）">0.1.0</span>
               <!-- ume-changelog:start -->
               <h2 data-ume-release="0.1.0">0.1.0</h2>
               <!-- ume-changelog:end -->
@@ -37,7 +37,7 @@ class UpdateLandingPageTest < Minitest::Test
 
       html = File.read(path)
       assert_includes html, "releases/download/v0.1.1/App.dmg"
-      assert_includes html, "<span data-ume-version>0.1.1</span>"
+      assert_includes html, "<span data-ume-version data-label-en=\"(version 0.1.1)\" data-label-ja=\"（バージョン 0.1.1）\">0.1.1</span>"
       refute_includes html, "</span>0.1.1</span>"
       assert_includes html, 'data-ume-release="0.1.1"'
       assert_includes html, 'data-label-en="Fixed &lt;select&gt; fields."'
@@ -56,6 +56,18 @@ class UpdateLandingPageTest < Minitest::Test
       html = File.read(path, encoding: "UTF-8")
       assert_includes html, "ダウンロード"
       assert_includes html, "選択欄を修正しました。"
+    end
+  end
+
+  def test_tolerates_a_page_without_a_version_label
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "ume.html")
+      File.write(path, fixture.sub(/<span data-ume-version[^>]*>[^<]*<\/span>\n/, ""))
+      _stdout, stderr, status = run_update(path)
+      assert status.success?, stderr
+      html = File.read(path)
+      refute_includes html, "data-ume-version"
+      assert_includes html, 'data-ume-release="0.1.1"'
     end
   end
 

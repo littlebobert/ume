@@ -3,7 +3,7 @@
 #
 # Usage: scripts/run-macos.sh [extra xcodebuild arguments]
 #
-# After it launches, enable Ume in Safari > Settings > Extensions. If Safari
+# After it launches, enable Umete in Safari > Settings > Extensions. If Safari
 # will not load a development build, use Develop > Allow Unsigned Extensions.
 set -euo pipefail
 
@@ -48,4 +48,4 @@ fi
 
 echo "Launching $app"
 open "$app"
-echo "Done. Enable Ume in Safari > Settings > Extensions, then open http://localhost:8000 (npm run test-form)."
+echo "Done. Enable Umete in Safari > Settings > Extensions, then open http://localhost:8000 (npm run test-form)."

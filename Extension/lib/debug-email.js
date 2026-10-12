@@ -20,15 +20,15 @@
     const body = [
       "Hi Justin,",
       "",
-      "I'm sending Ume extension debug logs for review.",
-      `Ume version: ${version}`,
+      "I'm sending Umete extension debug logs for review.",
+      `Umete version: ${version}`,
       `Platform: ${platform}`,
-      ...(truncated ? ["", `The log exceeded the email limit. The most recent ${maxLogLength.toLocaleString("en-US")} characters are included; use Copy in Ume for the complete log.`] : []),
+      ...(truncated ? ["", `The log exceeded the email limit. The most recent ${maxLogLength.toLocaleString("en-US")} characters are included; use Copy in Umete for the complete log.`] : []),
       "",
-      "--- Ume Debug Logs ---",
+      "--- Umete Debug Logs ---",
       includedLog
     ].join("\r\n");
-    return `mailto:${recipient}?subject=${encodeURIComponent("Ume debug logs")}&body=${encodeURIComponent(body)}`;
+    return `mailto:${recipient}?subject=${encodeURIComponent("Umete debug logs")}&body=${encodeURIComponent(body)}`;
   }
 
   return { buildDebugEmail, DEFAULT_MAX_LOG_LENGTH };

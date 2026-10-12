@@ -1,4 +1,4 @@
-name: Release Ume
+name: Release Umete
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
         required: false
         type: string
       changelog_en:
-        description: Short English changelog note for GitHub and the Ume landing page.
+        description: Short English changelog note for GitHub and the Umete landing page.
         required: false
         type: string
       changelog_ja:
@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   release:
-    name: Sign and release Ume
+    name: Sign and release Umete
     runs-on: macos-26
     timeout-minutes: 60
     environment: release
@@ -81,7 +81,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "build_number=${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
-          echo "Releasing Ume $version"
+          echo "Releasing Umete $version"
 
       - name: Verify publication credentials
         env:
@@ -148,10 +148,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          app_path="build/macos/Ume.app"
-          submission_zip="$RUNNER_TEMP/Ume-notarization.zip"
-          dmg_root="$RUNNER_TEMP/Ume-dmg"
-          release_dmg="build/Ume-$VERSION-macOS.dmg"
+          app_path="build/macos/Umete.app"
+          submission_zip="$RUNNER_TEMP/Umete-notarization.zip"
+          dmg_root="$RUNNER_TEMP/Umete-dmg"
+          release_dmg="build/Umete-$VERSION-macOS.dmg"
           api_key_path="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
 
           test -d "$app_path"
@@ -169,21 +169,21 @@ jobs:
           spctl --assess --type execute --verbose=2 "$app_path"
 
           mkdir -p "$dmg_root"
-          ditto "$app_path" "$dmg_root/Ume.app"
-          ln -s /Applications "$dmg_root/Applications - Drag Ume Here"
-          cat > "$dmg_root/READ ME - Install Ume.txt" <<'INSTRUCTIONS'
-          Install Ume
+          ditto "$app_path" "$dmg_root/Umete.app"
+          ln -s /Applications "$dmg_root/Applications - Drag Umete Here"
+          cat > "$dmg_root/READ ME - Install Umete.txt" <<'INSTRUCTIONS'
+          Install Umete
           ===========
 
-          1. Drag Ume.app onto "Applications - Drag Ume Here".
-          2. Open Ume from your Applications folder.
-          3. Follow Ume's setup steps to enable the extension in Safari.
+          1. Drag Umete.app onto "Applications - Drag Umete Here".
+          2. Open Umete from your Applications folder.
+          3. Follow Umete's setup steps to enable the extension in Safari.
 
-          Ume's Safari extension may not appear or open correctly until the app
+          Umete's Safari extension may not appear or open correctly until the app
           has been moved to Applications and reopened from there.
           INSTRUCTIONS
           diskutil image create from \
-            --volumeName "Install Ume" \
+            --volumeName "Install Umete" \
             --format UDZO \
             "$dmg_root" \
             "$release_dmg"
@@ -203,7 +203,7 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: Ume ${{ steps.version.outputs.version }}
+          name: Umete ${{ steps.version.outputs.version }}
           body: ${{ steps.changelog.outputs.release_body }}
           generate_release_notes: true
           fail_on_unmatched_files: true
@@ -217,7 +217,7 @@ jobs:
           token: ${{ secrets.WEBSITE_REPO_TOKEN }}
           path: website
 
-      - name: Update and publish Ume landing page and appcast
+      - name: Update and publish Umete landing page and appcast
         env:
           VERSION: ${{ steps.version.outputs.version }}
           TAG: ${{ steps.version.outputs.tag }}
@@ -230,20 +230,20 @@ jobs:
           ruby scripts/update_landing_page.rb \
             --file website/ume.html \
             --version "$VERSION" \
-            --download-url "https://github.com/littlebobert/ume/releases/download/$TAG/Ume-$VERSION-macOS.dmg" \
+            --download-url "https://github.com/littlebobert/umete/releases/download/$TAG/Umete-$VERSION-macOS.dmg" \
             --note-en "$NOTE_EN" \
             --note-ja "$NOTE_JA"
 
           sparkle_archive="$RUNNER_TEMP/Sparkle-2.9.5.zip"
           sparkle_dir="$RUNNER_TEMP/Sparkle-2.9.5"
-          updates_dir="$RUNNER_TEMP/Ume-sparkle-updates"
+          updates_dir="$RUNNER_TEMP/Umete-sparkle-updates"
           curl -L --fail --silent --show-error \
             https://github.com/sparkle-project/Sparkle/releases/download/2.9.5/Sparkle-for-Swift-Package-Manager.zip \
             -o "$sparkle_archive"
           printf '34b9b2071f3de0012eca3faa3a9290bb94e62131e9a74f6dc91514a000097a6c  %s\n' "$sparkle_archive" | shasum -a 256 -c -
           mkdir -p "$sparkle_dir" "$updates_dir"
           unzip -q "$sparkle_archive" -d "$sparkle_dir"
-          cp "$DMG_PATH" "$updates_dir/Ume-$VERSION-macOS.dmg"
+          cp "$DMG_PATH" "$updates_dir/Umete-$VERSION-macOS.dmg"
           if [[ -f website/ume-appcast.xml ]]; then
             cp website/ume-appcast.xml "$updates_dir/ume-appcast.xml"
           fi
@@ -254,10 +254,10 @@ jobs:
             --note-ja "$NOTE_JA"
           printf '%s' "$SPARKLE_PRIVATE_KEY" | "$sparkle_dir/bin/generate_appcast" \
             --ed-key-file - \
-            --download-url-prefix "https://github.com/littlebobert/ume/releases/download/$TAG/" \
-            --release-notes-url-prefix https://littlebobert.github.io/ \
-            --full-release-notes-url https://littlebobert.github.io/ume.html#changelog \
-            --link https://littlebobert.github.io/ume.html \
+            --download-url-prefix "https://github.com/littlebobert/umete/releases/download/$TAG/" \
+            --release-notes-url-prefix https://umete.jp/ \
+            --full-release-notes-url https://umete.jp/#changelog \
+            --link https://umete.jp/ \
             --embed-release-notes \
             --maximum-versions 10 \
             --maximum-deltas 0 \
@@ -265,19 +265,19 @@ jobs:
             "$updates_dir"
           cp "$updates_dir/ume-appcast.xml" website/ume-appcast.xml
           website_notes=()
-          for note in "$updates_dir"/Ume-"$VERSION"-macOS.*.md; do
+          for note in "$updates_dir"/Umete-"$VERSION"-macOS.*.md; do
             [[ -f "$note" ]] || continue
             note_name="${note##*/}"
             cp "$note" "website/$note_name"
             website_notes+=("$note_name")
           done
 
-          git -C website config user.name "Ume Release Bot"
+          git -C website config user.name "Umete Release Bot"
           git -C website config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C website add ume.html ume-appcast.xml "${website_notes[@]}"
           if git -C website diff --cached --quiet; then
             echo "Landing page is already current."
           else
-            git -C website commit -m "Update Ume for $TAG"
+            git -C website commit -m "Update Umete for $TAG"
             git -C website push origin HEAD:master
           fi

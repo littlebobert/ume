@@ -24,7 +24,7 @@ private enum SafariSettingsError: LocalizedError {
     case appNotInApplications
 
     var errorDescription: String? {
-        "Move Ume to Applications, reopen it, then try again."
+        "Move Umete to Applications, reopen it, then try again."
     }
 }
 
@@ -557,9 +557,9 @@ final class DebugLogViewController: NSViewController {
         if !log.isEmpty {
             textView.string = log
         } else if let error = AIDebugLogStore.lastError {
-            textView.string = "Ume attempted to write the AI debug log, but it failed:\n\n\(error)"
+            textView.string = "Umete attempted to write the AI debug log, but it failed:\n\n\(error)"
         } else if let attempt = AIDebugLogStore.lastAttempt {
-            textView.string = "Ume attempted to write the AI debug log at \(attempt.formatted()), but no entries could be read."
+            textView.string = "Umete attempted to write the AI debug log at \(attempt.formatted()), but no entries could be read."
         } else if !AIDebugLogStore.isEnabled {
             textView.string = "AI debug logging is disabled. Enable it in AI Provider settings, then fill a form again."
         } else {
@@ -634,7 +634,7 @@ final class OnboardingWindowController: NSWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "Get Started with Ume"
+        window.title = "Get Started with Umete"
         window.isReleasedWhenClosed = false
         window.contentViewController = OnboardingViewController(completion: completion)
         window.center()
@@ -745,7 +745,7 @@ final class OnboardingViewController: NSViewController {
             icon.heightAnchor.constraint(equalToConstant: 82)
         ])
         return centeredPage(
-            views: [icon, heading("Welcome to Ume"), body("Ume remembers answers you choose and fills similar web forms automatically.")],
+            views: [icon, heading("Welcome to Umete"), body("Umete remembers answers you choose and fills similar web forms automatically.")],
             spacing: 13
         )
     }
@@ -771,7 +771,7 @@ final class OnboardingViewController: NSViewController {
         form.column(at: 0).xPlacement = .trailing
         form.column(at: 0).width = 80
         form.column(at: 1).width = 330
-        return centeredPage(views: [heading("Connect an AI provider"), body("Your personal saved answers are never sent to the API provider. Ume only sends info about the form you’re on, like its field labels."), form, body("Your API key is stored in Apple Keychain."), status], spacing: 10)
+        return centeredPage(views: [heading("Connect an AI provider"), body("Your personal saved answers are never sent to the API provider. Umete only sends info about the form you’re on, like its field labels."), form, body("Your API key is stored in Apple Keychain."), status], spacing: 10)
     }
 
     private func safariPage() -> NSView {
@@ -788,7 +788,7 @@ final class OnboardingViewController: NSViewController {
         safariSettingsButton.action = #selector(openSafariSettings)
         safariSettingsButton.bezelStyle = .rounded
         safariSettingsButton.keyEquivalent = attemptedSafariSettings ? "" : "\r"
-        return centeredPage(views: [safariIcon, heading("Enable Ume in Safari"), safariSettingsButton, body("If the button doesn’t work, open Safari → Settings → Extensions and turn on Ume."), body("Return here after Ume is enabled.")], spacing: 12)
+        return centeredPage(views: [safariIcon, heading("Enable Umete in Safari"), safariSettingsButton, body("If the button doesn’t work, open Safari → Settings → Extensions and turn on Umete."), body("Return here after Umete is enabled.")], spacing: 12)
     }
 
     private func readyPage() -> NSView {
@@ -801,7 +801,7 @@ final class OnboardingViewController: NSViewController {
             image.widthAnchor.constraint(equalToConstant: 62),
             image.heightAnchor.constraint(equalToConstant: 62)
         ])
-        return centeredPage(views: [image, heading("Ume is ready"), body("Use Remember my answers on a completed form. Later, choose Fill this form to reuse them.")], spacing: 14)
+        return centeredPage(views: [image, heading("Umete is ready"), body("Use Remember my answers on a completed form. Later, choose Fill this form to reuse them.")], spacing: 14)
     }
 
     private func centeredPage(views: [NSView], spacing: CGFloat) -> NSView {
@@ -1039,8 +1039,8 @@ final class GeneralSettingsViewController: NSViewController {
                 guard let self else { return }
                 let isEnabled = state?.isEnabled == true
                 self.stateLabel.stringValue = isEnabled
-                    ? "Ume is enabled and ready in Safari."
-                    : "Ume is disabled. Enable it in Safari Settings → Extensions."
+                    ? "Umete is enabled and ready in Safari."
+                    : "Umete is disabled. Enable it in Safari Settings → Extensions."
                 self.stateIcon.image = NSImage(
                     systemSymbolName: isEnabled ? "checkmark.circle.fill" : "exclamationmark.circle.fill",
                     accessibilityDescription: isEnabled ? "Enabled" : "Disabled"
@@ -1306,7 +1306,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         buttons.orientation = .horizontal
         buttons.spacing = 8
 
-        let stack = paneStack(title: "Saved Data", description: "Double-click a label or value to edit; click a type to change it. Phone, Address, and Contact use structured editors so Ume can fill related fields automatically. Add each doctor or emergency contact once and Ume fills their name, phone, and other details wherever a form asks for them.")
+        let stack = paneStack(title: "Saved Data", description: "Double-click a label or value to edit; click a type to change it. Phone, Address, and Contact use structured editors so Umete can fill related fields automatically. Add each doctor or emergency contact once and Umete fills their name, phone, and other details wherever a form asks for them.")
         stack.addArrangedSubview(scroll)
         stack.addArrangedSubview(buttons)
         view.addSubview(stack)

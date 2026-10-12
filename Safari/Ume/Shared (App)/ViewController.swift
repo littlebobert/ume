@@ -40,7 +40,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
                     ? "All saved answers were deleted from this device and will be removed from your other devices. Your AI settings were kept."
                     : "All saved answers were deleted. Your AI settings were kept.")
             } catch {
-                sendResult(ok: false, message: "Ume could not delete all saved answers.")
+                sendResult(ok: false, message: "Umete could not delete all saved answers.")
             }
         case "set-sync-enabled":
             CloudSync.isEnabled = body["enabled"] as? Bool ?? true
@@ -78,7 +78,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
         do {
             try SettingsStore.save(AISettings(provider: provider, model: model, apiKey: key))
             if completesOnboarding { OnboardingStore.isComplete = true }
-            sendResult(ok: true, message: completesOnboarding ? "Ume is ready to use in Safari." : "Settings saved securely in Apple Keychain.")
+            sendResult(ok: true, message: completesOnboarding ? "Umete is ready to use in Safari." : "Settings saved securely in Apple Keychain.")
         } catch {
             sendResult(ok: false, message: error.localizedDescription)
         }

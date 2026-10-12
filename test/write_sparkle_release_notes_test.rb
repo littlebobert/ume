@@ -21,21 +21,21 @@ class WriteSparkleReleaseNotesTest < Minitest::Test
     Dir.mktmpdir do |directory|
       _out, error, status = run_write(directory)
       assert status.success?, error
-      english = "# Ume 0.1.12\n\nFixed Add.\n"
-      assert_equal english, File.read(File.join(directory, "Ume-0.1.12-macOS.md"))
-      assert_equal english, File.read(File.join(directory, "Ume-0.1.12-macOS.en.md"))
-      assert_equal "# Ume 0.1.12\n\n追加を修正しました。\n", File.read(File.join(directory, "Ume-0.1.12-macOS.ja.md"))
+      english = "# Umete 0.1.12\n\nFixed Add.\n"
+      assert_equal english, File.read(File.join(directory, "Umete-0.1.12-macOS.md"))
+      assert_equal english, File.read(File.join(directory, "Umete-0.1.12-macOS.en.md"))
+      assert_equal "# Umete 0.1.12\n\n追加を修正しました。\n", File.read(File.join(directory, "Umete-0.1.12-macOS.ja.md"))
     end
   end
 
   def test_omits_japanese_file_when_translation_is_blank
     Dir.mktmpdir do |directory|
-      File.write(File.join(directory, "Ume-0.1.12-macOS.ja.md"), "stale")
+      File.write(File.join(directory, "Umete-0.1.12-macOS.ja.md"), "stale")
       _out, error, status = run_write(directory, note_ja: "")
       assert status.success?, error
-      assert File.exist?(File.join(directory, "Ume-0.1.12-macOS.md"))
-      assert File.exist?(File.join(directory, "Ume-0.1.12-macOS.en.md"))
-      refute File.exist?(File.join(directory, "Ume-0.1.12-macOS.ja.md"))
+      assert File.exist?(File.join(directory, "Umete-0.1.12-macOS.md"))
+      assert File.exist?(File.join(directory, "Umete-0.1.12-macOS.en.md"))
+      refute File.exist?(File.join(directory, "Umete-0.1.12-macOS.ja.md"))
     end
   end
 end

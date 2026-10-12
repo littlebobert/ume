@@ -46,13 +46,16 @@ html.gsub!(/(<span\b[^>]*\bdata-ume-version\b[^>]*>)[^<]*(<\/span>)/) do
   prefix = match[1].dup
   suffix = match[2].dup
   version_count += 1
+  # The language switcher re-renders the span from its data-label-* attributes,
+  # so the version must be updated there as well as in the text node.
+  prefix.gsub!(/(data-label-(?:en|ja)=")([^"]*?)\d+\.\d+\.\d+([^"]*")/) { "#{$1}#{$2}#{version}#{$3}" }
   "#{prefix}#{version}#{suffix}"
 end
-abort "No data-ume-version element found in #{path}." if version_count.zero?
+warn "No data-ume-version element found in #{path}; skipping the version label." if version_count.zero?
 
 start_marker = "        <!-- ume-changelog:start -->"
 end_marker = "        <!-- ume-changelog:end -->"
-abort "Missing Ume changelog markers in #{path}." unless html.include?(start_marker) && html.include?(end_marker)
+abort "Missing Umete changelog markers in #{path}." unless html.include?(start_marker) && html.include?(end_marker)
 
 escaped_version = CGI.escapeHTML(version)
 unless note_en.empty? || html.include?("data-ume-release=\"#{escaped_version}\"")
@@ -76,5 +79,5 @@ if html == original
   puts "Landing page is already current."
 else
   File.write(path, html, encoding: "UTF-8")
-  puts "Updated #{path} for Ume #{version}."
+  puts "Updated #{path} for Umete #{version}."
 end

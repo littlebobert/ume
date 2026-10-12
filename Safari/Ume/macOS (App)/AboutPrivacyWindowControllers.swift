@@ -3,19 +3,19 @@ import AppKit
 final class AboutWindowController: NSWindowController {
     init(openPrivacy: @escaping () -> Void) {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 310, height: 292), styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
-        window.title = "About Ume"
+        window.title = "About Umete"
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
         window.center()
 
-        let windowTitle = NSTextField(labelWithString: "About Ume")
+        let windowTitle = NSTextField(labelWithString: "About Umete")
         windowTitle.font = .systemFont(ofSize: 13, weight: .semibold)
         windowTitle.alignment = .center
         let icon = NSImageView(image: NSApp.applicationIconImage)
         icon.imageScaling = .scaleProportionallyUpOrDown
         icon.translatesAutoresizingMaskIntoConstraints = false
-        let name = NSTextField(labelWithString: "Ume")
+        let name = NSTextField(labelWithString: "Umete")
         name.font = .systemFont(ofSize: 26, weight: .bold)
         name.alignment = .center
         let version = NSTextField(labelWithString: "Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")")
@@ -74,18 +74,18 @@ final class AboutWindowController: NSWindowController {
 final class PrivacyWindowController: NSWindowController {
     init() {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 315), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-        window.title = "Ume Privacy"
+        window.title = "Umete Privacy"
         window.isReleasedWhenClosed = false
         window.minSize = NSSize(width: 500, height: 300)
         window.center()
 
         let title = NSTextField(labelWithString: "Privacy")
         title.font = .systemFont(ofSize: 24, weight: .bold)
-        let intro = NSTextField(wrappingLabelWithString: "Ume keeps your actual answers encrypted in its private app storage.")
+        let intro = NSTextField(wrappingLabelWithString: "Umete keeps your actual answers encrypted in its private app storage.")
         intro.textColor = .secondaryLabelColor
         let details = [
-            ("Encrypted answer storage", "Saved values are encrypted in Ume’s shared app container. The encryption key is protected by Apple Keychain."),
-            ("AI receives field context, not answers", "Ume may send labels, field descriptions, field types, form group headings, and option labels. Saved answer values are never sent to your selected AI provider."),
+            ("Encrypted answer storage", "Saved values are encrypted in Umete’s shared app container. The encryption key is protected by Apple Keychain."),
+            ("AI receives field context, not answers", "Umete may send labels, field descriptions, field types, form group headings, and option labels. Saved answer values are never sent to your selected AI provider."),
             ("You stay in control", "You can edit or delete your saved answers at any time.")
         ]
         let stack = NSStackView(views: [title, intro])
@@ -144,7 +144,7 @@ private final class LinkTarget: NSObject {
         components.scheme = "mailto"
         components.path = "justin.garcia@gmail.com"
         components.queryItems = [
-            URLQueryItem(name: "subject", value: "Ume Bug Report"),
+            URLQueryItem(name: "subject", value: "Umete Bug Report"),
             URLQueryItem(name: "body", value: body)
         ]
         if let url = components.url { NSWorkspace.shared.open(url) }

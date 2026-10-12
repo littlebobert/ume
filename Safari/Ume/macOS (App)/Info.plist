@@ -7,7 +7,7 @@
 	<key>UmeKeychainAccessGroup</key>
 	<string>$(AppIdentifierPrefix)com.justin.ume.shared</string>
 	<key>SUFeedURL</key>
-	<string>https://littlebobert.github.io/ume-appcast.xml</string>
+	<string>https://umete.jp/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>Gjz4eaBW734cY7idF99PyqOWtycJBF4i8wSAUXg2p+0=</string>
 	<key>SURequireSignedFeed</key>

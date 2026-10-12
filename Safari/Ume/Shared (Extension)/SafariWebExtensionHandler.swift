@@ -35,7 +35,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         case "UME_OPEN_APP", "UME_OPEN_SETTINGS":
             let destination = type == "UME_OPEN_SETTINGS" ? "settings" : "onboarding"
             guard let url = URL(string: "ume://\(destination)") else {
-                complete(context, ["ok": false, "error": "Ume could not open the companion app."])
+                complete(context, ["ok": false, "error": "Umete could not open the companion app."])
                 return
             }
             #if os(macOS)
@@ -44,7 +44,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             context.open(url) { [weak self] opened in
                 self?.complete(context, opened
                     ? ["ok": true]
-                    : ["ok": false, "error": "Ume Settings could not be opened."])
+                    : ["ok": false, "error": "Umete Settings could not be opened."])
             }
             #endif
         case "UME_GET_ANSWERS":
@@ -92,7 +92,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             .deletingLastPathComponent()
 
         guard appURL.pathExtension == "app" else {
-            complete(context, ["ok": false, "error": "Ume Settings could not be opened."])
+            complete(context, ["ok": false, "error": "Umete Settings could not be opened."])
             return
         }
 
@@ -101,7 +101,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         NSWorkspace.shared.open([url], withApplicationAt: appURL, configuration: configuration) { [weak self] app, _ in
             self?.complete(context, app != nil
                 ? ["ok": true]
-                : ["ok": false, "error": "Ume Settings could not be opened."])
+                : ["ok": false, "error": "Umete Settings could not be opened."])
         }
     }
     #endif
@@ -121,7 +121,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
     private func mapFields(_ payload: [String: Any]) async throws -> [[String: String]] {
         guard let settings = SettingsStore.load(), ["openai", "anthropic"].contains(settings.provider), !settings.apiKey.isEmpty else {
-            throw MappingError.message("Open the Ume app and add an OpenAI or Anthropic API key first.")
+            throw MappingError.message("Open the Umete app and add an OpenAI or Anthropic API key first.")
         }
         guard let rawSaved = payload["saved"] as? [[String: Any]],
               let rawFields = payload["fields"] as? [[String: Any]],

@@ -20,10 +20,10 @@ abort "Version must use X.Y.Z format." unless version.match?(/\A\d+\.\d+\.\d+\z/
 abort "Notes directory is missing." unless File.directory?(directory)
 
 def write_notes(path, version, body)
-  File.write(path, "# Ume #{version}\n\n#{body}\n".sub(/\n+\z/, "\n"))
+  File.write(path, "# Umete #{version}\n\n#{body}\n".sub(/\n+\z/, "\n"))
 end
 
-basename = File.join(directory, "Ume-#{version}-macOS")
+basename = File.join(directory, "Umete-#{version}-macOS")
 write_notes("#{basename}.md", version, note_en)
 write_notes("#{basename}.en.md", version, note_en)
 if note_ja.empty?

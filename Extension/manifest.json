@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Ume",
+  "name": "Umete",
   "version": "0.1.0",
   "description": "Autofill everything, securely.",
   "permissions": ["storage", "activeTab", "nativeMessaging", "scripting"],
@@ -20,7 +20,7 @@
     "512": "icons/icon-512.png"
   },
   "action": {
-    "default_title": "Ume",
+    "default_title": "Umete",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon-16.png",

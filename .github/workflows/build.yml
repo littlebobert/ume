@@ -30,13 +30,13 @@ jobs:
             sdk: iphonesimulator
             destination: generic/platform=iOS Simulator
             products-directory: Debug-iphonesimulator
-            artifact-name: Ume-iOS-Simulator
+            artifact-name: Umete-iOS-Simulator
           - name: macOS
             scheme: Ume (macOS)
             sdk: macosx
             destination: generic/platform=macOS
             products-directory: Debug
-            artifact-name: Ume-macOS
+            artifact-name: Umete-macOS
 
     steps:
       - name: Check out repository
@@ -77,7 +77,7 @@ jobs:
           ARCHIVE_PATH: ${{ runner.temp }}/${{ matrix.artifact-name }}.zip
         run: |
           ditto -c -k --sequesterRsrc --keepParent \
-            "$DERIVED_DATA/Build/Products/${{ matrix.products-directory }}/Ume.app" \
+            "$DERIVED_DATA/Build/Products/${{ matrix.products-directory }}/Umete.app" \
             "$ARCHIVE_PATH"
 
       - name: Upload ${{ matrix.name }} artifact

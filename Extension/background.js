@@ -47,7 +47,7 @@
   }
 
   async function clearBadge(tabId) {
-    await setBadge(tabId, "", "Ume");
+    await setBadge(tabId, "", "Umete");
   }
 
   async function handleFields(tabId, fields) {
@@ -55,9 +55,9 @@
     const answers = await savedAnswers();
     const count = answers.length ? matchCount(answers, fields) : 0;
     if (count) {
-      await setBadge(tabId, String(count), `Ume can fill ${count} field${count === 1 ? "" : "s"} on this page`);
+      await setBadge(tabId, String(count), `Umete can fill ${count} field${count === 1 ? "" : "s"} on this page`);
     } else if (fields.length >= 3) {
-      await setBadge(tabId, "•", "This page has a form. Fill it once, then ask Ume to remember it.");
+      await setBadge(tabId, "•", "This page has a form. Fill it once, then ask Umete to remember it.");
     } else {
       await clearBadge(tabId);
     }

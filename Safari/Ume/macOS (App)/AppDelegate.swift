@@ -53,7 +53,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showSettingsContent(in window: NSWindow) {
-        window.title = "Ume Settings"
+        window.title = "Umete Settings"
         window.contentViewController = SettingsTabViewController()
         window.contentMinSize = NSSize(width: 720, height: 500)
         window.setContentSize(NSSize(width: 760, height: 620))
@@ -115,7 +115,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func installAboutAction() {
-        guard let about = NSApp.mainMenu?.items.first?.submenu?.items.first(where: { $0.title == "About Ume" }) else { return }
+        guard let about = NSApp.mainMenu?.items.first?.submenu?.items.first(where: { $0.title == "About Umete" }) else { return }
         about.target = self
         about.action = #selector(showAbout(_:))
     }

@@ -47,6 +47,10 @@ button.primary:hover:not(:disabled) { border-color: #8f1f34; background: #a8253e
 #status { margin: 10px 2px 0; color: #675a54; font-size: 12px; line-height: 1.4; }
 #status:empty { display: none; }
 #status.error { color: #a01f35; }
+.option { margin-top: 12px; border-top: 1px solid #eaded7; padding-top: 11px; }
+.option-row { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.35; cursor: pointer; }
+.option-row input { margin: 1px 0 0; flex: 0 0 auto; }
+.option-note { margin: 6px 0 0 24px; color: #7b6e68; font-size: 10px; line-height: 1.35; }
 footer { display: flex; align-items: center; justify-content: flex-end; margin-top: 12px; border-top: 1px solid #eaded7; padding-top: 11px; color: #7b6e68; font-size: 11px; }
 .footer-buttons { display: flex; gap: 6px; }
 .settings-button {
@@ -78,7 +82,8 @@ footer { display: flex; align-items: center; justify-content: flex-end; margin-t
 
 @media (prefers-color-scheme: dark) {
   :root { background: #211c1a; color: #f7efeb; }
-  header p, #status, footer, .activity, .debug-log-note { color: #bdaea7; }
+  header p, #status, footer, .activity, .debug-log-note, .option-note { color: #bdaea7; }
+  .option { border-color: #4b3f3a; }
   .get-started { border-color: #4b3f3a; background: #2c2522; color: #c8bab3; }
   .get-started h2 { color: #f7efeb; }
   .get-started p { color: #bdaea7; }

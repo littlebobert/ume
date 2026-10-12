@@ -40,12 +40,16 @@
 		D0A1D335301B98AE0082FD16 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32F301B98AE0082FD16 /* lib */; };
 		D0A1D336301B98AE0082FD16 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D330301B98AE0082FD16 /* popup.css */; };
 		D0A1D337301B98AE0082FD16 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D331301B98AE0082FD16 /* content.js */; };
+		A10000220000000000000001 /* detect.js in Resources */ = {isa = PBXBuildFile; fileRef = A10000200000000000000001 /* detect.js */; };
+		A10000240000000000000001 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = A10000210000000000000001 /* background.js */; };
 		D0A1D338301B98AE0082FD16 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32C301B98AE0082FD16 /* popup.js */; };
 		D0A1D339301B98AE0082FD16 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32D301B98AE0082FD16 /* popup.html */; };
 		D0A1D33A301B98AE0082FD16 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32E301B98AE0082FD16 /* manifest.json */; };
 		D0A1D33B301B98AE0082FD16 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D32F301B98AE0082FD16 /* lib */; };
 		D0A1D33C301B98AE0082FD16 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D330301B98AE0082FD16 /* popup.css */; };
 		D0A1D33D301B98AE0082FD16 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = D0A1D331301B98AE0082FD16 /* content.js */; };
+		A10000230000000000000001 /* detect.js in Resources */ = {isa = PBXBuildFile; fileRef = A10000200000000000000001 /* detect.js */; };
+		A10000250000000000000001 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = A10000210000000000000001 /* background.js */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -122,6 +126,8 @@
 		D0A1D32F301B98AE0082FD16 /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = ../../../Extension/lib; sourceTree = "<group>"; };
 		D0A1D330301B98AE0082FD16 /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; name = popup.css; path = ../../../Extension/popup.css; sourceTree = "<group>"; };
 		D0A1D331301B98AE0082FD16 /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = content.js; path = ../../../Extension/content.js; sourceTree = "<group>"; };
+		A10000200000000000000001 /* detect.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = detect.js; path = ../../../Extension/detect.js; sourceTree = "<group>"; };
+		A10000210000000000000001 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = ../../../Extension/background.js; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -261,6 +267,8 @@
 				D0A1D32F301B98AE0082FD16 /* lib */,
 				D0A1D330301B98AE0082FD16 /* popup.css */,
 				D0A1D331301B98AE0082FD16 /* content.js */,
+				A10000200000000000000001 /* detect.js */,
+				A10000210000000000000001 /* background.js */,
 				A10000130000000000000001 /* icons */,
 			);
 			name = Resources;
@@ -421,6 +429,8 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				D0A1D33D301B98AE0082FD16 /* content.js in Resources */,
+				A10000230000000000000001 /* detect.js in Resources */,
+				A10000250000000000000001 /* background.js in Resources */,
 				D0A1D33C301B98AE0082FD16 /* popup.css in Resources */,
 				D0A1D338301B98AE0082FD16 /* popup.js in Resources */,
 				D0A1D33A301B98AE0082FD16 /* manifest.json in Resources */,
@@ -435,6 +445,8 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			files = (
 				D0A1D337301B98AE0082FD16 /* content.js in Resources */,
+				A10000220000000000000001 /* detect.js in Resources */,
+				A10000240000000000000001 /* background.js in Resources */,
 				D0A1D336301B98AE0082FD16 /* popup.css in Resources */,
 				D0A1D332301B98AE0082FD16 /* popup.js in Resources */,
 				D0A1D334301B98AE0082FD16 /* manifest.json in Resources */,

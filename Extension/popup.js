@@ -217,6 +217,8 @@
       const saved = await sendNative({ type: "UME_SAVE_ANSWERS", answers: merged });
       if (!saved?.ok) throw new Error(saved?.error || "Ume could not save these answers.");
       cachedAnswers = merged;
+      api.runtime.sendMessage({ type: "UME_ANSWERS_CHANGED" }).catch(() => {});
+      api.tabs.sendMessage(tab.id, { type: "UME_REPORT_FIELDS" }, { frameId: 0 }).catch(() => {});
       show(`Remembered ${incoming.length} answer${incoming.length === 1 ? "" : "s"}. Passwords and payment fields were skipped.`);
     } catch (error) {
       show(error.message || "Ume could not read this page.", true);
@@ -290,6 +292,61 @@
     }
   }
 
+  // Optional toolbar badge. Turning it on asks Safari for access to all websites,
+  // then registers detect.js so pages are checked for forms. Off by default.
+  const FORM_BADGE_KEY = "ume-form-badge";
+  const DETECT_SCRIPT_ID = "ume-detect";
+  const formBadgeOption = document.getElementById("form-badge-option");
+  const formBadgeToggle = document.getElementById("form-badge");
+  const supportsFormBadge = Boolean(api.scripting?.registerContentScripts && api.permissions?.request && api.action?.setBadgeText);
+
+  async function loadFormBadgeState() {
+    if (!supportsFormBadge) return;
+    const stored = await api.storage.local.get(FORM_BADGE_KEY);
+    formBadgeToggle.checked = Boolean(stored[FORM_BADGE_KEY]);
+    formBadgeOption.hidden = false;
+  }
+
+  async function enableFormBadge(permissionRequest) {
+    const granted = await permissionRequest.catch(() => false);
+    if (!granted) {
+      formBadgeToggle.checked = false;
+      show("Ume needs access to all websites to check pages for forms. Allow it in Safari’s extension settings, then try again.", true);
+      return;
+    }
+    try {
+      await api.scripting.registerContentScripts([{
+        id: DETECT_SCRIPT_ID,
+        js: ["detect.js"],
+        matches: ["<all_urls>"],
+        runAt: "document_idle",
+        persistAcrossSessions: true
+      }]);
+    } catch (error) {
+      if (!/already|exist|duplicate/i.test(error.message || "")) throw error;
+    }
+    await api.storage.local.set({ [FORM_BADGE_KEY]: true });
+    const tab = await activeTab().catch(() => null);
+    if (tab) await api.tabs.sendMessage(tab.id, { type: "UME_REPORT_FIELDS" }, { frameId: 0 }).catch(() => {});
+    show("Ume will badge its toolbar icon on pages with forms it can fill. Reload open pages to badge them now.");
+  }
+
+  async function disableFormBadge() {
+    await api.scripting.unregisterContentScripts({ ids: [DETECT_SCRIPT_ID] }).catch(() => {});
+    await api.storage.local.set({ [FORM_BADGE_KEY]: false });
+    show("Form badges are off.");
+  }
+
+  formBadgeToggle.addEventListener("change", () => {
+    // permissions.request must start synchronously inside the user gesture.
+    const request = formBadgeToggle.checked ? api.permissions.request({ origins: ["<all_urls>"] }) : null;
+    const change = request ? enableFormBadge(request) : disableFormBadge();
+    change.catch((error) => {
+      formBadgeToggle.checked = !formBadgeToggle.checked;
+      show(error.message || "Ume could not change the badge setting.", true);
+    });
+  });
+
   learnButton.addEventListener("click", learn);
   fillButton.addEventListener("click", fill);
   openAppButton.addEventListener("click", openCompanionApp);
@@ -321,6 +378,7 @@
     }
   });
 
+  loadFormBadgeState().catch(() => {});
   Promise.all([loadOnboardingState(), refreshDebugLoggingState()])
     .then(([complete]) => {
       getStarted.hidden = complete;

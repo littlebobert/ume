@@ -4,6 +4,11 @@
   "version": "0.1.0",
   "description": "Autofill everything, securely.",
   "permissions": ["storage", "activeTab", "nativeMessaging", "scripting"],
+  "optional_host_permissions": ["<all_urls>"],
+  "background": {
+    "scripts": ["lib/matcher.js", "background.js"],
+    "persistent": false
+  },
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",

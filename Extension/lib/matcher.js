@@ -342,9 +342,13 @@
     return withPart(contacts)[0] || null;
   }
 
-  function contactParts(saved) {
+  // The AI sees a contact by its category, role, and number only, never its label,
+  // which defaults to the person's name. `number` tells apart two contacts of the
+  // same category ("Doctor 2"); pass it only when there is more than one.
+  function contactParts(saved, number) {
     const category = contactCategory(saved);
-    const base = [category === "doctor" ? "Doctor" : "Emergency contact", contactRole(saved)].filter(Boolean).join(", ");
+    const heading = `${category === "doctor" ? "Doctor" : "Emergency contact"}${number ? ` ${number}` : ""}`;
+    const base = [heading, contactRole(saved)].filter(Boolean).join(", ");
     return CONTACT_PARTS.filter((part) => contactValue(saved, part)).map((part) => {
       const title = part === "role" ? (category === "doctor" ? "specialty" : "relationship") : part;
       const name = `${base} ${title}`;
@@ -353,7 +357,6 @@
         entry: {
           accessibleName: name,
           label: name,
-          userLabel: [saved?.userLabel, title].filter(Boolean).join(" "),
           kind: "text",
           inputType: part === "phone" || part === "fax" ? "tel" : part === "email" ? "email" : "text",
           value: contactValue(saved, part)

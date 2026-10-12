@@ -168,25 +168,37 @@
             <section class="tab-panel" id="privacy-panel" role="tabpanel" aria-labelledby="privacy-tab" data-panel="privacy" hidden>
                 <div class="pane-heading">
                     <h2>Privacy</h2>
-                    <p>What stays on your device and what your AI provider receives.</p>
+                    <p>What stays on your device, what syncs, and what your AI provider receives.</p>
                 </div>
                 <div class="settings-group privacy-list">
                     <div class="setting-row">
                         <div>
-                            <strong>Answers stay on this device</strong>
-                            <span>Saved values are encrypted in Umete’s shared app container. Encryption keys are protected by Apple Keychain.</span>
+                            <strong>Answers are encrypted</strong>
+                            <span>Saved answers are encrypted with AES-GCM in Umete’s app storage. The key is kept in Apple Keychain, and in your iCloud Keychain when sync is on.</span>
                         </div>
                     </div>
                     <div class="setting-row">
                         <div>
-                            <strong>Answer values are not sent for AI mapping</strong>
-                            <span>Only bounded field context—such as labels, descriptions, field types, group headings, and option labels—is sent.</span>
+                            <strong>iCloud sync stays private</strong>
+                            <span>With Sync with iCloud on, each answer is encrypted on this device before it goes to your private iCloud database, so Apple can’t read it. You can turn sync off on the General tab.</span>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div>
+                            <strong>Answer values are never sent to AI</strong>
+                            <span>For fields Umete can’t match itself, it sends only descriptions such as labels, field types, headings, and menu options, plus the labels of your saved answers. Saved values, values in the form, addresses, and contacts’ names stay on your device.</span>
                         </div>
                     </div>
                     <div class="setting-row">
                         <div>
                             <strong>Sensitive fields are skipped</strong>
                             <span>Umete does not save passwords, payment fields, hidden values, or fields identified as security secrets.</span>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div>
+                            <strong>No analytics</strong>
+                            <span>Umete has no account and collects no analytics. The full privacy policy is at umete.jp/privacy.</span>
                         </div>
                     </div>
                 </div>

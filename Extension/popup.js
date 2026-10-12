@@ -101,13 +101,24 @@
   }
 
   // Addresses are matched locally only. Contacts are split into one sanitized
-  // entry per part ("Doctor, Cardiologist phone") so the AI can place them.
+  // entry per part ("Doctor 2, Cardiologist phone") so the AI can place them
+  // without seeing their labels, which are often the person's name.
   function aiSavedEntries(answers) {
+    const contacts = answers.filter((answer) => UmeMatcher.answerType(answer) === "contact");
+    const totals = {};
+    for (const contact of contacts) {
+      const category = UmeMatcher.contactCategory(contact);
+      totals[category] = (totals[category] || 0) + 1;
+    }
+    const seen = {};
     return answers.flatMap((answer, index) => {
       const type = UmeMatcher.answerType(answer);
       if (type === "address") return [];
       if (type === "contact") {
-        return UmeMatcher.contactParts(answer).map(({ part, entry }) => ({ key: `saved-${index}-${part}`, ...entry }));
+        const category = UmeMatcher.contactCategory(answer);
+        seen[category] = (seen[category] || 0) + 1;
+        const number = totals[category] > 1 ? seen[category] : undefined;
+        return UmeMatcher.contactParts(answer, number).map(({ part, entry }) => ({ key: `saved-${index}-${part}`, ...entry }));
       }
       return [{ key: `saved-${index}`, ...answer }];
     });

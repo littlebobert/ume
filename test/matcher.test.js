@@ -486,6 +486,10 @@ test("contacts flatten into sanitized parts for AI mapping and never merge with 
   assert.equal(phone.value, "813-555-0200");
   assert.equal(parts.find((item) => item.part === "role").entry.accessibleName, "Doctor, Cardiologist specialty");
   assert.equal(contactParts(emergencyContacts()[0]).find((item) => item.part === "role").entry.label, "Emergency contact, Daughter relationship");
+  // The AI never sees a contact's label, which defaults to the person's name.
+  for (const { entry: part } of parts) assert.equal(part.userLabel, undefined);
+  assert.ok(parts.every(({ entry: part }) => !JSON.stringify({ ...part, value: undefined }).includes(cardiologist.userLabel)));
+  assert.equal(contactParts(cardiologist, 2).find((item) => item.part === "phone").entry.accessibleName, "Doctor 2, Cardiologist phone");
 
   const incoming = entry({ accessibleName: "Cardiologist phone", inputType: "tel", value: "813-555-0200" });
   assert.equal(mergeEntries([cardiologist], [incoming]).length, 2);

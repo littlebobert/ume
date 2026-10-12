@@ -1,8 +1,10 @@
 (() => {
   "use strict";
 
-  if (globalThis.__umeContentLoaded) return;
-  globalThis.__umeContentLoaded = true;
+  // The popup injects this script only after a ping goes unanswered. That
+  // happens on first use, and also after the extension updates or reloads:
+  // the copy already in the page is then disconnected but its globals remain.
+  // So never bail out on an earlier copy; replace its listener instead.
 
   const api = browser;
   const BLOCKED_TYPES = new Set(["button", "file", "hidden", "image", "password", "reset", "submit"]);
@@ -19,7 +21,7 @@
     return compactText(element?.innerText || element?.textContent || "");
   }
 
-  const { deepQuerySelectorAll } = UmeDOM;
+  const { deepQuerySelectorAll, isUserVisible } = UmeDOM;
   const { formatDateParts, parseDateParts } = UmeDate;
   const { callingCodeFromOption, countryCodeDigits, digitsOnly, resolveCountryCode, valueForField: phoneValueForField } = UmePhone;
 
@@ -145,7 +147,10 @@
       .join(" ")
       .replace(/([a-z])([A-Z])/g, "$1 $2")
       .replace(/[_-]+/g, " ");
-    return !element.disabled && !element.readOnly && !BLOCKED_TYPES.has(type) && !SENSITIVE_HINT.test(hints);
+    // Hidden fields are skipped: pages often keep alternate inputs (for example
+    // office and home phone numbers behind tabs) that must stay empty.
+    return !element.disabled && !element.readOnly && !BLOCKED_TYPES.has(type) && !SENSITIVE_HINT.test(hints)
+      && isUserVisible(element);
   }
 
   function optionLabelFor(element) {
@@ -613,12 +618,23 @@
     return { filled };
   }
 
-  api.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  function handleMessage(message, _sender, sendResponse) {
     if (message?.type === "UME_PING") sendResponse({ ready: true });
     if (message?.type === "UME_COLLECT") sendResponse({ answers: collectAnswers() });
     if (message?.type === "UME_FILL") sendResponse(fillAnswers(message.answers || [], Boolean(message.diagnostics)));
     if (message?.type === "UME_SCHEMAS") sendResponse({ fields: unmatchedSchemas(message.answers || []) });
     if (message?.type === "UME_APPLY_MAPPINGS") sendResponse(applyMappings(message.mappings, message.values));
     return false;
-  });
+  }
+
+  const previousListener = globalThis.__umeContentListener;
+  if (previousListener) {
+    try {
+      api.runtime.onMessage.removeListener(previousListener);
+    } catch (_error) {
+      // The earlier copy belongs to an extension instance that no longer exists.
+    }
+  }
+  globalThis.__umeContentListener = handleMessage;
+  api.runtime.onMessage.addListener(handleMessage);
 })();

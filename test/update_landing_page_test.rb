@@ -71,6 +71,30 @@ class UpdateLandingPageTest < Minitest::Test
     end
   end
 
+  def test_writes_the_entry_to_a_separate_changelog_page
+    Dir.mktmpdir do |directory|
+      landing = File.join(directory, "ume.html")
+      changelog = File.join(directory, "ume-changelog.html")
+      File.write(landing, '<a data-ume-download href="old.dmg">Download</a>')
+      File.write(changelog, fixture.lines.drop(2).join)
+      _out, error, status = Open3.capture3(
+        "ruby", SCRIPT,
+        "--file", landing,
+        "--changelog-file", changelog,
+        "--version", "0.1.1",
+        "--download-url", "https://github.com/example/app/releases/download/v0.1.1/App.dmg",
+        "--note-en", "Fixed things."
+      )
+      assert status.success?, error
+
+      assert_includes File.read(landing), "releases/download/v0.1.1/App.dmg"
+      refute_includes File.read(landing), "data-ume-release"
+      html = File.read(changelog)
+      assert_includes html, 'data-ume-release="0.1.1"'
+      assert_operator html.index('data-ume-release="0.1.1"'), :<, html.index('data-ume-release="0.1.0"')
+    end
+  end
+
   def test_is_idempotent_for_an_existing_version
     Dir.mktmpdir do |directory|
       path = File.join(directory, "app.html")

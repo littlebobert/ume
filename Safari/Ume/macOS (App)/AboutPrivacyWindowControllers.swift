@@ -133,7 +133,7 @@ private final class ClosureButton: NSButton {
 private final class LinkTarget: NSObject {
     static let shared = LinkTarget()
     @objc func openSource() {
-        NSWorkspace.shared.open(URL(string: "https://github.com/littlebobert/ume")!)
+        NSWorkspace.shared.open(URL(string: "https://github.com/littlebobert/umete")!)
     }
 
     @objc func reportBug() {

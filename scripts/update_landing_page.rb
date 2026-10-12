@@ -9,6 +9,9 @@ require "uri"
 options = {}
 OptionParser.new do |parser|
   parser.on("--file PATH") { |value| options[:file] = value }
+  # The changelog has its own page (umete.jp/changelog); without this option the
+  # entry goes into --file, as it did when the changelog was on the landing page.
+  parser.on("--changelog-file PATH") { |value| options[:changelog_file] = value }
   parser.on("--version VERSION") { |value| options[:version] = value }
   parser.on("--download-url URL") { |value| options[:download_url] = value }
   parser.on("--note-en TEXT") { |value| options[:note_en] = value }
@@ -16,6 +19,7 @@ OptionParser.new do |parser|
 end.parse!
 
 path = options.fetch(:file)
+changelog_path = options.fetch(:changelog_file, path)
 version = options.fetch(:version).to_s.sub(/\Av/, "")
 download_url = options.fetch(:download_url)
 note_en = options.fetch(:note_en, "").to_s.strip
@@ -53,12 +57,15 @@ html.gsub!(/(<span\b[^>]*\bdata-ume-version\b[^>]*>)[^<]*(<\/span>)/) do
 end
 warn "No data-ume-version element found in #{path}; skipping the version label." if version_count.zero?
 
+changelog_html = changelog_path == path ? html : File.read(changelog_path, encoding: "UTF-8")
+changelog_original = changelog_html.dup
+
 start_marker = "        <!-- ume-changelog:start -->"
 end_marker = "        <!-- ume-changelog:end -->"
-abort "Missing Umete changelog markers in #{path}." unless html.include?(start_marker) && html.include?(end_marker)
+abort "Missing Umete changelog markers in #{changelog_path}." unless changelog_html.include?(start_marker) && changelog_html.include?(end_marker)
 
 escaped_version = CGI.escapeHTML(version)
-unless note_en.empty? || html.include?("data-ume-release=\"#{escaped_version}\"")
+unless note_en.empty? || changelog_html.include?("data-ume-release=\"#{escaped_version}\"")
   note_ja = note_en if note_ja.empty?
   escaped_note_en = CGI.escapeHTML(note_en)
   escaped_note_ja = CGI.escapeHTML(note_ja)
@@ -72,7 +79,12 @@ unless note_en.empty? || html.include?("data-ume-release=\"#{escaped_version}\""
           <li data-label-en="#{escaped_note_en}" data-label-ja="#{escaped_note_ja}">#{escaped_note_en}</li>
         </ul>
   HTML
-  html.sub!(start_marker, "#{start_marker}\n#{entry}")
+  changelog_html.sub!(start_marker, "#{start_marker}\n#{entry}")
+end
+
+if changelog_path != path && changelog_html != changelog_original
+  File.write(changelog_path, changelog_html, encoding: "UTF-8")
+  puts "Updated #{changelog_path} for Umete #{version}."
 end
 
 if html == original

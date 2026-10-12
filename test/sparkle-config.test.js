@@ -32,7 +32,7 @@ test("starts Sparkle and exposes Check for Updates", () => {
 });
 
 test("links Sparkle version history to the website changelog", () => {
-  assert.match(releaseWorkflow, /--full-release-notes-url https:\/\/umete\.jp\/#changelog/);
+  assert.match(releaseWorkflow, /--full-release-notes-url https:\/\/umete\.jp\/changelog/);
 });
 
 test("grants only Sparkle's required sandbox Mach lookup exceptions", () => {

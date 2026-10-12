@@ -17,20 +17,22 @@
                 <label class="form-row">
                     <span>Provider</span>
                     <select id="onboarding-provider">
+                        <option value="umete">Umete (free, no API key)</option>
                         <option value="openai">OpenAI</option>
                         <option value="anthropic">Anthropic</option>
+                        <option value="openai-decisions">OpenAI Decisions (your key)</option>
                     </select>
                 </label>
                 <label class="form-row">
                     <span>Model</span>
-                    <input id="onboarding-model" autocomplete="off" value="gpt-5.6-sol">
+                    <input id="onboarding-model" autocomplete="off" value="">
                 </label>
                 <label class="form-row">
                     <span>API key</span>
                     <input id="onboarding-api-key" type="password" autocomplete="off" placeholder="Paste your API key">
                 </label>
             </div>
-            <p class="onboarding-privacy">Your key is stored in Apple Keychain. Saved answer values are not sent to your AI provider.</p>
+            <p class="onboarding-privacy">Umete (free) works without a key, with a daily limit. Keys you add are stored in Apple Keychain. Saved answer values are never sent for AI matching.</p>
             <button id="complete-onboarding" class="primary" type="button">Continue</button>
         </section>
 
@@ -121,8 +123,10 @@
                     <label class="form-row">
                         <span>Provider</span>
                         <select id="provider">
-                            <option value="openai">OpenAI</option>
+                            <option value="umete">Umete (free, no API key)</option>
+                        <option value="openai">OpenAI</option>
                             <option value="anthropic">Anthropic</option>
+                        <option value="openai-decisions">OpenAI Decisions (your key)</option>
                         </select>
                     </label>
                     <label class="form-row">

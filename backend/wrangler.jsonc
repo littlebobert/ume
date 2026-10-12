@@ -1,0 +1,41 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "umete-api",
+	"main": "src/index.js",
+	"compatibility_date": "2026-10-12",
+	"observability": {
+		"enabled": true
+	},
+	"routes": [
+		{ "pattern": "api.umete.jp", "custom_domain": true }
+	],
+	"vars": {
+		// Requests (not fills) allowed per day. One fill sends one request per
+		// ten unmatched fields, so 60 covers roughly 30 to 60 forms a day.
+		"DAILY_DEVICE_LIMIT": "60",
+		// Catches device-ID rotation from a single network.
+		"DAILY_IP_LIMIT": "300",
+		// Hard ceiling on total spend. At ~$0.002 per request this is ~$40/day.
+		"DAILY_GLOBAL_LIMIT": "20000",
+		"DECISIONS_MODEL": "gpt-6-luna"
+	},
+	// Secrets (set with `wrangler secret put`): OPENAI_API_KEY, HASH_SALT.
+	"ratelimits": [
+		{
+			"name": "BURST_LIMITER",
+			"namespace_id": "91003",
+			"simple": { "limit": 20, "period": 60 }
+		}
+	],
+	"triggers": {
+		"crons": ["23 4 * * *"]
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "umete-api",
+			"database_id": "REPLACE_WITH_D1_DATABASE_ID",
+			"migrations_dir": "migrations"
+		}
+	]
+}

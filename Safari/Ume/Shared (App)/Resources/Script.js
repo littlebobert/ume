@@ -7,7 +7,17 @@ const answerSummary = document.getElementById("answer-summary");
 const answerList = document.getElementById("answer-list");
 const tabs = [...document.querySelectorAll("[role='tab']")];
 const panels = [...document.querySelectorAll("[role='tabpanel']")];
-const defaults = { openai: "gpt-5.6-sol", anthropic: "claude-opus-5" };
+const defaults = { umete: "", openai: "gpt-5.6-sol", anthropic: "claude-opus-5", "openai-decisions": "gpt-6-luna" };
+const keylessProviders = new Set(["umete"]);
+
+// The free service needs no model or key.
+function updateKeyFields(providerSelect, modelInput, keyInput) {
+    const keyless = keylessProviders.has(providerSelect.value);
+    modelInput.disabled = keyless;
+    keyInput.disabled = keyless;
+    if (keyless) modelInput.value = "";
+    keyInput.placeholder = keyless ? "Not needed" : "Paste your API key";
+}
 const onboarding = document.getElementById("onboarding");
 const settingsContent = document.getElementById("settings-content");
 const onboardingProvider = document.getElementById("onboarding-provider");
@@ -96,8 +106,10 @@ function receiveSettings(settings) {
     const needsOnboarding = !settings.onboardingComplete;
     onboarding.hidden = !needsOnboarding;
     settingsContent.hidden = needsOnboarding;
-    provider.value = ["openai", "anthropic"].includes(settings.provider) ? settings.provider : "openai";
+    provider.value = Object.keys(defaults).includes(settings.provider) ? settings.provider : "umete";
     model.value = settings.model || defaults[provider.value] || "";
+    updateKeyFields(provider, model, apiKey);
+    if (keylessProviders.has(provider.value)) keyState.textContent = "Free, with a daily limit. No key needed.";
     keyState.textContent = settings.hasKey ? "A key is saved securely in Apple Keychain." : "No key saved.";
     document.getElementById("delete-key").disabled = !settings.hasKey;
     renderAnswers(settings.answers || []);
@@ -129,16 +141,18 @@ tabs.forEach((tab, index) => {
 
 provider.addEventListener("change", () => {
     if (!model.value || Object.values(defaults).includes(model.value)) model.value = defaults[provider.value] || "";
+    updateKeyFields(provider, model, apiKey);
 });
 
 onboardingProvider.addEventListener("change", () => {
     onboardingModel.value = defaults[onboardingProvider.value] || "";
+    updateKeyFields(onboardingProvider, onboardingModel, onboardingAPIKey);
 });
 
 document.getElementById("complete-onboarding").addEventListener("click", () => {
     const selectedModel = onboardingModel.value.trim();
     const suppliedKey = onboardingAPIKey.value.trim();
-    if (!selectedModel || !suppliedKey) {
+    if (!keylessProviders.has(onboardingProvider.value) && (!selectedModel || !suppliedKey)) {
         status.textContent = "Enter a model and API key to continue.";
         status.className = "error";
         return;
@@ -166,3 +180,5 @@ syncNow.addEventListener("click", () => {
 });
 const preferences = document.querySelector("button.open-preferences");
 if (preferences) preferences.addEventListener("click", () => post("open-preferences"));
+
+updateKeyFields(onboardingProvider, onboardingModel, onboardingAPIKey);

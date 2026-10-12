@@ -29,9 +29,13 @@ Anyone with access to your unlocked device and the Umete app may be able to view
 
 ## Optional AI matching
 
-Local matching always runs first. You can optionally connect OpenAI or Anthropic to match fields Umete does not recognize.
+Local matching always runs first. For fields it does not recognize, Umete can ask an AI which saved answer fits.
 
-Only sanitized field descriptions are sent to the provider. Saved answers and values currently entered in the form never leave your device. Returned mappings are validated and applied locally.
+By default this uses **Umete (free)**, which needs no API key and has a daily limit. Requests go to Umete's small server at `api.umete.jp`, which forwards them to OpenAI's Decisions API. The server never logs or stores request content; it keeps only a daily request count keyed by a salted hash of a random per-install ID and of your IP address, and deletes those counts after three days. You can instead connect your own OpenAI or Anthropic key for unlimited use.
+
+The "OpenAI Decisions (your key)" option calls the same API directly with your own OpenAI key. It asks one multiple-choice question per unmatched field, applies a match only when the model is confident, and costs a fraction of a cent per form because only input tokens are billed.
+
+Only sanitized field descriptions are sent, whichever option you choose. Saved answers and values currently entered in the form never leave your device. Returned mappings are validated and applied locally.
 
 ## Using Umete
 

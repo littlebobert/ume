@@ -67,16 +67,18 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
     }
 
     private func saveSettings(_ body: [String: Any], completesOnboarding: Bool = false) {
-        let provider = body["provider"] as? String ?? "openai"
+        let provider = body["provider"] as? String ?? SafariWebExtensionHandlerProviders.default
         let model = body["model"] as? String ?? ""
         let suppliedKey = body["apiKey"] as? String ?? ""
         let key = suppliedKey.isEmpty ? SettingsStore.load()?.apiKey ?? "" : suppliedKey
-        guard ["openai", "anthropic"].contains(provider), !model.isEmpty, !key.isEmpty else {
+        let needsKey = SafariWebExtensionHandlerProviders.requiresKey(provider)
+        guard SafariWebExtensionHandlerProviders.supported.contains(provider), !needsKey || (!model.isEmpty && !key.isEmpty) else {
             sendResult(ok: false, message: "Enter a supported provider, model, and API key.")
             return
         }
         do {
-            try SettingsStore.save(AISettings(provider: provider, model: model, apiKey: key))
+            // The free service ignores the model; any saved key is kept for switching back.
+            try SettingsStore.save(AISettings(provider: provider, model: needsKey ? model : "", apiKey: key))
             if completesOnboarding { OnboardingStore.isComplete = true }
             sendResult(ok: true, message: completesOnboarding ? "Umete is ready to use in Safari." : "Settings saved securely in Apple Keychain.")
         } catch {
@@ -87,7 +89,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
     private func settingsPayload() async -> [String: Any] {
         let settings = SettingsStore.load()
         return [
-            "provider": ["openai", "anthropic"].contains(settings?.provider ?? "") ? settings!.provider : "openai",
+            "provider": SafariWebExtensionHandlerProviders.supported.contains(settings?.provider ?? "") ? settings!.provider : SafariWebExtensionHandlerProviders.default,
             "model": settings?.model ?? "",
             "hasKey": !(settings?.apiKey.isEmpty ?? true),
             "onboardingComplete": OnboardingStore.isComplete,

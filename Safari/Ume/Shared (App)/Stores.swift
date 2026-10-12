@@ -9,6 +9,33 @@ private let syncKeyService = "com.justin.ume.answer-encryption.sync"
 let appGroupIdentifier = Bundle.main.object(forInfoDictionaryKey: "UmeAppGroupIdentifier") as? String
     ?? "group.com.justin.ume.shared"
 
+/// AI providers the extension can map fields with. "umete" is the free Umete
+/// service (OpenAI Decisions behind a quota, no key needed). "openai-decisions"
+/// calls the Decisions API directly with the user's own OpenAI key.
+enum SafariWebExtensionHandlerProviders {
+    static let supported = ["umete", "openai", "anthropic", "openai-decisions"]
+    static let `default` = "umete"
+
+    static func requiresKey(_ provider: String) -> Bool {
+        provider != "umete"
+    }
+}
+
+/// A random per-install identifier used only to apply the free service's daily
+/// quota. It is not tied to the Apple ID, iCloud, or saved answers, and the
+/// server stores only a salted hash of it.
+enum UsageIdentity {
+    private static let key = "usage-device-id"
+
+    static var deviceID: String {
+        let defaults = UserDefaults(suiteName: appGroupIdentifier)
+        if let existing = defaults?.string(forKey: key), existing.count >= 16 { return existing }
+        let created = UUID().uuidString
+        defaults?.set(created, forKey: key)
+        return created
+    }
+}
+
 struct AISettings: Codable {
     var provider: String
     var model: String

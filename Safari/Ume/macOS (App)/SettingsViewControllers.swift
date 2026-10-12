@@ -612,6 +612,29 @@ final class DatePopoverViewController: ConfirmPopoverViewController {
     }
 }
 
+// AI provider choices shared by onboarding and the AI settings pane.
+private let aiProviderIDs = SafariWebExtensionHandlerProviders.supported
+private let aiProviderTitles = ["Umete (free, no API key)", "OpenAI", "Anthropic", "OpenAI Decisions (your key)"]
+private let aiDefaultModels = ["umete": "", "openai": "gpt-5.6-sol", "anthropic": "claude-opus-5", "openai-decisions": "gpt-6-luna"]
+
+private func aiProviderIndex(_ provider: String?) -> Int {
+    aiProviderIDs.firstIndex(of: provider ?? SafariWebExtensionHandlerProviders.default) ?? 0
+}
+
+/// The free service needs no model or key, so those fields are disabled while it is selected.
+private func updateKeyFields(provider: String, model: NSTextField, apiKey: NSTextField) {
+    let needsKey = SafariWebExtensionHandlerProviders.requiresKey(provider)
+    model.isEnabled = needsKey
+    apiKey.isEnabled = needsKey
+    if !needsKey {
+        model.stringValue = ""
+        model.placeholderString = "Not needed"
+        apiKey.placeholderString = "Not needed"
+    } else if model.placeholderString == "Not needed" {
+        model.placeholderString = "Provider model name"
+    }
+}
+
 private func settingsPaneView() -> NSView {
     NSView(frame: NSRect(origin: .zero, size: settingsPaneSize))
 }
@@ -752,13 +775,14 @@ final class OnboardingViewController: NSViewController {
 
     private func providerPage() -> NSView {
         if provider.numberOfItems == 0 {
-            provider.addItems(withTitles: ["OpenAI", "Anthropic"])
+            provider.addItems(withTitles: aiProviderTitles)
             provider.target = self
             provider.action = #selector(providerChanged)
             let settings = SettingsStore.load()
-            provider.selectItem(at: settings?.provider == "anthropic" ? 1 : 0)
+            provider.selectItem(at: aiProviderIndex(settings?.provider))
             model.stringValue = settings?.model ?? defaultModel
             apiKey.placeholderString = settings?.apiKey.isEmpty == false ? "A key is already saved" : "Paste your API key"
+            updateKeyFields(provider: selectedProvider, model: model, apiKey: apiKey)
         }
         status.stringValue = ""
         let form = NSGridView(views: [
@@ -771,7 +795,7 @@ final class OnboardingViewController: NSViewController {
         form.column(at: 0).xPlacement = .trailing
         form.column(at: 0).width = 80
         form.column(at: 1).width = 330
-        return centeredPage(views: [heading("Connect an AI provider"), body("Your personal saved answers are never sent to the API provider. Umete only sends info about the form you’re on, like its field labels."), form, body("Your API key is stored in Apple Keychain."), status], spacing: 10)
+        return centeredPage(views: [heading("Choose AI matching"), body("When local matching isn’t sure, Umete can ask an AI which saved answer fits a field. Your saved answers are never sent. Only info about the form you’re on is, like its field labels."), form, body("Umete (free) works without a key, with a daily limit. Bring your own key for unlimited use; it’s stored in Apple Keychain."), status], spacing: 10)
     }
 
     private func safariPage() -> NSView {
@@ -836,11 +860,13 @@ final class OnboardingViewController: NSViewController {
         return label
     }
 
-    private var selectedProvider: String { provider.indexOfSelectedItem == 1 ? "anthropic" : "openai" }
-    private var defaultModel: String { selectedProvider == "anthropic" ? "claude-opus-5" : "gpt-5.6-sol" }
+    private var selectedProvider: String { aiProviderIDs[max(0, min(provider.indexOfSelectedItem, aiProviderIDs.count - 1))] }
+    private var defaultModel: String { aiDefaultModels[selectedProvider] ?? "" }
 
     @objc private func providerChanged() {
         model.stringValue = defaultModel
+        if apiKey.placeholderString == "Not needed" { apiKey.placeholderString = "Paste your API key" }
+        updateKeyFields(provider: selectedProvider, model: model, apiKey: apiKey)
     }
 
     @objc private func openSafariSettings() {
@@ -876,12 +902,13 @@ final class OnboardingViewController: NSViewController {
         let trimmedModel = model.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         let suppliedKey = apiKey.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         let key = suppliedKey.isEmpty ? SettingsStore.load()?.apiKey ?? "" : suppliedKey
-        guard !trimmedModel.isEmpty, !key.isEmpty else {
+        let needsKey = SafariWebExtensionHandlerProviders.requiresKey(selectedProvider)
+        guard !needsKey || (!trimmedModel.isEmpty && !key.isEmpty) else {
             status.stringValue = "Enter a model and API key to continue."
             return
         }
         do {
-            try SettingsStore.save(AISettings(provider: selectedProvider, model: trimmedModel, apiKey: key))
+            try SettingsStore.save(AISettings(provider: selectedProvider, model: needsKey ? trimmedModel : "", apiKey: needsKey ? key : ""))
             showStep(2)
         } catch {
             status.stringValue = error.localizedDescription
@@ -1075,7 +1102,7 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
 
     override func loadView() {
         view = settingsPaneView()
-        provider.addItems(withTitles: ["OpenAI", "Anthropic"])
+        provider.addItems(withTitles: aiProviderTitles)
         provider.target = self
         provider.action = #selector(providerChanged)
         model.placeholderString = "Provider model name"
@@ -1140,9 +1167,14 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
 
     private func loadSettings() {
         let settings = SettingsStore.load()
-        provider.selectItem(at: settings?.provider == "anthropic" ? 1 : 0)
+        provider.selectItem(at: aiProviderIndex(settings?.provider))
         model.stringValue = settings?.model ?? defaultModel
-        status.stringValue = settings?.apiKey.isEmpty == false ? "A key is saved in Apple Keychain." : "No key is saved."
+        updateKeyFields(provider: selectedProvider, model: model, apiKey: apiKey)
+        if !SafariWebExtensionHandlerProviders.requiresKey(selectedProvider) {
+            status.stringValue = "Free, with a daily limit. No key needed."
+        } else {
+            status.stringValue = settings?.apiKey.isEmpty == false ? "A key is saved in Apple Keychain." : "No key is saved."
+        }
         debugLogging.state = AIDebugLogStore.isEnabled ? .on : .off
         hideSensitive.state = AIDebugLogStore.hidesSensitiveInfo ? .on : .off
         updateDebugDependentControls()
@@ -1155,13 +1187,16 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
         debugButtons.isHidden = !enabled
     }
 
-    private var selectedProvider: String { provider.indexOfSelectedItem == 1 ? "anthropic" : "openai" }
-    private var defaultModel: String { selectedProvider == "anthropic" ? "claude-opus-5" : "gpt-5.6-sol" }
+    private var selectedProvider: String { aiProviderIDs[max(0, min(provider.indexOfSelectedItem, aiProviderIDs.count - 1))] }
+    private var defaultModel: String { aiDefaultModels[selectedProvider] ?? "" }
 
     @objc private func providerChanged() {
-        if model.stringValue.isEmpty || ["gpt-5.6-terra", "gpt-5.6-sol", "claude-haiku-4-5", "claude-opus-5"].contains(model.stringValue) {
+        if model.stringValue.isEmpty || ["gpt-5.6-terra", "gpt-5.6-sol", "gpt-6-luna", "claude-haiku-4-5", "claude-opus-5"].contains(model.stringValue) {
             model.stringValue = defaultModel
         }
+        if apiKey.placeholderString == "Not needed" { apiKey.placeholderString = "Leave blank to keep the saved key" }
+        model.placeholderString = "Provider model name"
+        updateKeyFields(provider: selectedProvider, model: model, apiKey: apiKey)
         autosave()
     }
 
@@ -1170,6 +1205,17 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
     }
 
     private func autosave() {
+        if !SafariWebExtensionHandlerProviders.requiresKey(selectedProvider) {
+            // Keep any saved key so switching back to a key-based provider doesn't lose it.
+            let existingKey = SettingsStore.load()?.apiKey ?? ""
+            do {
+                try SettingsStore.save(AISettings(provider: selectedProvider, model: "", apiKey: existingKey))
+                status.stringValue = "Free, with a daily limit. No key needed."
+            } catch {
+                status.stringValue = error.localizedDescription
+            }
+            return
+        }
         let key = apiKey.stringValue.isEmpty ? SettingsStore.load()?.apiKey ?? "" : apiKey.stringValue
         let trimmedModel = model.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedModel.isEmpty else {

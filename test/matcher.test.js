@@ -492,3 +492,14 @@ test("contacts flatten into sanitized parts for AI mapping and never merge with 
   assert.equal(score(cardiologist, incoming), -Infinity);
   assert.equal(answerType(cardiologist), "contact");
 });
+
+test("fields asking who owns a phone are not filled with a phone number", () => {
+  const phone = entry({ accessibleName: "Phone number", label: "Phone number", autocomplete: "tel", inputType: "tel", answerType: "phone", countryCode: "81", value: "8026206269" });
+  const saved = [phone, entry({ autocomplete: "given-name", value: "Justin" }), entry({ autocomplete: "family-name", value: "Garcia" })];
+  for (const label of ["Owner of Phone", "Name of phone owner", "Phone holder", "Mobile subscriber name"]) {
+    assert.equal(bestMatch(saved, entry({ accessibleName: label, label, group: "Phone No." })), null, label);
+  }
+  for (const label of ["Phone No.", "Owner's phone number", "Cardholder phone", "Mobile"]) {
+    assert.equal(bestMatch(saved, entry({ accessibleName: label, label, group: "Phone No.", placeholder: "+81 Ex. 9012345678" })), phone, label);
+  }
+});

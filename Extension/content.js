@@ -11,6 +11,7 @@
   const SENSITIVE_HINT = /\b(card(?:holder)?|credit card|cvc|cvv|password|passcode|security code|secret|social security|ssn|token)\b/i;
   const HEADING_SELECTOR = "h1, h2, h3, h4, h5, h6, [role='heading']";
   const MAX_CONTEXT_LENGTH = 160;
+  const FORM_CONTROL_SELECTOR = "input, select, textarea, [role='combobox']";
 
   function compactText(value, maximum = MAX_CONTEXT_LENGTH) {
     const text = String(value || "").replace(/\s+/g, " ").trim();
@@ -132,15 +133,86 @@
     return [...new Set(headers.filter(Boolean))].slice(0, 4);
   }
 
+  // ARIA comboboxes: dropdowns built from a div or button with role="combobox"
+  // and a list of role="option" items, used instead of <select> by many sites
+  // (Delta, for example). Text inputs with role="combobox" stay text fields.
+  function isCustomCombobox(element) {
+    return element instanceof HTMLElement
+      && !(element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement)
+      && element.getAttribute("role") === "combobox";
+  }
+
+  function isDropdown(element) {
+    return element instanceof HTMLSelectElement || isCustomCombobox(element);
+  }
+
+  function comboboxListbox(element) {
+    for (const attribute of ["aria-controls", "aria-owns"]) {
+      for (const id of (element.getAttribute(attribute) || "").split(/\s+/).filter(Boolean)) {
+        const target = elementById(element, id);
+        if (target?.getAttribute("role") === "listbox") return target;
+        const nested = target?.querySelector?.("[role='listbox']");
+        if (nested) return nested;
+      }
+    }
+    const inside = element.querySelector("[role='listbox']");
+    if (inside) return inside;
+    // Otherwise the nearest container holding exactly one listbox.
+    let ancestor = element.parentElement;
+    for (let depth = 0; ancestor && depth < 4; depth += 1, ancestor = ancestor.parentElement) {
+      const lists = ancestor.querySelectorAll("[role='listbox']");
+      if (lists.length === 1) return lists[0];
+      if (lists.length > 1) return null;
+    }
+    return null;
+  }
+
+  // Options of a <select>, or of a combobox shaped like <select> options:
+  // { text, value } plus the option node to click.
+  function dropdownOptions(element) {
+    if (element instanceof HTMLSelectElement) return [...element.options];
+    const listbox = comboboxListbox(element);
+    if (!listbox) return [];
+    return [...listbox.querySelectorAll("[role='option']")].map((node) => ({
+      text: compactText(node.textContent),
+      value: node.getAttribute("data-value") || node.getAttribute("value") || compactText(node.textContent),
+      node,
+      selected: node.getAttribute("aria-selected") === "true"
+    })).filter((option) => option.text);
+  }
+
+  function clickLikeAPerson(node) {
+    for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup"]) {
+      const EventType = type.startsWith("pointer") && typeof PointerEvent === "function" ? PointerEvent : MouseEvent;
+      node.dispatchEvent(new EventType(type, { bubbles: true, cancelable: true, view: window }));
+    }
+    node.click();
+  }
+
+  function chooseComboboxOption(element, option) {
+    const listbox = comboboxListbox(element);
+    const wasOpen = isUserVisible(listbox || element);
+    if (!wasOpen) clickLikeAPerson(element);
+    clickLikeAPerson(option.node);
+    const chosen = option.node.getAttribute("aria-selected") === "true"
+      || UmeMatcher.normalize(element.textContent).includes(UmeMatcher.normalize(option.text));
+    // Close the list if picking an option didn't.
+    if (listbox && isUserVisible(listbox)) {
+      element.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+    }
+    return chosen;
+  }
+
   function kindOf(element) {
-    if (element.tagName === "SELECT") return "select";
+    if (isDropdown(element)) return "select";
     if (element.tagName === "TEXTAREA") return "textarea";
     const type = (element.type || "text").toLowerCase();
     return type === "checkbox" || type === "radio" ? type : "text";
   }
 
   function isEligible(element) {
-    if (!(element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement)) return false;
+    if (!(element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement || isCustomCombobox(element))) return false;
+    if (element.getAttribute("aria-disabled") === "true") return false;
     const type = (element.type || "").toLowerCase();
     const hints = [element.name, element.id, element.autocomplete, element.placeholder, labelFor(element), groupFor(element)]
       .filter(Boolean)
@@ -155,6 +227,7 @@
 
   function optionLabelFor(element) {
     if (element instanceof HTMLSelectElement) return compactText(element.selectedOptions?.[0]?.text);
+    if (isCustomCombobox(element)) return dropdownOptions(element).find((option) => option.selected)?.text || "";
     return "";
   }
 
@@ -174,12 +247,12 @@
       kind: kindOf(element),
       label: labelFor(element),
       name: element.name || "",
-      placeholder: element instanceof HTMLSelectElement ? "" : compactText(element.placeholder),
+      placeholder: isDropdown(element) ? "" : compactText(element.placeholder),
       required: Boolean(element.required || element.getAttribute("aria-required") === "true"),
       section: headingFor(element),
       tableHeaders: tableHeadersFor(element)
     };
-    if (element instanceof HTMLSelectElement) descriptor.optionLabel = optionLabelFor(element);
+    if (isDropdown(element)) descriptor.optionLabel = optionLabelFor(element);
     const addressPart = UmeMatcher.addressFieldPart(descriptor);
     if (addressPart) descriptor.addressPart = addressPart;
     if (element.type === "radio") {
@@ -195,13 +268,14 @@
     if (element.type === "checkbox") return element.checked;
     if (element.type === "radio") return element.checked ? (describe(element).optionLabel || element.value) : null;
     if (element instanceof HTMLSelectElement) return optionLabelFor(element) || element.value;
+    if (isCustomCombobox(element)) return optionLabelFor(element);
     return element.value;
   }
 
   function collectAnswers() {
     const answers = [];
     const seenRadios = new Set();
-    const elements = deepQuerySelectorAll("input, select, textarea").filter(isEligible);
+    const elements = deepQuerySelectorAll(FORM_CONTROL_SELECTOR).filter(isEligible);
     for (const element of elements) {
       if (isCountryCodeField(element)) continue;
       const descriptor = describe(element);
@@ -222,6 +296,14 @@
       answers.push(answer);
     }
     return answers;
+  }
+
+  // Sites often reformat what's typed, such as uppercasing names (ANA) or
+  // trimming spaces, so compare loosely when checking that a value stuck.
+  function valueStuck(element, expected) {
+    const actual = String(element.value ?? "").trim();
+    const wanted = String(expected ?? "").trim();
+    return actual === wanted || (actual !== "" && actual.toLocaleLowerCase() === wanted.toLocaleLowerCase());
   }
 
   function setNativeValue(element, value) {
@@ -268,6 +350,10 @@
       const option = element.selectedOptions?.[0];
       return callingCodeFromOption(option?.value, option?.text);
     }
+    if (isCustomCombobox(element)) {
+      const option = dropdownOptions(element).find((candidate) => candidate.selected);
+      return callingCodeFromOption(option?.value, option?.text);
+    }
     return callingCodeFromOption(element.value, element.value);
   }
 
@@ -290,6 +376,7 @@
 
   function selectOption(element, option) {
     if (!option) return false;
+    if (isCustomCombobox(element)) return chooseComboboxOption(element, option);
     setNativeValue(element, option.value);
     if (element.value !== option.value) option.selected = true;
     element.dispatchEvent(new Event("input", { bubbles: true }));
@@ -300,7 +387,7 @@
   function applyCountryCodeSelect(element, code) {
     const target = digitsOnly(code);
     if (!target) return false;
-    const candidates = [...element.options].filter((option) => compactText(option.text) || String(option.value || "").trim());
+    const candidates = dropdownOptions(element).filter((option) => compactText(option.text) || String(option.value || "").trim());
     const option = candidates.find((candidate) => callingCodeFromOption(candidate.value, candidate.text) === target)
       || candidates.find((candidate) => new RegExp(`\\+${target}(?:\\D|$)`).test(compactText(candidate.text)))
       || candidates.find((candidate) => {
@@ -311,7 +398,7 @@
   }
 
   function applySelect(element, value) {
-    const options = [...element.options];
+    const options = dropdownOptions(element);
     const index = UmeMatcher.selectOptionIndex(options, value);
     return selectOption(element, index >= 0 ? options[index] : null);
   }
@@ -325,8 +412,8 @@
     if (part === "country") {
       const code = UmeMatcher.normalize(address.countryCode);
       const name = UmeMatcher.normalize(address.countryName);
-      if (element instanceof HTMLSelectElement) {
-        const option = [...element.options].find((candidate) => {
+      if (isDropdown(element)) {
+        const option = dropdownOptions(element).find((candidate) => {
           const optionValue = UmeMatcher.normalize(candidate.value);
           const optionText = UmeMatcher.normalize(candidate.text);
           const optionTextWithoutDialingCode = optionText.replace(/ \d{1,3}$/, "");
@@ -340,17 +427,17 @@
       if (!country) return false;
       setNativeValue(element, country);
       dispatchValueEvents(element);
-      return String(element.value) === String(country);
+      return valueStuck(element, country);
     }
 
     const value = part === "streetAddress" && !(element instanceof HTMLTextAreaElement)
       ? address.addressLine1
       : UmeMatcher.addressValue(saved, part);
     if (!value) return false;
-    if (element instanceof HTMLSelectElement) return applySelect(element, value);
+    if (isDropdown(element)) return applySelect(element, value);
     setNativeValue(element, value);
     dispatchValueEvents(element);
-    return String(element.value) === String(value);
+    return valueStuck(element, value);
   }
 
   function genderValue(value) {
@@ -367,7 +454,7 @@
     if (applySelect(element, saved?.value)) return true;
     const target = genderValue(saved?.value);
     if (!target) return false;
-    const option = [...element.options].find((candidate) => {
+    const option = dropdownOptions(element).find((candidate) => {
       return genderValue([candidate.text, candidate.value].filter(Boolean).join(" ")) === target;
     });
     return selectOption(element, option);
@@ -413,11 +500,21 @@
   const MONTH_NAMES = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
   function dateFieldPart(element) {
-    const text = UmeMatcher.normalize([labelFor(element), element.name, element.id, element.placeholder, element.autocomplete].filter(Boolean).join(" "));
-    if (element.autocomplete === "bday" || /(?:^| )(?:birth ?day|birth ?date|date of birth|dob)(?: |$)/.test(text)) return "";
-    if (/(?:^| )(?:month|mm)(?: |$)/.test(text) || element.autocomplete === "bday-month") return "month";
-    if (/(?:^| )(?:year|yyyy|yy)(?: |$)/.test(text) || element.autocomplete === "bday-year") return "year";
-    if (/(?:^| )(?:day|dd)(?: |$)/.test(text) || element.autocomplete === "bday-day") return "day";
+    const autocomplete = String(element.autocomplete || "");
+    if (autocomplete === "bday-month") return "month";
+    if (autocomplete === "bday-year") return "year";
+    if (autocomplete === "bday-day") return "day";
+    if (autocomplete === "bday") return "";
+    // IDs like "dobmonth_0_dropdown" or "birthYear" glue the part onto the name.
+    const machine = [element.name, element.id].filter(Boolean).join(" ").toLowerCase();
+    const glued = machine.match(/(?:dob|birth|bday)[_-]?(month|day|year)/);
+    if (glued) return glued[1];
+    // "Birth day" is the whole date, not the day part, so drop that phrase first.
+    const text = UmeMatcher.normalize([labelFor(element), element.name, element.id, element.placeholder].filter(Boolean).join(" "))
+      .replace(/(?:^| )birth ?day(?= |$)/g, " ");
+    if (/(?:^| )(?:month|mm)(?: |$)/.test(text)) return "month";
+    if (/(?:^| )(?:year|yyyy|yy)(?: |$)/.test(text)) return "year";
+    if (/(?:^| )(?:day|dd)(?: |$)/.test(text)) return "day";
     return "";
   }
 
@@ -443,15 +540,15 @@
     if (part) {
       const partValue = datePartValue(parts, part);
       if (!partValue) return false;
-      if (element instanceof HTMLSelectElement) return applyDateSelect(element, partValue);
+      if (isDropdown(element)) return applyDateSelect(element, partValue);
       const text = UmeMatcher.normalize([element.placeholder, element.name, element.id].filter(Boolean).join(" "));
       const value = (part === "month" || part === "day") && /mm|dd|yyyy|yy/.test(text) ? partValue.padded : partValue.numeric;
       setNativeValue(element, value);
       dispatchValueEvents(element);
-      return String(element.value) === String(value);
+      return valueStuck(element, value);
     }
 
-    if (element instanceof HTMLSelectElement) return false;
+    if (isDropdown(element)) return false;
     const normalized = UmeMatcher.normalize([labelFor(element), accessibleNameFor(element), element.name, element.id, element.placeholder, element.autocomplete].filter(Boolean).join(" "));
     const isBirthDate = /(?:^| )(?:birth ?day|birth ?date|date of birth|dob)(?: |$)/.test(normalized) || element.autocomplete === "bday";
     if (!isBirthDate) return false;
@@ -496,46 +593,85 @@
     const type = UmeMatcher.answerType(saved);
     if (type === "address") return applyAddress(element, saved);
     if (type === "gender") {
-      if (element instanceof HTMLSelectElement && applyGenderSelect(element, saved)) return true;
+      if (isDropdown(element) && applyGenderSelect(element, saved)) return true;
       if (applySegmentedGender(saved)) return true;
-      if (element instanceof HTMLSelectElement) return false;
+      if (isDropdown(element)) return false;
     }
     if (type === "date") {
       if (applyDate(element, saved)) return true;
-      if (element instanceof HTMLSelectElement) return false;
+      if (isDropdown(element)) return false;
       setNativeValue(element, value);
       dispatchValueEvents(element);
-      return String(element.value) === String(value);
+      return valueStuck(element, value);
     }
 
     if (type === "phone") {
       const parts = phoneParts(saved, element);
       if (!parts) return false;
-      if (element instanceof HTMLSelectElement) {
+      if (isDropdown(element)) {
         return isCountryCodeField(element)
           ? applyCountryCodeSelect(element, parts[0])
           : applySelect(element, parts[0]);
       }
       value = parts[parts.length - 1];
-    } else if (element instanceof HTMLSelectElement) {
+      const digits = digitsOnly(value);
+      if (digits && !isConfirmationField(element) && phoneUsedElsewhere(digits, element)) {
+        intentionallySkipped.add(element);
+        return false;
+      }
+      if (digits && !filledPhoneNumbers.has(digits)) filledPhoneNumbers.set(digits, element);
+    } else if (isDropdown(element)) {
       return applySelect(element, value);
     }
 
     setNativeValue(element, value);
     dispatchValueEvents(element);
-    return String(element.value) === String(value);
+    return valueStuck(element, value);
   }
 
   const failedApplications = new WeakSet();
+  // Fields left empty on purpose (not failures), so they aren't sent to the AI.
+  const intentionallySkipped = new WeakSet();
+  // Phone numbers Umete filled on this page, mapped to the field that got each.
+  // A second phone field is almost always an alternate, emergency, or
+  // per-person number, and sites like ANA reject the same number twice, so a
+  // saved number goes into one field per page unless a field asks to confirm
+  // it. This lasts for the page's lifetime because multi-step forms (ANA again)
+  // collapse a finished step before showing the next, so the next click is a
+  // separate fill whose earlier phone field is no longer visible.
+  const filledPhoneNumbers = new Map();
+
+  function fieldIdentity(element) {
+    return element.id || element.name || "";
+  }
+
+  function phoneUsedElsewhere(digits, element) {
+    const owner = filledPhoneNumbers.get(digits);
+    // The field that got the number counts as used even after the site removes
+    // it (a collapsed step), unless this is that same field re-rendered.
+    if (owner && owner !== element && !(fieldIdentity(owner) && fieldIdentity(owner) === fieldIdentity(element))) return true;
+    // Also catch the number already typed into any other field, hidden or not.
+    return deepQuerySelectorAll("input").some((other) => {
+      if (other === element || other.type === "hidden") return false;
+      const otherDigits = digitsOnly(other.value);
+      return otherDigits.length >= 6 && (otherDigits === digits || otherDigits.endsWith(digits) || digits.endsWith(otherDigits));
+    });
+  }
+
+  function isConfirmationField(element) {
+    const text = UmeMatcher.normalize([labelFor(element), accessibleNameFor(element), element.name, element.placeholder].filter(Boolean).join(" "));
+    return /(?:^| )(?:confirm|confirmation|re enter|reenter|retype|repeat|verify|again)(?: |$)/.test(text);
+  }
 
   function eligibleElements() {
-    return deepQuerySelectorAll("input, select, textarea").filter(isEligible);
+    return deepQuerySelectorAll(FORM_CONTROL_SELECTOR).filter(isEligible);
   }
 
   function fillAnswers(savedEntries, diagnosticsEnabled = false) {
     const elements = eligibleElements();
     const countryCodeDiagnostics = [];
     let filled = 0;
+    let skippedDuplicates = 0;
     let unmatched = 0;
     let matchedButNotApplied = 0;
     for (const element of elements) {
@@ -563,8 +699,8 @@
           selectedBefore,
           selectedAfter: optionLabelFor(element),
           applied,
-          matchingOptions: element instanceof HTMLSelectElement
-            ? [...element.options].filter((option) => {
+          matchingOptions: isDropdown(element)
+            ? dropdownOptions(element).filter((option) => {
               const textCodes = compactText(option.text).match(/\+\d{1,3}/g) || [];
               return digitsOnly(option.value) === targetCode || textCodes.some((code) => digitsOnly(code) === targetCode);
             }).slice(0, 10).map((option) => ({ text: compactText(option.text), value: String(option.value || "") }))
@@ -573,6 +709,10 @@
       }
       if (applied) {
         filled += 1;
+        failedApplications.delete(element);
+        intentionallySkipped.delete(element);
+      } else if (intentionallySkipped.has(element)) {
+        skippedDuplicates += 1;
         failedApplications.delete(element);
       } else {
         unmatched += 1;
@@ -584,9 +724,10 @@
       filled,
       unmatched,
       matchedButNotApplied,
+      skippedDuplicates,
       ...(diagnosticsEnabled ? { countryCodeDiagnostics } : {}),
       eligibleFieldCount: elements.length,
-      domControlCount: deepQuerySelectorAll("input, select, textarea").length,
+      domControlCount: deepQuerySelectorAll(FORM_CONTROL_SELECTOR).length,
       frameURL: location.href
     };
   }
@@ -596,9 +737,10 @@
     return eligibleElements().flatMap((element, index) => {
       const descriptor = describe(element);
       if (hasAddress && UmeMatcher.addressFieldPart(descriptor)) return [];
+      if (intentionallySkipped.has(element)) return [];
       if (!failedApplications.has(element) && matchForElement(savedEntries, element)) return [];
-      const options = element instanceof HTMLSelectElement
-        ? [...element.options].map((option) => compactText(option.text)).filter(Boolean).slice(0, 50)
+      const options = isDropdown(element)
+        ? dropdownOptions(element).map((option) => compactText(option.text)).filter(Boolean).slice(0, 50)
         : [];
       return [{ field: `field-${index}`, ...descriptor, options }];
     });

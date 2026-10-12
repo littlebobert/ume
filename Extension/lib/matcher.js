@@ -362,10 +362,21 @@
     });
   }
 
+  // "Owner of Phone", "Phone holder", "Name of phone owner": these ask for a
+  // person, not a number. Only the field's own label is checked, because the
+  // surrounding group (often "Phone No.") would otherwise look like a number.
+  function isPhoneOwnerField(entry) {
+    const own = ` ${normalize([nameText(entry), entry?.label, entry?.placeholder].filter(Boolean).join(" "))} `;
+    if (!/ (?:phone|telephone|tel|mobile|cell) /.test(own)) return false;
+    if (!/ (?:owner|holder|subscriber|user|name|owner s) /.test(own)) return false;
+    return !/ (?:number|no|num|nr|#|digits) /.test(own);
+  }
+
   function semanticCategory(entry) {
     const text = semanticText(entry);
     if (addressFieldPart(entry)) return "address";
     if (/(?:^| )(?:country (?:phone )?code|phone country|calling code|dial code|international code|country dialing)(?: |$)/.test(text)) return "phone";
+    if (isPhoneOwnerField(entry)) return "phone-owner";
     if (/(?:^| )(?:phone|telephone|tel|mobile|cell)(?: |$)/.test(text)) return "phone";
     if (/(?:^| )(?:gender|sex)(?: |$)/.test(text)) return "gender";
     if (/(?:^| )(?:expir(?:y|ation)|expires?|valid (?:to|until)|issue date|issued (?:on|date))(?= |$)/.test(text)) return "document-date";

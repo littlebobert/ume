@@ -900,6 +900,17 @@ final class SettingsTabViewController: NSTabViewController {
         addTabViewItem(item(SavedDataViewController(), label: "Saved Data", image: "tray.full"))
     }
 
+    override func tabView(_ tabView: NSTabView, willSelect tabViewItem: NSTabViewItem?) {
+        // NSTabViewController resizes the window to each pane's preferredContentSize when
+        // switching tabs. Hand the incoming pane the window's current content size so the
+        // window keeps whatever size it has, including any resizing the user has done.
+        let current = view.bounds.size
+        if current.width > 0, current.height > 0 {
+            tabViewItem?.viewController?.preferredContentSize = current
+        }
+        super.tabView(tabView, willSelect: tabViewItem)
+    }
+
     private func item(_ controller: NSViewController, label: String, image: String) -> NSTabViewItem {
         controller.preferredContentSize = settingsPaneSize
         let item = NSTabViewItem(viewController: controller)
@@ -1161,6 +1172,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
     private var navigatingCells = false
     private var discardingDraft = false
     private var keyMonitor: Any?
+    private var draftEditorObserver: NSObjectProtocol?
     private static let answerTypes = ["", "address", "contact", "date", "gender", "phone"]
     private static let typeTitles = ["Auto", "Address", "Contact", "Date", "Gender", "Phone"]
     private static let aggregateTypes = AnswerStore.aggregateTypes
@@ -1471,6 +1483,19 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         let popover = NSPopover()
         popover.contentViewController = controller
         popover.behavior = .transient
+        if row == answers.count, draftAnswer != nil {
+            // A new address or contact only exists once its editor saves; cancelling,
+            // pressing Escape, or clicking away should not leave an empty row behind.
+            if let draftEditorObserver { NotificationCenter.default.removeObserver(draftEditorObserver) }
+            draftEditorObserver = NotificationCenter.default.addObserver(forName: NSPopover.didCloseNotification, object: popover, queue: .main) { [weak self] _ in
+                guard let self else { return }
+                if let observer = self.draftEditorObserver {
+                    NotificationCenter.default.removeObserver(observer)
+                    self.draftEditorObserver = nil
+                }
+                self.discardEmptyDraft()
+            }
+        }
         popover.show(relativeTo: anchorCellView(row: row, column: column).bounds, of: anchorCellView(row: row, column: column), preferredEdge: .maxY)
     }
 

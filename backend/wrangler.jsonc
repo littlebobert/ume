@@ -7,7 +7,10 @@
 		"enabled": true
 	},
 	"routes": [
-		{ "pattern": "api.umete.jp", "custom_domain": true }
+		{
+			"pattern": "api.umete.jp",
+			"custom_domain": true
+		}
 	],
 	"vars": {
 		// Requests (not fills) allowed per day. One fill sends one request per
@@ -24,17 +27,22 @@
 		{
 			"name": "BURST_LIMITER",
 			"namespace_id": "91003",
-			"simple": { "limit": 20, "period": 60 }
+			"simple": {
+				"limit": 20,
+				"period": 60
+			}
 		}
 	],
 	"triggers": {
-		"crons": ["23 4 * * *"]
+		"crons": [
+			"23 4 * * *"
+		]
 	},
 	"d1_databases": [
 		{
 			"binding": "DB",
 			"database_name": "umete-api",
-			"database_id": "REPLACE_WITH_D1_DATABASE_ID",
+			"database_id": "addc6165-69e9-4d81-98cc-ef46960ea029",
 			"migrations_dir": "migrations"
 		}
 	]

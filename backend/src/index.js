@@ -178,8 +178,11 @@ async function handleDecisions(request, env, deps) {
       body: JSON.stringify({ model: env.DECISIONS_MODEL || 'gpt-6-luna', input, questions }),
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
-  } catch {
-    throw new HttpError(504, 'upstream_unavailable', 'The AI service did not respond in time.');
+  } catch (error) {
+    // Log the error type only, never request content.
+    console.warn(`decisions upstream fetch failed: ${error?.name || 'Error'}: ${error?.message || ''}`.slice(0, 200));
+    const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+    throw new HttpError(504, 'upstream_unavailable', timedOut ? 'The AI service did not respond in time.' : 'The AI service could not be reached.');
   }
   if (!upstream.ok) {
     // Log the status only; upstream error bodies can echo request content.
@@ -191,7 +194,9 @@ async function handleDecisions(request, env, deps) {
 }
 
 export async function handleRequest(request, env, deps = {}) {
-  const resolved = { fetch: deps.fetch || fetch, now: deps.now || (() => new Date()) };
+  // Workers reject the global fetch when it is called as a method of another
+  // object ("Illegal invocation"), so wrap it instead of storing it directly.
+  const resolved = { fetch: deps.fetch || ((url, init) => fetch(url, init)), now: deps.now || (() => new Date()) };
   const url = new URL(request.url);
   try {
     if (url.pathname === '/v1/health' && request.method === 'GET') return json({ ok: true });

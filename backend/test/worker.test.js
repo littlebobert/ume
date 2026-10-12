@@ -163,3 +163,19 @@ test('health check, unknown routes, and the cleanup cron', async () => {
   await worker.scheduled({}, env);
   assert.equal(database.prepare('SELECT COUNT(*) AS n FROM usage').get().n, 0);
 });
+
+test('calls the global fetch as a plain function, as Workers require', async () => {
+  const { env } = createEnvironment();
+  const original = globalThis.fetch;
+  globalThis.fetch = function strictFetch() {
+    // Workers throw "Illegal invocation" unless `this` is the global object or undefined.
+    if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
+    return Promise.resolve(Response.json({ answers: [] }));
+  };
+  try {
+    const response = await handleRequest(post(decisionBody()), env, { now: NOW });
+    assert.equal(response.status, 200);
+  } finally {
+    globalThis.fetch = original;
+  }
+});

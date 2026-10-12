@@ -1,10 +1,19 @@
 name: Release Umete
+run-name: Release Umete ${{ inputs.version || '(auto version)' }} for ${{ inputs.platform || 'all' }}
 
 on:
   workflow_dispatch:
     inputs:
+      platform:
+        description: "all: TestFlight, Mac DMG, GitHub release, Sparkle update, and website. ios: TestFlight only, which can rebuild an already-released version."
+        required: false
+        type: choice
+        default: all
+        options:
+          - all
+          - ios
       version:
-        description: Version to release (for example, 0.1.2). Leave blank to increment the latest release tag's patch version.
+        description: Version (for example, 0.1.2). Blank means the next patch version for "all", or the latest released version for "ios".
         required: false
         type: string
       changelog_en:
@@ -52,14 +61,18 @@ jobs:
         shell: bash
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
+          PLATFORM: ${{ inputs.platform || 'all' }}
         run: |
           set -euo pipefail
 
           version="${REQUESTED_VERSION#v}"
+          latest_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | sed -n '1p')"
           if [[ -z "$version" ]]; then
-            latest_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | sed -n '1p')"
             if [[ -z "$latest_tag" ]]; then
               version="1.0.1"
+            elif [[ "$PLATFORM" == "ios" ]]; then
+              # A TestFlight-only run with no version rebuilds the latest release.
+              version="${latest_tag#v}"
             else
               latest_version="${latest_tag#v}"
               IFS=. read -r major minor patch <<< "$latest_version"
@@ -73,17 +86,20 @@ jobs:
           fi
 
           tag="v$version"
-          if git rev-parse --verify --quiet "refs/tags/$tag" >/dev/null; then
-            echo "Tag $tag already exists." >&2
+          # TestFlight-only runs may rebuild a released version: each run gets a new
+          # build number, and nothing is tagged or published on GitHub.
+          if [[ "$PLATFORM" != "ios" ]] && git rev-parse --verify --quiet "refs/tags/$tag" >/dev/null; then
+            echo "Tag $tag already exists. To rebuild it for TestFlight only, run with platform=ios." >&2
             exit 1
           fi
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "build_number=${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
-          echo "Releasing Umete $version"
+          echo "Releasing Umete $version for $PLATFORM"
 
       - name: Verify publication credentials
+        if: inputs.platform != 'ios'
         env:
           WEBSITE_REPO_TOKEN: ${{ secrets.WEBSITE_REPO_TOKEN }}
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
@@ -98,6 +114,7 @@ jobs:
           fi
 
       - name: Prepare localized changelog note
+        if: inputs.platform != 'ios'
         id: changelog
         env:
           RELEASE_NOTE_EN: ${{ inputs.changelog_en }}
@@ -134,12 +151,14 @@ jobs:
           build_number:${{ steps.version.outputs.build_number }}
 
       - name: Build signed macOS app
+        if: inputs.platform != 'ios'
         run: >-
           bundle exec fastlane mac release
           version:${{ steps.version.outputs.version }}
           build_number:${{ steps.version.outputs.build_number }}
 
       - name: Notarize and package macOS app
+        if: inputs.platform != 'ios'
         id: macos
         shell: bash
         env:
@@ -199,6 +218,7 @@ jobs:
           echo "archive=$release_dmg" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub release
+        if: inputs.platform != 'ios'
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
@@ -210,6 +230,7 @@ jobs:
           files: ${{ steps.macos.outputs.archive }}
 
       - name: Check out landing-page repository
+        if: inputs.platform != 'ios'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: littlebobert/littlebobert.github.io
@@ -218,6 +239,7 @@ jobs:
           path: website
 
       - name: Update and publish Umete landing page and appcast
+        if: inputs.platform != 'ios'
         env:
           VERSION: ${{ steps.version.outputs.version }}
           TAG: ${{ steps.version.outputs.tag }}

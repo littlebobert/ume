@@ -1,0 +1,1 @@
+Umete no longer sends your contacts’ names to AI matching, and its Privacy tab now explains iCloud sync.

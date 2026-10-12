@@ -1,0 +1,119 @@
+name: App Store metadata
+
+# Syncs the iOS App Store listing (description, keywords, promotional text, What's New,
+# URLs, name, and subtitle, per language) with the files in AppStoreMetadata/.
+# See ci/STORE_METADATA.md.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "push updates App Store Connect from the files; pull opens a pull request with the current listing."
+        required: true
+        type: choice
+        options:
+          - push
+          - pull
+        default: push
+      dry_run:
+        description: "Push only: show what would change without changing anything."
+        required: false
+        type: boolean
+        default: true
+      version:
+        description: "Push only: the App Store version to update. Blank uses the one being prepared."
+        required: false
+        type: string
+        default: ""
+  pull_request:
+    paths:
+      - "AppStoreMetadata/**"
+      - "ci/publish_store_metadata.py"
+
+concurrency:
+  group: app-store-metadata
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  BUNDLE_ID: com.justin.henry.ume.ios
+
+jobs:
+  validate:
+    name: Validate metadata files
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests
+        run: python3 -m unittest ci/test_publish_store_metadata.py
+      - name: Check lengths and URLs
+        run: python3 ci/publish_store_metadata.py push --validate-only
+
+  sync:
+    name: ${{ github.event.inputs.mode == 'pull' && 'Pull listing' || (github.event.inputs.dry_run == 'true' && 'Preview changes' || 'Push listing') }}
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The App Store Connect API key lives in the release environment, as for releases.
+    environment: release
+    permissions:
+      # Pull commits the listing to a branch and opens a pull request.
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull the current listing
+        if: github.event.inputs.mode == 'pull'
+        env:
+          APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: python3 ci/publish_store_metadata.py pull
+
+      - name: Open a pull request with the pulled listing
+        if: github.event.inputs.mode == 'pull'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git add AppStoreMetadata
+          if git diff --cached --quiet; then
+            echo "The files already match App Store Connect; nothing to commit." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          branch="app-store-metadata/pull-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -m "Pull the App Store listing from App Store Connect"
+          git push origin "$branch"
+          pr_url="$(gh pr create --base "$BASE_BRANCH" --head "$branch" \
+            --title "Pull the App Store listing from App Store Connect" \
+            --body "The listing as it is in App Store Connect now, pulled by the App Store metadata workflow. Merge to make these files the starting point for future pushes.")"
+          echo "Opened ${pr_url}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Push the listing
+        if: github.event.inputs.mode == 'push'
+        env:
+          APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          arguments=(push)
+          if [ "$DRY_RUN" = "true" ]; then arguments+=(--dry-run); fi
+          if [ -n "$VERSION" ]; then arguments+=(--version "$VERSION"); fi
+          python3 ci/publish_store_metadata.py "${arguments[@]}" | tee "${RUNNER_TEMP}/changes.txt"
+          {
+            echo "## App Store metadata"
+            echo ""
+            echo '```'
+            cat "${RUNNER_TEMP}/changes.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,22 @@
+Umete (埋めて, “fill it in”) fills web forms in Safari with answers you’ve already typed once.
+
+Fill in a form yourself, open Umete from Safari, and choose Remember my answers. Next time you see a form, choose Fill this form. Umete fills only when you ask, and never submits the form for you.
+
+WHAT IT FILLS
+• Text fields, menus, checkboxes, radio buttons, and dates, including day, month, and year in separate fields
+• Names, email addresses, phone numbers with their country codes, and dates of birth
+• Addresses, filled part by part into the right fields
+• Contacts like your doctors and an emergency contact, matched by specialty or relationship
+• Passport, frequent flyer, and membership numbers, only into fields that ask for them
+
+MATCHING THAT UNDERSTANDS FORMS
+Umete matches fields on your iPhone using their labels, headings, and autocomplete hints. For fields it doesn’t recognize, it can ask an AI which of your saved answers fits. AI matching is free with a daily limit, with no API key or account needed, or you can use your own OpenAI or Anthropic key.
+
+PRIVATE BY DESIGN
+• Saved answers are encrypted with AES-GCM, with the key in your Keychain
+• Sync between iPhone, iPad, and Mac through your own iCloud, encrypted before upload
+• AI matching sees only descriptions of the fields, never your saved answers, the values in the form, your addresses, or your contacts’ names
+• Passwords, card numbers, and security codes are never saved or filled
+• No account and no analytics
+
+Umete is also available for Mac at umete.jp, and its source code is on GitHub.

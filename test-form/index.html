@@ -44,6 +44,12 @@
             <div class="grid">
               <label>Emergency contact name<input name="emergency_contact_name" value="Taro Yamada"></label>
               <label>Emergency contact phone number<input name="emergency_contact_phone" type="tel" value="080-9876-5432"></label>
+              <label>Relationship
+                <select name="emergency_contact_relationship">
+                  <option value="">Choose one</option>
+                  <option>Spouse</option><option>Parent</option><option>Child</option><option selected>Son</option><option>Daughter</option><option>Friend</option>
+                </select>
+              </label>
             </div>
           </fieldset>
 
@@ -57,6 +63,9 @@
                 </select>
               </label>
               <label>Primary physician<input name="primary_physician" value="Dr. Sakura Ito"></label>
+              <label>Primary physician phone<input name="primary_physician_phone" type="tel" value="03-1234-5678"></label>
+              <label>Cardiologist<input name="cardiologist_name" value="Dr. Kenji Mori"></label>
+              <label>Cardiologist phone<input name="cardiologist_phone" type="tel" value="03-8765-4321"></label>
               <label class="wide">Current medications<textarea name="current_medications">Atorvastatin 10 mg once daily</textarea></label>
               <label class="wide">Known allergies<textarea name="known_allergies">Penicillin</textarea></label>
             </div>

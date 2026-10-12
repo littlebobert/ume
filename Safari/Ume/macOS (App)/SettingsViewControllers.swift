@@ -318,6 +318,165 @@ final class AddressEditorViewController: NSViewController {
     }
 }
 
+final class ContactEditorViewController: NSViewController {
+    var onSave: ((String, [String: Any]) -> Void)?
+
+    private static let categories = AnswerStore.contactCategories
+    private static let categoryTitles = ["Doctor", "Emergency contact"]
+    private static let doctorRoles = [
+        "Primary care", "Cardiologist", "Dentist", "Dermatologist", "Endocrinologist", "Gastroenterologist",
+        "Neurologist", "Oncologist", "Ophthalmologist", "Orthopedist", "Psychiatrist", "Pulmonologist",
+        "Rheumatologist", "Surgeon", "Urologist"
+    ]
+    private static let emergencyRoles = [
+        "Spouse", "Partner", "Parent", "Mother", "Father", "Child", "Son", "Daughter", "Sibling", "Brother",
+        "Sister", "Friend", "Neighbor", "Caregiver", "Guardian"
+    ]
+
+    private let initialLabel: String
+    private let initialContact: [String: Any]
+    private let labelField = NSTextField()
+    private let categoryPopup = NSPopUpButton()
+    private let nameField = NSTextField()
+    private let roleField = NSComboBox()
+    private let phoneField = NSTextField()
+    private let faxField = NSTextField()
+    private let emailField = NSTextField()
+    private let organizationField = NSTextField()
+    private let addressField = NSTextField()
+    private let roleLabel = NSTextField(labelWithString: "Specialty")
+    private let organizationLabel = NSTextField(labelWithString: "Practice or clinic")
+    private let saveButton = NSButton()
+
+    init(label: String, contact: [String: Any]) {
+        initialLabel = label
+        initialContact = contact
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func loadView() {
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 520, height: 400))
+        labelField.stringValue = initialLabel
+        categoryPopup.addItems(withTitles: Self.categoryTitles)
+        let initialCategory = initialContact["category"] as? String ?? "doctor"
+        categoryPopup.selectItem(at: Self.categories.firstIndex(of: initialCategory) ?? 0)
+        categoryPopup.target = self
+        categoryPopup.action = #selector(categoryChanged)
+        nameField.stringValue = initialContact["name"] as? String ?? ""
+        roleField.stringValue = initialContact["role"] as? String ?? ""
+        roleField.completes = true
+        phoneField.stringValue = initialContact["phone"] as? String ?? ""
+        phoneField.placeholderString = "Phone number"
+        faxField.stringValue = initialContact["fax"] as? String ?? ""
+        faxField.placeholderString = "Fax number"
+        emailField.stringValue = initialContact["email"] as? String ?? ""
+        emailField.placeholderString = "Email address"
+        organizationField.stringValue = initialContact["organization"] as? String ?? ""
+        addressField.stringValue = initialContact["address"] as? String ?? ""
+        addressField.placeholderString = "Street, city, state, postal code"
+
+        let grid = NSGridView(views: [
+            [NSTextField(labelWithString: "Label"), labelField],
+            [NSTextField(labelWithString: "Kind"), categoryPopup],
+            [NSTextField(labelWithString: "Name"), nameField],
+            [roleLabel, roleField],
+            [NSTextField(labelWithString: "Phone"), phoneField],
+            [NSTextField(labelWithString: "Fax"), faxField],
+            [NSTextField(labelWithString: "Email"), emailField],
+            [organizationLabel, organizationField],
+            [NSTextField(labelWithString: "Address"), addressField]
+        ])
+        grid.column(at: 0).xPlacement = .trailing
+        grid.rowAlignment = .firstBaseline
+        grid.columnSpacing = 10
+        grid.rowSpacing = 10
+        grid.translatesAutoresizingMaskIntoConstraints = false
+
+        let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancelPressed))
+        cancel.bezelStyle = .rounded
+        saveButton.target = self
+        saveButton.action = #selector(savePressed)
+        saveButton.bezelStyle = .rounded
+        saveButton.keyEquivalent = "\r"
+        let buttons = NSStackView(views: [cancel, saveButton])
+        buttons.orientation = .horizontal
+        buttons.spacing = 8
+        buttons.translatesAutoresizingMaskIntoConstraints = false
+
+        for field in [labelField, nameField, roleField, phoneField, faxField, emailField, organizationField, addressField] as [NSView] {
+            field.translatesAutoresizingMaskIntoConstraints = false
+        }
+        categoryPopup.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(grid)
+        view.addSubview(buttons)
+        NSLayoutConstraint.activate([
+            grid.topAnchor.constraint(equalTo: view.topAnchor, constant: 16),
+            grid.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            grid.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            labelField.widthAnchor.constraint(equalToConstant: 340),
+            buttons.topAnchor.constraint(equalTo: grid.bottomAnchor, constant: 16),
+            buttons.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            buttons.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -14)
+        ])
+        updateCategoryUI()
+    }
+
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        view.window?.makeFirstResponder(nameField.stringValue.isEmpty ? nameField : labelField)
+    }
+
+    private var selectedCategory: String {
+        Self.categories[max(categoryPopup.indexOfSelectedItem, 0)]
+    }
+
+    @objc private func categoryChanged() {
+        updateCategoryUI()
+    }
+
+    private func updateCategoryUI() {
+        let isDoctor = selectedCategory == "doctor"
+        roleLabel.stringValue = isDoctor ? "Specialty" : "Relationship"
+        roleField.removeAllItems()
+        roleField.addItems(withObjectValues: isDoctor ? Self.doctorRoles : Self.emergencyRoles)
+        roleField.placeholderString = isDoctor ? "e.g. Cardiologist or Primary care" : "e.g. Daughter"
+        organizationLabel.stringValue = isDoctor ? "Practice or clinic" : "Employer"
+        nameField.placeholderString = isDoctor ? "Dr. Anita Patel" : "Full name"
+        labelField.placeholderString = isDoctor ? "Defaults to the doctor's name" : "Defaults to the contact's name"
+        saveButton.title = isDoctor ? "Save Doctor" : "Save Contact"
+    }
+
+    @objc private func cancelPressed() {
+        view.window?.close()
+    }
+
+    @objc private func savePressed() {
+        let name = nameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else {
+            NSSound.beep()
+            view.window?.makeFirstResponder(nameField)
+            return
+        }
+        var contact: [String: Any] = ["version": 1, "category": selectedCategory, "name": name]
+        let optional: [String: String] = [
+            "role": roleField.stringValue,
+            "phone": phoneField.stringValue,
+            "fax": faxField.stringValue,
+            "email": emailField.stringValue,
+            "organization": organizationField.stringValue,
+            "address": addressField.stringValue
+        ]
+        for (key, raw) in optional {
+            let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !value.isEmpty { contact[key] = value }
+        }
+        onSave?(labelField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines), contact)
+        view.window?.close()
+    }
+}
+
 final class DebugLogWindowController: NSWindowController, NSWindowDelegate {
     init() {
         let window = NSWindow(
@@ -996,15 +1155,15 @@ final class AISettingsViewController: NSViewController, NSTextFieldDelegate {
 final class SavedDataViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSTextFieldDelegate {
     private let table = NSTableView()
     private let deleteButton = NSButton()
-    private let addButton = NSButton()
-    private let addAddressButton = NSButton()
+    private let addMenu = NSPopUpButton(frame: .zero, pullsDown: true)
     private var answers: [[String: Any]] = []
     private var draftAnswer: [String: Any]?
     private var navigatingCells = false
     private var discardingDraft = false
     private var keyMonitor: Any?
-    private static let answerTypes = ["", "address", "date", "gender", "phone"]
-    private static let typeTitles = ["Auto", "Address", "Date", "Gender", "Phone"]
+    private static let answerTypes = ["", "address", "contact", "date", "gender", "phone"]
+    private static let typeTitles = ["Auto", "Address", "Contact", "Date", "Gender", "Phone"]
+    private static let aggregateTypes = AnswerStore.aggregateTypes
 
     override func loadView() {
         view = settingsPaneView()
@@ -1038,25 +1197,30 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         scroll.hasVerticalScroller = true
         scroll.borderType = .bezelBorder
 
-        addButton.title = "Add…"
-        addButton.target = self
-        addButton.action = #selector(addAnswer)
-        addButton.bezelStyle = .rounded
-        addAddressButton.title = "Add Address…"
-        addAddressButton.target = self
-        addAddressButton.action = #selector(addAddress)
-        addAddressButton.bezelStyle = .rounded
+        addMenu.bezelStyle = .rounded
+        addMenu.addItem(withTitle: "Add")
+        let addItems: [(String, Selector)] = [
+            ("Text Answer…", #selector(addAnswer)),
+            ("Address…", #selector(addAddress)),
+            ("Doctor…", #selector(addDoctor)),
+            ("Emergency Contact…", #selector(addEmergencyContact))
+        ]
+        for (title, action) in addItems {
+            addMenu.addItem(withTitle: title)
+            addMenu.lastItem?.target = self
+            addMenu.lastItem?.action = action
+        }
         deleteButton.title = "Delete"
         deleteButton.target = self
         deleteButton.action = #selector(deleteSelected)
         deleteButton.bezelStyle = .rounded
         deleteButton.isEnabled = false
         let clear = NSButton(title: "Clear All Answers…", target: self, action: #selector(clearAll))
-        let buttons = NSStackView(views: [addButton, addAddressButton, deleteButton, NSView(), clear])
+        let buttons = NSStackView(views: [addMenu, deleteButton, NSView(), clear])
         buttons.orientation = .horizontal
         buttons.spacing = 8
 
-        let stack = paneStack(title: "Saved Data", description: "Double-click a label or value to edit; click a type to change it. Phone and Address use structured editors so Ume can fill related fields automatically.")
+        let stack = paneStack(title: "Saved Data", description: "Double-click a label or value to edit; click a type to change it. Phone, Address, and Contact use structured editors so Ume can fill related fields automatically. Add each doctor or emergency contact once and Ume fills their name, phone, and other details wherever a form asks for them.")
         stack.addArrangedSubview(scroll)
         stack.addArrangedSubview(buttons)
         view.addSubview(stack)
@@ -1118,7 +1282,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
 
     @discardableResult
     private func commitDraftIfComplete() -> Bool {
-        guard let draft = draftAnswer, draft["answerType"] as? String != "address" else { return false }
+        guard let draft = draftAnswer, !Self.aggregateTypes.contains(draft["answerType"] as? String ?? "") else { return false }
         let label = (draft["userLabel"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let value = (draft["value"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard !label.isEmpty, !value.isEmpty else { return false }
@@ -1157,9 +1321,12 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         guard draftAnswer != nil, displayedAnswers.indices.contains(row) else { return }
         table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
         table.scrollRowToVisible(row)
-        if draftAnswer?["answerType"] as? String == "address" {
+        switch draftAnswer?["answerType"] as? String {
+        case "address":
             presentAddressEditor(row: row)
-        } else {
+        case "contact":
+            presentContactEditor(row: row)
+        default:
             startEditing(row: row, column: columnIndex("label"))
         }
     }
@@ -1198,6 +1365,8 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         if identifier == "type" { return }
         if identifier == "value", type == "address" {
             presentAddressEditor(row: row)
+        } else if identifier == "value", type == "contact" {
+            presentContactEditor(row: row)
         } else if identifier == "value", type == "phone" {
             presentPhonePopover(row: row)
         } else if identifier == "value", type == "date" {
@@ -1229,15 +1398,21 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
               Self.answerTypes.indices.contains(sender.indexOfSelectedItem) else { return }
         let type = Self.answerTypes[sender.indexOfSelectedItem]
         let currentType = displayedAnswers[row]["answerType"] as? String ?? detectedType(displayedAnswers[row])
+        if type == currentType { return }
+        if Self.aggregateTypes.contains(currentType) {
+            // Addresses and contacts hold structured values; delete and re-add to change their type.
+            NSSound.beep()
+            table.reloadData()
+            return
+        }
         if type == "address" {
-            if currentType == "address" { return }
             table.reloadData()
             DispatchQueue.main.async { self.presentAddressEditor(row: row) }
             return
         }
-        if currentType == "address" {
-            NSSound.beep()
+        if type == "contact" {
             table.reloadData()
+            DispatchQueue.main.async { self.presentContactEditor(row: row, category: "doctor") }
             return
         }
         if row == answers.count {
@@ -1314,6 +1489,43 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
                     try AnswerStore.updateAddress(id: id, userLabel: label, value: address)
                 } else {
                     try AnswerStore.addAddress(userLabel: label, value: address)
+                    self.draftAnswer = nil
+                }
+                self.reload()
+                if !self.answers.isEmpty {
+                    let selected = min(row, self.answers.count - 1)
+                    self.table.selectRowIndexes(IndexSet(integer: selected), byExtendingSelection: false)
+                }
+            } catch {
+                self.present(error)
+                self.reload()
+            }
+        }
+        present(controller, row: row)
+    }
+
+    private func presentContactEditor(row: Int, category: String? = nil) {
+        guard let answer = answerForRow(row) else { return }
+        let isContact = (answer["answerType"] as? String) == "contact"
+        var contact = answer["value"] as? [String: Any] ?? [:]
+        if !isContact, let text = answer["value"] as? String, !text.isEmpty {
+            // Converting a plain text answer: keep its value as the contact's name.
+            contact["name"] = text
+        }
+        if contact["category"] == nil {
+            contact["category"] = category ?? "doctor"
+        }
+        let existingLabel = answer["userLabel"] as? String
+            ?? (isContact ? (answer["accessibleName"] as? String ?? answer["label"] as? String) : nil)
+            ?? ""
+        let controller = ContactEditorViewController(label: existingLabel, contact: contact)
+        controller.onSave = { [weak self] label, contact in
+            guard let self else { return }
+            do {
+                if self.answers.indices.contains(row), let id = self.answers[row]["answerID"] as? String {
+                    try AnswerStore.updateContact(id: id, userLabel: label, value: contact)
+                } else {
+                    try AnswerStore.addContact(userLabel: label, value: contact)
                     self.draftAnswer = nil
                 }
                 self.reload()
@@ -1533,6 +1745,12 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
                 .filter { !$0.isEmpty }
                 .joined(separator: ", ")
         }
+        if detectedType(answer) == "contact", let contact = answer["value"] as? [String: Any] {
+            return ["name", "role", "phone"]
+                .compactMap { contact[$0] as? String }
+                .filter { !$0.isEmpty }
+                .joined(separator: " · ")
+        }
         let value = valueString(answer["value"])
         guard detectedType(answer) == "phone",
               let code = answer["countryCode"] as? String else { return value }
@@ -1642,6 +1860,32 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         let row = answers.count
         table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
         DispatchQueue.main.async { self.presentAddressEditor(row: row) }
+    }
+
+    @objc private func addDoctor() {
+        addContact(category: "doctor")
+    }
+
+    @objc private func addEmergencyContact() {
+        addContact(category: "emergencyContact")
+    }
+
+    private func addContact(category: String) {
+        if draftAnswer != nil && !commitDraftIfComplete() {
+            focusDraft()
+            return
+        }
+        draftAnswer = [
+            "answerID": UUID().uuidString,
+            "answerType": "contact",
+            "kind": "aggregate",
+            "inputType": "",
+            "value": ["category": category]
+        ]
+        table.reloadData()
+        let row = answers.count
+        table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        DispatchQueue.main.async { self.presentContactEditor(row: row, category: category) }
     }
 
     @objc private func addAnswer() {

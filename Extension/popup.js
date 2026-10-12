@@ -100,6 +100,19 @@
     debugLogText.value = existing || "No extension debug entries yet.";
   }
 
+  // Addresses are matched locally only. Contacts are split into one sanitized
+  // entry per part ("Doctor, Cardiologist phone") so the AI can place them.
+  function aiSavedEntries(answers) {
+    return answers.flatMap((answer, index) => {
+      const type = UmeMatcher.answerType(answer);
+      if (type === "address") return [];
+      if (type === "contact") {
+        return UmeMatcher.contactParts(answer).map(({ part, entry }) => ({ key: `saved-${index}-${part}`, ...entry }));
+      }
+      return [{ key: `saved-${index}`, ...answer }];
+    });
+  }
+
   function schemaForAI(source, identityKey, identityValue) {
     const result = { [identityKey]: identityValue };
     for (const key of AI_SCHEMA_KEYS) {
@@ -241,11 +254,8 @@
       }
 
       setActivity("Asking your AI provider about unmatched fields…");
-      const saved = answers.flatMap((answer, index) => {
-        return UmeMatcher.answerType(answer) === "address"
-          ? []
-          : [schemaForAI(answer, "key", `saved-${index}`)];
-      });
+      const aiValues = aiSavedEntries(answers);
+      const saved = aiValues.map((answer) => schemaForAI(answer, "key", answer.key));
       const sanitizedFields = fields.map((field) => schemaForAI(field, "field", field.field));
       const nativeResult = await sendNative({ type: "UME_MAP_FIELDS", saved, fields: sanitizedFields });
       await appendDebug("NATIVE AI RESPONSE", {
@@ -259,7 +269,7 @@
       const aiResult = await sendMessage(tab.id, {
         type: "UME_APPLY_MAPPINGS",
         mappings: nativeResult.mappings || [],
-        values: answers.map((answer, index) => ({ key: `saved-${index}`, ...answer }))
+        values: aiValues
       });
       await appendDebug("AI APPLY RESPONSE", aiResult || { response: null });
       const aiFilled = aiResult?.filled || 0;

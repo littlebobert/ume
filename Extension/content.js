@@ -461,7 +461,27 @@
     element.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  function flattenContact(saved, element) {
+    if (element.type === "checkbox") return null;
+    const descriptor = describe(element);
+    const info = UmeMatcher.contactFieldInfo(descriptor);
+    const value = info ? UmeMatcher.contactValue(saved, info.part) : "";
+    if (!value) return null;
+    return {
+      accessibleName: descriptor.accessibleName || descriptor.label,
+      label: descriptor.label,
+      kind: descriptor.kind,
+      inputType: descriptor.inputType,
+      ...(info.part === "phone" || info.part === "fax" ? { answerType: "phone" } : {}),
+      value
+    };
+  }
+
   function applyValue(element, value, saved) {
+    if (UmeMatcher.answerType(saved) === "contact") {
+      const flattened = flattenContact(saved, element);
+      return flattened ? applyValue(element, flattened.value, flattened) : false;
+    }
     if (element.type === "checkbox") {
       if (element.checked !== Boolean(value)) element.click();
       return element.checked === Boolean(value);

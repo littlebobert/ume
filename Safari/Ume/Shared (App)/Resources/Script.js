@@ -51,6 +51,18 @@ function answerName(answer, index) {
     return answer.accessibleName || answer.label || answer.placeholder || answer.name || answer.autocomplete || `Saved answer ${index + 1}`;
 }
 
+function answerValueText(answer) {
+    const value = answer.value;
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (value && typeof value === "object") {
+        const keys = answer.answerType === "address"
+            ? ["addressLine1", "addressLine2", "locality", "administrativeArea", "postalCode", "countryName"]
+            : ["name", "role", "phone"];
+        return keys.map((key) => value[key]).filter(Boolean).join(answer.answerType === "address" ? ", " : " · ");
+    }
+    return value == null ? "" : String(value);
+}
+
 function renderAnswers(answers = []) {
     answerSummary.textContent = answers.length
         ? `${answers.length} answer${answers.length === 1 ? "" : "s"} stored securely on this device.`
@@ -71,7 +83,7 @@ function renderAnswers(answers = []) {
         label.textContent = answerName(answer, index);
         const value = document.createElement("span");
         value.className = "answer-value";
-        value.textContent = typeof answer.value === "boolean" ? (answer.value ? "Yes" : "No") : String(answer.value);
+        value.textContent = answerValueText(answer);
         item.append(label, value);
         answerList.append(item);
     });

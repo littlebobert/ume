@@ -185,6 +185,183 @@
     return typeof address[part] === "string" ? address[part] : "";
   }
 
+  // Contacts are aggregate answers (doctors, emergency contacts) whose parts fill
+  // fields that name the contact: "Cardiologist phone", "Emergency contact name".
+  const CONTACT_PARTS = ["name", "role", "phone", "fax", "email", "organization", "address"];
+  const DOCTOR_WORDS = "physicians?|doctors?|pcp|primary care|family (?:doctor|physician|medicine|practice)|general practitioner|gp|specialists?|cardiologist|dentist|orthodontist|p(?:a)?ediatrician|referring (?:provider|physician|doctor)|surgeon|psychiatrist|psychologist|therapist|ophthalmologist|optometrist|dermatologist|neurologist|oncologist|obstetrician|gynecologist|ob ?gyn|endocrinologist|orthop(?:a)?edi(?:st|c)|urologist|allergist|rheumatologist|gastroenterologist|pulmonologist|nephrologist|hematologist|podiatrist|chiropractor|internist|nurse practitioner|(?:health ?care|medical|care) provider";
+  const EMERGENCY_WORDS = "emergency contacts?|next of kin|in case of emergency|ice contact|emergency person|emergency notification";
+  const DOCTOR_OWN_RE = new RegExp(`(?:^| )(?:${DOCTOR_WORDS}|dr)(?= |$)`);
+  const DOCTOR_CONTEXT_RE = new RegExp(`(?:^| )(?:${DOCTOR_WORDS})(?= |$)`);
+  const EMERGENCY_OWN_RE = new RegExp(`(?:^| )(?:${EMERGENCY_WORDS}|emergency)(?= |$)`);
+  const EMERGENCY_CONTEXT_RE = new RegExp(`(?:^| )(?:${EMERGENCY_WORDS})(?= |$)`);
+  const CONTACT_SELF_RE = /(?:^| )(?:your|you|my|me|self|own|patient s?|applicant s?|member s?)(?= |$)/;
+  const CONTACT_EXCLUDED_RE = /(?:^| )(?:license|licence|npi|dea|id|identifier|password|insurance|insurer|policy|plan|visits?|dates?|dob|birth|appointments?|how many|number of|reasons?|notes?|comments?|history|conditions?|medications?|allerg(?:y|ies)|room|diagnosis|referral date)(?= |$)/;
+  const CONTACT_NAME_QUALIFIERS = new Set([
+    "primary", "secondary", "alternate", "alternative", "first", "second", "1", "2", "3", "current", "your",
+    "patient", "patients", "s", "information", "info", "details", "contact", "person", "who", "is", "main",
+    "regular", "preferred", "treating", "attending", "name", "full", "complete"
+  ]);
+  const SPECIALTIES = [
+    ["primary care", "pcp", "family doctor", "family physician", "family medicine", "family practice", "general practitioner", "gp", "general practice", "general physician", "internist", "internal medicine", "primary physician", "primary doctor", "primary provider", "regular doctor", "main doctor"],
+    ["cardiologist", "cardiology", "heart doctor"],
+    ["dentist", "dental", "dentistry", "orthodontist", "orthodontics"],
+    ["dermatologist", "dermatology"],
+    ["ophthalmologist", "ophthalmology", "eye doctor", "optometrist", "optometry"],
+    ["ob gyn", "obgyn", "obstetrician", "gynecologist", "gynecology", "obstetrics"],
+    ["pediatrician", "paediatrician", "pediatrics", "paediatrics"],
+    ["psychiatrist", "psychiatry"],
+    ["psychologist", "psychology", "therapist", "counselor", "counsellor", "mental health"],
+    ["neurologist", "neurology"],
+    ["oncologist", "oncology"],
+    ["endocrinologist", "endocrinology"],
+    ["orthopedist", "orthopaedist", "orthopedic", "orthopaedic", "orthopedics", "orthopaedics"],
+    ["urologist", "urology"],
+    ["allergist", "allergy", "immunologist"],
+    ["rheumatologist", "rheumatology"],
+    ["gastroenterologist", "gastroenterology"],
+    ["pulmonologist", "pulmonology"],
+    ["nephrologist", "nephrology"],
+    ["hematologist", "hematology"],
+    ["podiatrist", "podiatry"],
+    ["chiropractor", "chiropractic"],
+    ["surgeon", "surgery", "surgical"]
+  ];
+
+  function specialtyIndex(text) {
+    const padded = ` ${normalize(text)} `;
+    return SPECIALTIES.findIndex((group) => group.some((term) => padded.includes(` ${term} `)));
+  }
+
+  function contactOwnText(entry) {
+    const machine = [entry?.name, entry?.id].filter((value) => value && !looksGenerated(value));
+    return normalize([entry?.userLabel, entry?.accessibleName, entry?.label, ...machine].filter(Boolean).join(" "));
+  }
+
+  function stripMatches(text, re) {
+    let result = ` ${text} `;
+    const global = new RegExp(re.source, "g");
+    let previous;
+    do {
+      previous = result;
+      result = result.replace(global, " ");
+    } while (result !== previous);
+    return result.trim();
+  }
+
+  function contactPartIn(text, category, fromContext) {
+    const padded = ` ${text} `;
+    if (/ fax /.test(padded)) return "fax";
+    if (/ e ?mail /.test(padded)) return "email";
+    if (/ (?:phone|telephone|tel|mobile|cell|number) /.test(padded)) return "phone";
+    if (/ (?:relationship|relation|relation to|relationship to) /.test(padded)) return "role";
+    if (/ (?:specialty|speciality|specialization|specialisation|type of (?:doctor|physician|provider|practice)) /.test(padded)) return "role";
+    if (/ (?:address|street|location) /.test(padded)) return "address";
+    if (/ (?:practice|clinic|office|hospital|facility|group|organization|organisation|employer|company|workplace) /.test(padded)) return "organization";
+    if (/ (?:first|given) name /.test(padded)) return "givenName";
+    if (/ (?:last|family) name | surname /.test(padded)) return "familyName";
+    if (/ name /.test(padded)) return "name";
+    if (fromContext) return "";
+    const leftover = stripMatches(text, category === "doctor" ? DOCTOR_OWN_RE : EMERGENCY_OWN_RE).split(/\s+/).filter(Boolean);
+    return leftover.every((token) => CONTACT_NAME_QUALIFIERS.has(token) || specialtyIndex(token) >= 0) ? "name" : "";
+  }
+
+  function contactOrdinal(text) {
+    const padded = ` ${text} `;
+    if (/ (?:third|3|3rd) /.test(padded)) return 2;
+    if (/ (?:secondary|alternate|alternative|second|2|2nd|backup|additional|other|another|specialists?) /.test(padded)) return 1;
+    if (/ (?:primary|first|1|1st|main) /.test(padded)) return 0;
+    return -1;
+  }
+
+  function contactFieldInfo(entry) {
+    if (!entry || typeof entry !== "object") return null;
+    const own = contactOwnText(entry);
+    if (!own) return null;
+    const padded = ` ${own} `;
+    if (CONTACT_EXCLUDED_RE.test(padded) && !/ (?:phone|fax|contact) number /.test(padded)) return null;
+    let category = EMERGENCY_OWN_RE.test(padded) ? "emergencyContact" : DOCTOR_OWN_RE.test(padded) ? "doctor" : "";
+    let fromContext = false;
+    if (!category) {
+      if (CONTACT_SELF_RE.test(padded)) return null;
+      const context = normalize(contextText(entry));
+      category = EMERGENCY_CONTEXT_RE.test(context) ? "emergencyContact" : DOCTOR_CONTEXT_RE.test(context) ? "doctor" : "";
+      fromContext = true;
+    }
+    if (!category) return null;
+    const part = contactPartIn(own, category, fromContext);
+    if (!part) return null;
+    const text = normalize(`${own} ${contextText(entry)}`);
+    const specialty = category === "doctor" ? specialtyIndex(text) : -1;
+    const ordinalText = category === "doctor" ? stripMatches(text, /(?:^| )primary (?:care|physician|doctor|provider)(?= |$)/) : text;
+    return { category, part, specialty, ordinal: contactOrdinal(ordinalText), text };
+  }
+
+  function contactObject(saved) {
+    const contact = saved?.value;
+    return contact && typeof contact === "object" && !Array.isArray(contact) ? contact : null;
+  }
+
+  function contactCategory(saved) {
+    return typeof contactObject(saved)?.category === "string" ? contactObject(saved).category : "";
+  }
+
+  function contactRole(saved) {
+    return typeof contactObject(saved)?.role === "string" ? contactObject(saved).role : "";
+  }
+
+  function contactValue(saved, field) {
+    const contact = contactObject(saved);
+    if (!contact) return "";
+    const part = typeof field === "string" ? field : contactFieldInfo(field)?.part;
+    if (!part) return "";
+    if (part === "givenName" || part === "familyName") {
+      const words = String(contact.name || "").trim()
+        .replace(/^(?:dr|doctor|mr|mrs|ms|miss|mx|prof)\.?\s+/i, "")
+        .replace(/,.*$/, "")
+        .split(/\s+/).filter(Boolean);
+      if (words.length < 2) return part === "familyName" ? (words[0] || "") : "";
+      return part === "givenName" ? words.slice(0, -1).join(" ") : words[words.length - 1];
+    }
+    return typeof contact[part] === "string" ? contact[part].trim() : "";
+  }
+
+  function pickContact(contacts, info) {
+    const withPart = (list) => list.filter((entry) => contactValue(entry, info.part));
+    const roleMatches = withPart(contacts.filter((entry) => contactRole(entry) && overlap(contactRole(entry), info.text) > 0));
+    if (info.category === "doctor") {
+      if (info.specialty >= 0) return withPart(contacts.filter((entry) => specialtyIndex(contactRole(entry)) === info.specialty))[0] || null;
+      if (roleMatches.length === 1) return roleMatches[0];
+      const primary = contacts.filter((entry) => specialtyIndex(contactRole(entry)) === 0);
+      if (info.ordinal >= 1) return withPart(contacts.filter((entry) => specialtyIndex(contactRole(entry)) !== 0))[info.ordinal - 1] || null;
+      if (primary.length === 1 && contactValue(primary[0], info.part)) return primary[0];
+      const available = withPart(contacts);
+      return available.length === 1 ? available[0] : null;
+    }
+    if (roleMatches.length === 1) return roleMatches[0];
+    if (info.ordinal >= 0) return contacts[info.ordinal] && contactValue(contacts[info.ordinal], info.part) ? contacts[info.ordinal] : null;
+    return withPart(contacts)[0] || null;
+  }
+
+  function contactParts(saved) {
+    const category = contactCategory(saved);
+    const base = [category === "doctor" ? "Doctor" : "Emergency contact", contactRole(saved)].filter(Boolean).join(", ");
+    return CONTACT_PARTS.filter((part) => contactValue(saved, part)).map((part) => {
+      const title = part === "role" ? (category === "doctor" ? "specialty" : "relationship") : part;
+      const name = `${base} ${title}`;
+      return {
+        part,
+        entry: {
+          accessibleName: name,
+          label: name,
+          userLabel: [saved?.userLabel, title].filter(Boolean).join(" "),
+          kind: "text",
+          inputType: part === "phone" || part === "fax" ? "tel" : part === "email" ? "email" : "text",
+          value: contactValue(saved, part)
+        }
+      };
+    });
+  }
+
   function semanticCategory(entry) {
     const text = semanticText(entry);
     if (addressFieldPart(entry)) return "address";
@@ -198,7 +375,7 @@
     return "";
   }
 
-  const VALID_TYPES = new Set(["address", "date", "gender", "phone"]);
+  const VALID_TYPES = new Set(["address", "contact", "date", "gender", "phone"]);
   const FIELD_CATEGORIES = { date: "date", gender: "gender", phone: "phone" };
 
   function answerType(entry) {
@@ -212,6 +389,11 @@
     if (!saved || !field) return false;
     const savedType = answerType(saved);
     const fieldCategory = semanticCategory(field);
+    const fieldContact = contactFieldInfo(field);
+    if (savedType === "contact") {
+      return Boolean(fieldContact) && field.kind !== "checkbox" && fieldContact.category === contactCategory(saved) && Boolean(contactValue(saved, fieldContact.part));
+    }
+    if ((fieldContact?.category || "") !== (contactFieldInfo(saved)?.category || "")) return false;
     if (savedType === "address") return fieldCategory === "address" && Boolean(addressValue(saved, field));
     if (savedType && field.kind === "radio") {
       if (savedType === "gender") {
@@ -240,8 +422,8 @@
   }
 
   function score(saved, field) {
-    if (!compatible(saved, field)) return -Infinity;
     const savedType = answerType(saved);
+    if (savedType === "contact" || !compatible(saved, field)) return -Infinity;
     if (saved.inputType && field.inputType && saved.inputType !== field.inputType) {
       const compatibleTextTypes = new Set(["", "email", "search", "tel", "text", "url"]);
       const compatibleTextInput = compatibleTextTypes.has(saved.inputType) && compatibleTextTypes.has(field.inputType);
@@ -296,13 +478,19 @@
   }
 
   function bestMatch(savedEntries, field, minimumScore) {
+    const contactInfo = field?.kind === "checkbox" ? null : contactFieldInfo(field);
+    if (contactInfo) {
+      const contacts = (savedEntries || []).filter((entry) => answerType(entry) === "contact" && contactCategory(entry) === contactInfo.category);
+      if (contacts.length) return pickContact(contacts, contactInfo);
+    }
+
     const addressPart = addressFieldPart(field);
     if (addressPart) {
       const addresses = (savedEntries || []).filter((entry) => answerType(entry) === "address" && addressValue(entry, addressPart));
       if (addresses.length) return addresses.length === 1 ? addresses[0] : null;
     }
 
-    if (nameFieldPart(field) === "full") {
+    if (nameFieldPart(field) === "full" && !contactInfo) {
       const explicit = (savedEntries || []).filter((entry) => nameFieldPart(entry) === "full" && namePartValue(entry));
       return scoredBestMatch(explicit, field, minimumScore) || composedFullName(savedEntries, field);
     }
@@ -329,5 +517,5 @@
     return result;
   }
 
-  return { addressFieldPart, addressValue, answerType, bestMatch, composedFullName, compatible, looksGenerated, mergeEntries, nameFieldPart, normalize, overlap, score, selectOptionIndex };
+  return { addressFieldPart, addressValue, answerType, bestMatch, composedFullName, compatible, contactCategory, contactFieldInfo, contactParts, contactValue, looksGenerated, mergeEntries, nameFieldPart, normalize, overlap, score, selectOptionIndex };
 });

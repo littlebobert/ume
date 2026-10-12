@@ -11,6 +11,7 @@ Ume is a private Safari form filler for iPhone, iPad, and Mac. Complete a form o
 ## What it does
 
 - Fills text fields, text areas, selects, checkboxes, and radio buttons.
+- Stores structured addresses and contacts, such as doctors and emergency contacts, and fills each part into the matching fields.
 - Matches fields locally using labels, names, placeholders, and `autocomplete` hints.
 - Skips ambiguous and sensitive fields, including passwords and payment details.
 - Never submits a form.

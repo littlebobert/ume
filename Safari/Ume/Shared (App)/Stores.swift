@@ -416,13 +416,40 @@ enum AnswerStore {
         return address
     }
 
+    static let contactCategories = ["doctor", "emergencyContact"]
+    static let aggregateTypes = ["address", "contact"]
+
+    private static func validatedContact(_ raw: [String: Any]) throws -> [String: Any] {
+        let limits = [
+            "name": 160,
+            "role": 120,
+            "phone": 64,
+            "fax": 64,
+            "email": 254,
+            "organization": 200,
+            "address": 400
+        ]
+        var contact: [String: Any] = ["version": 1]
+        for (key, limit) in limits {
+            let value = (raw[key] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard value.count <= limit else { throw StoreError.message("The saved contact was too long.") }
+            if !value.isEmpty { contact[key] = value }
+        }
+        guard contact["name"] != nil else { throw StoreError.message("Enter the contact's name.") }
+        let category = (raw["category"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard contactCategories.contains(category) else { throw StoreError.message("Choose a contact kind.") }
+        contact["category"] = category
+        return contact
+    }
+
     static func save(_ answers: [[String: Any]]) throws {
         var (answers, _) = normalized(answers)
-        for index in answers.indices where answers[index]["answerType"] as? String == "address" {
+        for index in answers.indices {
+            guard let type = answers[index]["answerType"] as? String, aggregateTypes.contains(type) else { continue }
             guard let raw = answers[index]["value"] as? [String: Any] else {
-                throw StoreError.message("The saved address was invalid.")
+                throw StoreError.message(type == "address" ? "The saved address was invalid." : "The saved contact was invalid.")
             }
-            answers[index]["value"] = try validatedAddress(raw)
+            answers[index]["value"] = type == "address" ? try validatedAddress(raw) : try validatedContact(raw)
             answers[index]["kind"] = "aggregate"
             answers[index]["inputType"] = ""
         }
@@ -509,6 +536,47 @@ enum AnswerStore {
         answers[index]["inputType"] = ""
         answers[index]["value"] = address
         try save(answers)
+    }
+
+    static func addContact(userLabel: String, value: [String: Any]) throws {
+        let contact = try validatedContact(value)
+        let label = resolvedContactLabel(userLabel, contact: contact)
+        var answers = try load()
+        answers.append([
+            "answerID": UUID().uuidString,
+            "answerType": "contact",
+            "userLabel": label,
+            "accessibleName": label,
+            "label": label,
+            "kind": "aggregate",
+            "inputType": "",
+            "value": contact
+        ])
+        try save(answers)
+    }
+
+    static func updateContact(id: String, userLabel: String, value: [String: Any]) throws {
+        let contact = try validatedContact(value)
+        let label = resolvedContactLabel(userLabel, contact: contact)
+        var answers = try load()
+        guard let index = answers.firstIndex(where: { $0["answerID"] as? String == id }) else {
+            throw StoreError.message("That saved contact no longer exists.")
+        }
+        answers[index]["answerType"] = "contact"
+        answers[index]["userLabel"] = label
+        answers[index]["accessibleName"] = label
+        answers[index]["label"] = label
+        answers[index]["kind"] = "aggregate"
+        answers[index]["inputType"] = ""
+        answers[index]["value"] = contact
+        answers[index].removeValue(forKey: "countryCode")
+        try save(answers)
+    }
+
+    /// A contact's label defaults to its name so the table stays readable without extra typing.
+    private static func resolvedContactLabel(_ userLabel: String, contact: [String: Any]) -> String {
+        let label = userLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        return label.isEmpty ? (contact["name"] as? String ?? "") : label
     }
 
     static func update(id: String, userLabel: String, value: Any) throws {

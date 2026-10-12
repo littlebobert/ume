@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { addressFieldPart, addressValue, answerType, bestMatch, compatible, looksGenerated, mergeEntries, nameFieldPart, normalize, score, selectOptionIndex } = require("../Extension/lib/matcher.js");
+const { addressFieldPart, addressValue, answerType, bestMatch, compatible, contactFieldInfo, contactParts, contactValue, looksGenerated, mergeEntries, nameFieldPart, normalize, score, selectOptionIndex } = require("../Extension/lib/matcher.js");
 
 const entry = (overrides = {}) => ({
   accessibleDescription: "",
@@ -381,4 +381,114 @@ test("grouped first and last names compose the matching full name", () => {
   const otherLast = entry({ accessibleName: "Last name", group: "Emergency contact", value: "Doe" });
   const match = bestMatch([first, last, otherFirst, otherLast], entry({ accessibleName: "Full name", section: "Traveler" }));
   assert.equal(match.value, "Justin Garcia");
+});
+
+const contact = (category, role, name, extra = {}) => entry({
+  answerType: "contact",
+  kind: "aggregate",
+  inputType: "",
+  userLabel: name,
+  accessibleName: name,
+  label: name,
+  value: { version: 1, category, role, name, ...extra }
+});
+
+const doctors = () => [
+  contact("doctor", "Primary care", "Dr. Sakura Ito", { phone: "03-1234-5678", organization: "Ito Family Clinic" }),
+  contact("doctor", "Cardiologist", "Dr. Anita Patel", { phone: "813-555-0200", fax: "813-555-0201", address: "500 Heart Way, Tampa, FL 33602" })
+];
+
+const emergencyContacts = () => [
+  contact("emergencyContact", "Daughter", "Hanako Yamada", { phone: "080-9876-5432" }),
+  contact("emergencyContact", "Son", "Taro Yamada", { phone: "080-1111-2222" })
+];
+
+test("contact fields are recognized by category, part, and specialty", () => {
+  const info = (overrides) => {
+    const result = contactFieldInfo(entry(overrides));
+    return result ? { category: result.category, part: result.part, specialty: result.specialty, ordinal: result.ordinal } : null;
+  };
+  assert.deepEqual(info({ accessibleName: "Primary care physician" }), { category: "doctor", part: "name", specialty: 0, ordinal: -1 });
+  assert.deepEqual(info({ accessibleName: "Cardiologist phone" }), { category: "doctor", part: "phone", specialty: 1, ordinal: -1 });
+  assert.deepEqual(info({ accessibleName: "Referring physician fax" }), { category: "doctor", part: "fax", specialty: -1, ordinal: -1 });
+  assert.deepEqual(info({ accessibleName: "Emergency contact name" }), { category: "emergencyContact", part: "name", specialty: -1, ordinal: -1 });
+  assert.deepEqual(info({ accessibleName: "Emergency contact phone number", name: "emergency_contact_phone" }), { category: "emergencyContact", part: "phone", specialty: -1, ordinal: -1 });
+  assert.deepEqual(info({ accessibleName: "Emergency contact 2 phone" }), { category: "emergencyContact", part: "phone", specialty: -1, ordinal: 1 });
+  assert.deepEqual(info({ accessibleName: "Relationship", group: "Emergency contact" }), { category: "emergencyContact", part: "role", specialty: -1, ordinal: -1 });
+  assert.deepEqual(info({ accessibleName: "Phone", section: "In case of emergency" }), { category: "emergencyContact", part: "phone", specialty: -1, ordinal: -1 });
+  assert.deepEqual(info({ accessibleName: "Practice name", section: "Primary care physician" }), { category: "doctor", part: "organization", specialty: 0, ordinal: -1 });
+  assert.equal(info({ accessibleName: "Your phone", section: "Emergency contact" }), null);
+  assert.equal(info({ accessibleName: "Name", section: "Emergency department intake" }), null);
+  assert.equal(info({ accessibleName: "Physician license number" }), null);
+  assert.equal(info({ accessibleName: "Insurance provider" }), null);
+  assert.equal(info({ accessibleName: "Mobile phone", autocomplete: "tel" }), null);
+  assert.equal(info({ accessibleName: "Who normally manages your care?", id: "portal-doctor" }), null);
+  assert.equal(info({ accessibleName: "Date of last doctor visit" }), null);
+});
+
+test("doctor fields pick the saved doctor by specialty", () => {
+  const [pcp, cardiologist] = doctors();
+  const saved = [...doctors(), entry({ accessibleName: "Phone number", autocomplete: "tel", answerType: "phone", value: "090-1234-5678" })];
+  const pick = (overrides) => bestMatch(saved, entry(overrides));
+  assert.equal(pick({ accessibleName: "Primary care physician" }).userLabel, pcp.userLabel);
+  assert.equal(pick({ accessibleName: "Primary physician", name: "primary_physician" }).userLabel, pcp.userLabel);
+  assert.equal(pick({ accessibleName: "Cardiologist phone" }).userLabel, cardiologist.userLabel);
+  assert.equal(pick({ accessibleName: "Cardiologist fax" }).userLabel, cardiologist.userLabel);
+  assert.equal(pick({ accessibleName: "Physician name" }).userLabel, pcp.userLabel, "no specialty hint prefers the primary care doctor");
+  assert.equal(pick({ accessibleName: "Specialist name" }).userLabel, cardiologist.userLabel);
+  assert.equal(pick({ accessibleName: "Dermatologist phone" }), null, "unknown specialties are not guessed");
+  assert.equal(pick({ accessibleName: "Primary care physician fax" }), null, "missing parts are not filled");
+  assert.equal(contactValue(cardiologist, entry({ accessibleName: "Cardiologist address" })), "500 Heart Way, Tampa, FL 33602");
+  assert.equal(contactValue(pcp, entry({ accessibleName: "Practice", section: "Primary care physician" })), "Ito Family Clinic");
+  assert.equal(contactValue(pcp, entry({ accessibleName: "Physician last name" })), "Ito");
+  assert.equal(contactValue(pcp, entry({ accessibleName: "Physician first name" })), "Sakura");
+});
+
+test("emergency contact fields use ordinals, relationships, and name parts", () => {
+  const [daughter, son] = emergencyContacts();
+  const saved = [...emergencyContacts(), ...doctors()];
+  const pick = (overrides) => bestMatch(saved, entry(overrides));
+  assert.equal(pick({ accessibleName: "Emergency contact phone number" }).userLabel, daughter.userLabel);
+  assert.equal(pick({ accessibleName: "Emergency contact 2 phone" }).userLabel, son.userLabel);
+  assert.equal(pick({ accessibleName: "Emergency contact 3 phone" }), null);
+  assert.equal(pick({ accessibleName: "Secondary emergency contact name" }).userLabel, son.userLabel);
+  const relationship = entry({ accessibleName: "Relationship", group: "Emergency contact", kind: "select" });
+  assert.equal(pick(relationship).userLabel, daughter.userLabel);
+  assert.equal(contactValue(daughter, relationship), "Daughter");
+  assert.equal(contactValue(daughter, entry({ accessibleName: "Emergency contact first name" })), "Hanako");
+  assert.equal(contactValue(daughter, entry({ accessibleName: "Emergency contact last name" })), "Yamada");
+  assert.equal(pick({ accessibleName: "Emergency", kind: "checkbox", inputType: "checkbox" }), null);
+});
+
+test("your own answers never fill contact fields, and remembered contact answers stay with contact fields", () => {
+  const ownPhone = entry({ accessibleName: "Phone number", autocomplete: "tel", answerType: "phone", value: "090-1234-5678" });
+  const emergencyField = entry({ accessibleName: "Emergency contact phone number", name: "emergency_contact_phone", inputType: "tel" });
+  assert.equal(bestMatch([ownPhone], emergencyField), null);
+  assert.equal(bestMatch([ownPhone, ...emergencyContacts()], emergencyField).userLabel, "Hanako Yamada");
+
+  const remembered = entry({ ...emergencyField, value: "080-9876-5432" });
+  assert.equal(bestMatch([remembered, ownPhone], entry({ accessibleName: "Emergency contact phone", inputType: "tel" })), remembered);
+  assert.equal(bestMatch([remembered], entry({ accessibleName: "Mobile phone", autocomplete: "tel", inputType: "tel" })), null);
+
+  const given = entry({ autocomplete: "given-name", value: "Hanako" });
+  const family = entry({ autocomplete: "family-name", value: "Yamada" });
+  assert.equal(bestMatch([given, family], entry({ accessibleName: "Emergency contact full name" })), null);
+  assert.equal(bestMatch([given, family], entry({ accessibleName: "Full name" }))?.value, "Hanako Yamada");
+});
+
+test("contacts flatten into sanitized parts for AI mapping and never merge with remembered answers", () => {
+  const [, cardiologist] = doctors();
+  const parts = contactParts(cardiologist);
+  assert.deepEqual(parts.map((item) => item.part), ["name", "role", "phone", "fax", "address"]);
+  const phone = parts.find((item) => item.part === "phone").entry;
+  assert.equal(phone.accessibleName, "Doctor, Cardiologist phone");
+  assert.equal(phone.inputType, "tel");
+  assert.equal(phone.value, "813-555-0200");
+  assert.equal(parts.find((item) => item.part === "role").entry.accessibleName, "Doctor, Cardiologist specialty");
+  assert.equal(contactParts(emergencyContacts()[0]).find((item) => item.part === "role").entry.label, "Emergency contact, Daughter relationship");
+
+  const incoming = entry({ accessibleName: "Cardiologist phone", inputType: "tel", value: "813-555-0200" });
+  assert.equal(mergeEntries([cardiologist], [incoming]).length, 2);
+  assert.equal(score(cardiologist, incoming), -Infinity);
+  assert.equal(answerType(cardiologist), "contact");
 });

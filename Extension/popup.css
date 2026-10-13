@@ -92,3 +92,73 @@ footer { display: flex; align-items: center; justify-content: flex-end; margin-t
   footer, .debug-log-panel { border-color: #4b3f3a; }
   .debug-log-panel textarea { border-color: #594943; background: #2c2522; color: #f7efeb; }
 }
+
+/* iPhone and iPad: one type scale that follows the system text size, body text for
+   everything you act on and a smaller size for notes, and every button the same
+   tap-sized control. The Mac keeps the compact layout above. */
+@media (hover: none) and (pointer: coarse) {
+  :root { font: -apple-system-body; }
+  main { padding: 20px; }
+  header { gap: 14px; margin-bottom: 20px; }
+  .app-icon { width: 3.2em; height: 3.2em; }
+  h1 { font-size: 1.3em; }
+  header p, #status, .activity, .get-started p { font-size: .88em; }
+  .option-note, .debug-log-note { font-size: .8em; line-height: 1.4; }
+  .get-started h2 { font-size: 1.1em; }
+  .actions { gap: 10px; }
+  button, .settings-button, .debug-log-actions button, .icon-button {
+    width: 100%;
+    min-height: 50px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font: inherit;
+    font-weight: 600;
+  }
+  .option, footer, .debug-log-panel { margin-top: 16px; padding-top: 16px; }
+  /* The badge option is an iOS-style switch at the end of its row, as in Settings. */
+  .option-row { align-items: center; gap: 12px; font-size: 1em; }
+  .option-row input {
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+    order: 2;
+    flex: 0 0 auto;
+    width: 51px;
+    height: 31px;
+    margin: 0 0 0 auto;
+    border-radius: 16px;
+    background: #e3d6cf;
+    transition: background .2s;
+    cursor: pointer;
+  }
+  .option-row input::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+    transition: transform .2s;
+  }
+  .option-row input:checked { background: #34c759; }
+  .option-row input:checked::before { transform: translateX(20px); }
+  .option-row input:focus-visible { outline: 3px solid rgb(183 44 70 / 22%); outline-offset: 2px; }
+  .option-note { margin: 8px 0 0; }
+  footer { font-size: inherit; }
+  .footer-buttons, .debug-log-share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+  .debug-log-header { margin-bottom: 8px; font-size: 1em; }
+  .debug-log-header .icon-button { width: auto; min-height: 44px; }
+  .debug-log-actions { flex-direction: column; align-items: stretch; gap: 10px; margin-top: 10px; }
+  .debug-log-panel textarea { height: 240px; font-size: .75em; }
+}
+
+@media (hover: none) and (pointer: coarse) and (prefers-color-scheme: dark) {
+  .option-row input { background: #4b3f3a; }
+  .option-row input:checked { background: #30d158; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .option-row input, .option-row input::before { transition: none; }
+}

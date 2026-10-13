@@ -1,0 +1,15 @@
+{
+  "name": "umete-app-store-assets",
+  "version": "1.0.0",
+  "description": "Umete's App Store screenshots, header, and search results card, from Simulator captures.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node scripts/render.mjs",
+    "narrate": "node scripts/narrate.mjs",
+    "preview": "node scripts/preview.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

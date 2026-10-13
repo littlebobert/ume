@@ -7,3 +7,13 @@ node_modules/
 **/DerivedData/
 **/.derivedData*/
 **/xcuserdata/
+
+# App Store screenshots: captures, outputs, and tools are made, not kept.
+AppStoreScreenshots/captures/
+AppStoreScreenshots/output/
+AppStoreScreenshots/node_modules/
+
+# Local secrets, such as ELEVENLABS_API_KEY for the App Store preview voice-over.
+.env
+AppStoreScreenshots/.cache/
+AppStoreScreenshots/voiceover/

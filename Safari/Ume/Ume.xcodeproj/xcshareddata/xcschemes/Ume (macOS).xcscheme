@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "D0A1D2F0301B98AE0082FD16"
-               BuildableName = "Ume.app"
+               BuildableName = "Umete.app"
                ReferencedContainer = "container:Ume.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,7 +45,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "D0A1D2F0301B98AE0082FD16"
-            BuildableName = "Ume.app"
+            BuildableName = "Umete.app"
             ReferencedContainer = "container:Ume.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -61,7 +61,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "D0A1D2F0301B98AE0082FD16"
-            BuildableName = "Ume.app"
+            BuildableName = "Umete.app"
             ReferencedContainer = "container:Ume.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

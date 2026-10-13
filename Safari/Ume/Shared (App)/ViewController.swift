@@ -1,119 +1,15 @@
+import SwiftUI
 import UIKit
-import WebKit
 
-class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHandler {
-    @IBOutlet var webView: WKWebView!
-
+/// Hosts the iOS app's SwiftUI settings (SettingsView) in the storyboard's scene.
+class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        webView.navigationDelegate = self
-        webView.scrollView.isScrollEnabled = true
-        webView.configuration.userContentController.add(self, name: "controller")
-        webView.loadFileURL(Bundle.main.url(forResource: "Main", withExtension: "html")!, allowingReadAccessTo: Bundle.main.resourceURL!)
-        for name in [CloudSync.didApplyRemoteChanges, CloudSync.didFinishSync] {
-            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                self?.sendSettings()
-            }
-        }
-    }
-
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        webView.evaluateJavaScript("show('ios')")
-    }
-
-    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard let body = message.body as? [String: Any], let action = body["action"] as? String else { return }
-        switch action {
-        case "load-settings":
-            sendSettings()
-        case "save-settings":
-            saveSettings(body)
-        case "complete-onboarding":
-            saveSettings(body, completesOnboarding: true)
-        case "delete-key":
-            SettingsStore.delete()
-            sendResult(ok: true, message: "The saved API key was deleted.")
-        case "forget-everything":
-            do {
-                try AnswerStore.clear()
-                sendResult(ok: true, message: CloudSync.isEnabled
-                    ? "All saved answers were deleted from this device and will be removed from your other devices. Your AI settings were kept."
-                    : "All saved answers were deleted. Your AI settings were kept.")
-            } catch {
-                sendResult(ok: false, message: "Umete could not delete all saved answers.")
-            }
-        case "set-sync-enabled":
-            CloudSync.isEnabled = body["enabled"] as? Bool ?? true
-            if CloudSync.isEnabled {
-                Task {
-                    _ = try? await CloudSync.shared.sync(reason: .manual)
-                    sendResult(ok: true, message: "iCloud sync is on.")
-                }
-            } else {
-                sendResult(ok: true, message: "iCloud sync is off. Saved answers stay on this device.")
-            }
-        case "sync-now":
-            Task {
-                do {
-                    _ = try await CloudSync.shared.sync(reason: .manual)
-                    sendResult(ok: true, message: "Synced with iCloud.")
-                } catch {
-                    sendResult(ok: false, message: await CloudSync.shared.statusDescription())
-                }
-            }
-        default:
-            break
-        }
-    }
-
-    private func saveSettings(_ body: [String: Any], completesOnboarding: Bool = false) {
-        let provider = body["provider"] as? String ?? SafariWebExtensionHandlerProviders.default
-        let model = body["model"] as? String ?? ""
-        let suppliedKey = body["apiKey"] as? String ?? ""
-        let key = suppliedKey.isEmpty ? SettingsStore.load()?.apiKey ?? "" : suppliedKey
-        let needsKey = SafariWebExtensionHandlerProviders.requiresKey(provider)
-        guard SafariWebExtensionHandlerProviders.supported.contains(provider), !needsKey || (!model.isEmpty && !key.isEmpty) else {
-            sendResult(ok: false, message: "Enter a supported provider, model, and API key.")
-            return
-        }
-        do {
-            // The free service ignores the model; any saved key is kept for switching back.
-            try SettingsStore.save(AISettings(provider: provider, model: needsKey ? model : "", apiKey: key))
-            if completesOnboarding { OnboardingStore.isComplete = true }
-            sendResult(ok: true, message: completesOnboarding ? "Umete is ready to use in Safari." : "Settings saved securely in Apple Keychain.")
-        } catch {
-            sendResult(ok: false, message: error.localizedDescription)
-        }
-    }
-
-    private func settingsPayload() async -> [String: Any] {
-        let settings = SettingsStore.load()
-        return [
-            "provider": SafariWebExtensionHandlerProviders.supported.contains(settings?.provider ?? "") ? settings!.provider : SafariWebExtensionHandlerProviders.default,
-            "model": settings?.model ?? "",
-            "hasKey": !(settings?.apiKey.isEmpty ?? true),
-            "onboardingComplete": OnboardingStore.isComplete,
-            "answers": (try? AnswerStore.load()) ?? [],
-            "syncEnabled": CloudSync.isEnabled,
-            "syncStatus": await CloudSync.shared.statusDescription()
-        ]
-    }
-
-    private func sendSettings() {
-        Task { @MainActor in
-            sendJavaScript(function: "receiveSettings", payload: await settingsPayload())
-        }
-    }
-
-    private func sendResult(ok: Bool, message: String) {
-        Task { @MainActor in
-            sendJavaScript(function: "receiveResult", payload: ["ok": ok, "message": message, "settings": await settingsPayload()])
-        }
-    }
-
-    private func sendJavaScript(function: String, payload: [String: Any]) {
-        guard let data = try? JSONSerialization.data(withJSONObject: payload),
-              let json = String(data: data, encoding: .utf8) else { return }
-        webView.evaluateJavaScript("\(function)(\(json))")
+        let host = UIHostingController(rootView: SettingsView())
+        addChild(host)
+        host.view.frame = view.bounds
+        host.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(host.view)
+        host.didMove(toParent: self)
     }
 }

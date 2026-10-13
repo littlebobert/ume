@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Traveler details</title>
+  <!-- The booking form in the first App Store screenshot. Made up, served locally by
+       scripts/capture.sh; every field matches one of the -umete-screenshot-demo answers
+       on the device, so filling it never reaches AI matching. -->
+  <style>
+    :root { --ink: #1d1d1f; --muted: #6e6e73; --line: #d2d2d7; --accent: #0b5cad; --filled: #f3f8ea; --filled-line: #7f9252; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f5f5f7; color: var(--ink); font: 16px/1.35 -apple-system, BlinkMacSystemFont, sans-serif; }
+    header { display: flex; align-items: center; gap: 10px; padding: 14px 18px; background: #fff; border-bottom: 1px solid var(--line); }
+    .logo { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; }
+    header strong { font-size: 17px; }
+    .steps { margin: 0; padding: 12px 18px 0; color: var(--muted); font-size: 13px; }
+    main { padding: 6px 18px 28px; }
+    h1 { margin: 6px 0 4px; font-size: 26px; letter-spacing: -0.02em; }
+    .note { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+    .card { padding: 16px; border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 6%); }
+    .card + .card { margin-top: 14px; }
+    h2 { margin: 0 0 12px; font-size: 15px; }
+    label { display: block; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: #3a3a3c; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row.phone { grid-template-columns: 0.9fr 1.4fr; }
+    input, select { display: block; width: 100%; height: 44px; margin-top: 5px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font: 16px -apple-system, sans-serif; -webkit-appearance: none; appearance: none; }
+    select { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 18px) 19px, calc(100% - 13px) 19px; background-size: 5px 5px; background-repeat: no-repeat; }
+    /* Safari draws a date's value at the top of a tall field; center it like the text fields. */
+    input[type="date"] { display: flex; align-items: center; }
+    input::-webkit-date-and-time-value { margin: 0; text-align: left; }
+    input.is-filled, select.is-filled { border-color: var(--filled-line); background-color: var(--filled); }
+    button { width: 100%; height: 50px; margin-top: 16px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font: 600 17px -apple-system, sans-serif; }
+  </style>
+</head>
+<body>
+  <header><span class="logo">✈︎</span><strong>Skyway Air</strong></header>
+  <p class="steps">Flights › <b>Travelers</b> › Seats › Payment</p>
+  <main>
+    <h1>Traveler details</h1>
+    <p class="note">Enter your details as they appear on your passport.</p>
+    <form onsubmit="return false">
+      <div class="card">
+        <h2>Passenger 1</h2>
+        <div class="row">
+          <label>First name<input name="first_name" autocomplete="given-name"></label>
+          <label>Last name<input name="last_name" autocomplete="family-name"></label>
+        </div>
+        <div class="row">
+          <label>Date of birth<input name="dob" type="date" autocomplete="bday"></label>
+          <label>Gender
+            <select name="gender">
+              <option value="">Select</option>
+              <option value="F">Female</option>
+              <option value="M">Male</option>
+              <option value="X">Unspecified</option>
+            </select>
+          </label>
+        </div>
+        <label>Passport number<input name="passport_number"></label>
+        <label>Frequent flyer number<input name="frequent_flyer_number"></label>
+      </div>
+      <div class="card">
+        <h2>Contact</h2>
+        <label>Email address<input name="email" type="email" autocomplete="email"></label>
+        <div class="row phone">
+          <label>Country code
+            <select name="country_code">
+              <option value="1">US +1</option>
+              <option value="44">UK +44</option>
+              <option value="81">JP +81</option>
+            </select>
+          </label>
+          <label>Phone number<input name="phone" type="tel" autocomplete="tel-national"></label>
+        </div>
+      </div>
+      <button type="submit">Continue to seats</button>
+    </form>
+  </main>
+  <script>
+    // Tint fields once something fills them, like the landing page's demo.
+    for (const field of document.querySelectorAll('input, select')) {
+      const mark = () => field.classList.toggle('is-filled', Boolean(field.value) && !(field.tagName === 'SELECT' && field.name === 'country_code' && field.value === '1'));
+      field.addEventListener('input', mark);
+      field.addEventListener('change', mark);
+    }
+  </script>
+</body>
+</html>

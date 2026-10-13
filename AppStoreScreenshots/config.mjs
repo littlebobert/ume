@@ -52,6 +52,19 @@ export const slides = Object.freeze([
   },
 ]);
 
+// The 13-inch iPad screenshots App Store Connect requires: the same headlines over the
+// iPad Simulator's captures (iPad Pro 13-inch, 2064 × 2752) in a drawn frame, a dark
+// rounded rectangle like an iPad's, since there's no iPad bezel to hand. Kaketa's layout.
+export const ipad = Object.freeze({
+  width: 2064,
+  height: 2752,
+  suffix: "ipad-13",
+  captures: Object.freeze({ fill: "captures/ipad-fill.png", remembers: "captures/ipad-saved-data.png", private: "captures/ipad-privacy.png" }),
+  capture: Object.freeze({ width: 2064, height: 2752 }),
+  // The bezel's width and corners, and the screen's width on the page and its bottom margin.
+  frame: Object.freeze({ bezel: 52, radius: 104, screenWidth: 1400, bottom: 150 }),
+});
+
 // The product page header, App Store Connect's wide image above the listing, in both
 // sizes it takes: the name's meaning in the green, centered over faint empty form
 // fields, and nothing else, like Kaketa's 書けた, since the store crops the edges and

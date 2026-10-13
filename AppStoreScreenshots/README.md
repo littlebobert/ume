@@ -7,7 +7,7 @@ npm install
 npm run render
 ```
 
-Output goes to `output/`: `<locale>-6.9/` and `<locale>-6.3/` for the screenshots, `header/<locale>/` (5244×2950 and 3840×1646; "Fill it in." in English, 埋めて in Japanese), and `search/<locale>/3840x2560.png`. The bezel is Apple's iPhone 18 Pro Max from Apple Design Resources, which can't be redistributed; the default is Karui's local copy, or set `BEZEL=<png>`.
+Output goes to `output/`: `<locale>-6.9/` and `<locale>-6.3/` for the iPhone screenshots, `<locale>-ipad-13/` for the 13-inch iPad ones (2064×2752, from `captures/ipad-*.png` taken the same way on the iPad Pro 13-inch Simulator), `header/<locale>/` (5244×2950 and 3840×1646; "Fill it in." in English, 埋めて in Japanese), and `search/<locale>/3840x2560.png`. The bezel is Apple's iPhone 18 Pro Max from Apple Design Resources, which can't be redistributed; the default is Karui's local copy, or set `BEZEL=<png>`.
 
 ## Taking the captures
 

@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { bezel, header, locales, screenshot, search, slides } from "../config.mjs";
+import { bezel, header, ipad, locales, screenshot, search, slides } from "../config.mjs";
 
 const here = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -107,6 +107,28 @@ function searchHTML({ width, height, hero, capture, locale }) {
   </body></html>`;
 }
 
+// The iPad page: the headline, then the capture in a drawn frame, whole and clear of
+// the bottom.
+function ipadHTML({ hero, capture, locale }) {
+  const { background, ink } = screenshot;
+  const { width, height, frame } = ipad;
+  const screenHeight = (ipad.capture.height / ipad.capture.width) * frame.screenWidth;
+  const deviceWidth = frame.screenWidth + frame.bezel * 2;
+  const left = (width - deviceWidth) / 2;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    html, body { margin: 0; width: ${width}px; height: ${height}px; overflow: hidden; background: ${background}; }
+    .copy { position: absolute; z-index: 3; top: 190px; left: 120px; right: 120px; color: ${ink}; text-align: center; }
+    h1 { margin: 0; font-family: ${fontFamily(locale)}; font-size: ${locale === "ja" ? 118 : 132}px; font-weight: 600; line-height: 1.08; letter-spacing: ${locale === "ja" ? "0" : "-0.035em"}; }
+    .shadow { position: absolute; z-index: 1; left: ${left + 80}px; width: ${deviceWidth - 160}px; bottom: ${frame.bottom - 12}px; height: 220px; border-radius: 50%; background: rgb(48 54 43 / 22%); filter: blur(60px); }
+    .device { position: absolute; z-index: 2; left: ${left}px; bottom: ${frame.bottom}px; width: ${deviceWidth}px; height: ${screenHeight + frame.bezel * 2}px; box-sizing: border-box; padding: ${frame.bezel}px; border-radius: ${frame.radius}px; background: #1c1c1e; box-shadow: inset 0 0 0 2px #3a3a3c; }
+    .screen { display: block; width: ${frame.screenWidth}px; height: ${screenHeight}px; border-radius: ${frame.radius - frame.bezel}px; }
+  </style></head><body>
+    <div class="copy"><h1>${hero}</h1></div>
+    <div class="shadow"></div>
+    <div class="device"><img class="screen" src="${capture}"></div>
+  </body></html>`;
+}
+
 const browser = await chromium.launch();
 const page = await browser.newPage({ deviceScaleFactor: 1 });
 async function shoot(markup, width, height, file) {
@@ -137,6 +159,15 @@ for (const locale of locales) {
 for (const locale of locales) {
   for (const size of header.sizes) {
     await shoot(headerHTML(size, locale), size.width, size.height, join(here, "output/header", locale, size.file));
+  }
+}
+// The 13-inch iPad set.
+for (const locale of locales) {
+  for (const [index, slide] of slides.entries()) {
+    await shoot(
+      ipadHTML({ hero: slide.hero[locale], capture: dataURL(ipad.captures[slide.id]), locale }),
+      ipad.width, ipad.height, join(here, "output", `${locale}-${ipad.suffix}`, `${index + 1}-${slide.id}.png`),
+    );
   }
 }
 await browser.close();

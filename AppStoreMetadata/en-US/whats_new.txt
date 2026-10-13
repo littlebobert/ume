@@ -1,1 +1,1 @@
-Umete no longer sends your contacts’ names to AI matching, and its Privacy tab now explains iCloud sync.
+A redesigned iPhone and iPad app, with a standard tab bar, familiar controls, and support for larger text sizes. The Safari extension has bigger, easier-to-tap buttons and a switch for the toolbar badge. Umete also no longer sends your contacts’ names to AI matching, and its Privacy tab now explains iCloud sync.

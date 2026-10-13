@@ -132,6 +132,18 @@ export const preview = Object.freeze({
       },
     },
   ]),
+  // The iPad preview: the same scenes, voice, and timing from the iPad Simulator's
+  // recordings, at 1200 × 1600, App Store Connect's size for iPad previews.
+  ipad: Object.freeze({
+    width: 1200,
+    height: 1600,
+    scenes: Object.freeze([
+      // The popover opening, then the fill, cutting the wait while it got ready.
+      { clip: "captures/ipad-scene-1-fill.mp4", keep: [[0, 3.2], [12.0, 16.2]] },
+      { clip: "captures/ipad-scene-2-saved.mp4" },
+      { clip: "captures/ipad-scene-3-privacy.mp4" },
+    ]),
+  }),
   // Japanese is spoken by ElevenLabs (scripts/narrate.mjs). English is recorded by
   // hand: voiceover/en-US/line-<n>.(m4a|mp3|wav), one file per scene.
   voice: Object.freeze({

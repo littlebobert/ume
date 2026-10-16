@@ -199,11 +199,22 @@ final class CloudSync {
     private func performSync(reason: Reason) async throws -> Bool {
         guard await accountStatus() == .available else { return false }
         var appliedRemote = false
+        let before = SyncState.load()
         do {
             try await ensureZone()
-            appliedRemote = try await pull()
-            try await push()
+            let pulled = try await pull()
+            appliedRemote = pulled.applied
+            let pushed = try await push()
             SyncState.update { $0.lastError = nil }
+            // A line in the bug report for every sync that moved something, and for the
+            // first success after a failure, so a report shows that sync works and when it
+            // last did; the quiet runs every 90 seconds would only drown those out.
+            let moved = pulled.changed + pulled.deleted + pushed.uploaded + pushed.removed
+            if moved > 0 || before.lastError != nil || before.lastPullAt == nil {
+                var summary = "iCloud sync (\(reason.rawValue)) succeeded: pulled \(pulled.changed) changed and \(pulled.deleted) deleted, pushed \(pushed.uploaded) and removed \(pushed.removed)"
+                if pulled.unreadable > 0 { summary += ", \(pulled.unreadable) unreadable" }
+                SupportDiagnostics.record(summary + ".")
+            }
         } catch {
             let message = Self.describe(error)
             SyncState.update { $0.lastError = message }
@@ -224,7 +235,19 @@ final class CloudSync {
         SyncState.update { $0.zoneReady = true }
     }
 
-    private func pull() async throws -> Bool {
+    private struct PullSummary {
+        var applied: Bool
+        var changed: Int
+        var deleted: Int
+        var unreadable: Int
+    }
+
+    private struct PushSummary {
+        var uploaded = 0
+        var removed = 0
+    }
+
+    private func pull() async throws -> PullSummary {
         var token = SyncState.load().changeToken.flatMap(Self.decodeToken)
         var changed: [[String: Any]] = []
         var deleted: [String] = []
@@ -281,12 +304,13 @@ final class CloudSync {
             state.unreadableCount = unreadable
             state.pendingUploads.formUnion(needsReupload)
         }
-        return applied
+        return PullSummary(applied: applied, changed: changed.count, deleted: deleted.count, unreadable: unreadable)
     }
 
-    private func push() async throws {
+    private func push() async throws -> PushSummary {
         let state = SyncState.load()
-        guard !state.pendingUploads.isEmpty || !state.pendingDeletes.isEmpty else { return }
+        var summary = PushSummary()
+        guard !state.pendingUploads.isEmpty || !state.pendingDeletes.isEmpty else { return summary }
         let answers = try AnswerStore.loadForSync()
         let byID = Dictionary(answers.compactMap { answer in (answer["answerID"] as? String).map { ($0, answer) } }, uniquingKeysWith: { $1 })
 
@@ -338,8 +362,11 @@ final class CloudSync {
                 removed.forEach { state.pendingDeletes.remove($0) }
                 state.lastPushAt = Date().timeIntervalSince1970
             }
+            summary.uploaded += uploaded.count
+            summary.removed += removed.count
             if let firstError { throw firstError }
         }
+        return summary
     }
 
     // MARK: - Helpers

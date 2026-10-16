@@ -155,6 +155,71 @@ final class PhonePopoverViewController: ConfirmPopoverViewController {
     }
 }
 
+/// A text view for values with several lines, like a medication list, which the
+/// table's one-line fields can't edit. Return adds a line; Command-Return or
+/// clicking away keeps the text.
+final class MultilineValuePopoverViewController: ConfirmPopoverViewController {
+    private let scroll = NSTextView.scrollableTextView()
+    private var textView: NSTextView { scroll.documentView as! NSTextView }
+    private let initialText: String
+
+    var text: String { textView.string }
+
+    init(text: String) {
+        initialText = text
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func loadView() {
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 440, height: 270))
+        scroll.borderType = .bezelBorder
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        textView.string = initialText
+        textView.isRichText = false
+        textView.font = .systemFont(ofSize: NSFont.systemFontSize)
+        textView.textContainerInset = NSSize(width: 4, height: 6)
+        // Lists of names and doses are not prose.
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticDashSubstitutionEnabled = false
+        textView.isAutomaticTextReplacementEnabled = false
+        let hint = NSTextField(labelWithString: "One item per line. Press Return to add a line.")
+        hint.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+        hint.textColor = .secondaryLabelColor
+        hint.translatesAutoresizingMaskIntoConstraints = false
+        let done = NSButton(title: "Done", target: self, action: #selector(donePressed))
+        done.keyEquivalent = "\r"
+        done.keyEquivalentModifierMask = [.command]
+        done.bezelStyle = .rounded
+        done.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scroll)
+        view.addSubview(hint)
+        view.addSubview(done)
+        NSLayoutConstraint.activate([
+            scroll.topAnchor.constraint(equalTo: view.topAnchor, constant: 14),
+            scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 14),
+            scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -14),
+            scroll.heightAnchor.constraint(equalToConstant: 190),
+            hint.leadingAnchor.constraint(equalTo: scroll.leadingAnchor),
+            hint.centerYAnchor.constraint(equalTo: done.centerYAnchor),
+            hint.trailingAnchor.constraint(lessThanOrEqualTo: done.leadingAnchor, constant: -8),
+            done.topAnchor.constraint(equalTo: scroll.bottomAnchor, constant: 10),
+            done.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -14),
+            done.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -10)
+        ])
+    }
+
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        view.window?.makeFirstResponder(textView)
+    }
+
+    @objc private func donePressed() {
+        applyAndClose()
+    }
+}
+
 final class AddressEditorViewController: NSViewController {
     var onSave: ((String, [String: Any]) -> Void)?
 
@@ -1352,7 +1417,7 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
         buttons.orientation = .horizontal
         buttons.spacing = 8
 
-        let stack = paneStack(title: "Saved Data", description: "Double-click a label or value to edit; click a type to change it. Phone, Address, and Contact use structured editors so Umete can fill related fields automatically. Add each doctor or emergency contact once and Umete fills their name, phone, and other details wherever a form asks for them.")
+        let stack = paneStack(title: "Saved Data", description: "Double-click a label or value to edit; click a type to change it. A value with several lines, like a medication list, opens in a larger editor; press Option-Return while editing a value to give it more lines. Phone, Address, and Contact use structured editors so Umete can fill related fields automatically. Add each doctor or emergency contact once and Umete fills their name, phone, and other details wherever a form asks for them.")
         stack.addArrangedSubview(scroll)
         stack.addArrangedSubview(buttons)
         view.addSubview(stack)
@@ -1506,9 +1571,24 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
             presentPhonePopover(row: row)
         } else if identifier == "value", type == "date" {
             presentDatePopover(row: row)
+        } else if identifier == "value", let text = answer["value"] as? String, text.contains(where: \.isNewline) {
+            presentMultilineEditor(row: row)
         } else {
             editCell(row: row, column: column)
         }
+    }
+
+    /// Edits a text value in a text view: for values that already have several
+    /// lines, and for a one-line value when Option-Return is pressed in its field.
+    private func presentMultilineEditor(row: Int, text: String? = nil) {
+        guard let answer = answerForRow(row) else { return }
+        let controller = MultilineValuePopoverViewController(text: text ?? (answer["value"] as? String ?? ""))
+        controller.onApply = { [weak self, weak controller] in
+            guard let self, let controller else { return }
+            let value = controller.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            self.persistChanges(row: row) { answer in answer["value"] = value }
+        }
+        present(controller, row: row)
     }
 
     @objc private func beginInlineEditing() {
@@ -1899,6 +1979,12 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
                 .filter { !$0.isEmpty }
                 .joined(separator: " · ")
         }
+        if let text = answer["value"] as? String, text.contains(where: \.isNewline) {
+            return text.split(whereSeparator: \.isNewline)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+                .joined(separator: " · ")
+        }
         let value = valueString(answer["value"])
         guard detectedType(answer) == "phone",
               let code = answer["countryCode"] as? String else { return value }
@@ -1921,6 +2007,19 @@ final class SavedDataViewController: NSViewController, NSTableViewDataSource, NS
                 discardDraft()
                 return true
             }
+        }
+        if commandSelector == #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)),
+           field.identifier?.rawValue == "value",
+           let answer = displayedAnswers[safe: field.tag],
+           !(answer["value"] is Bool),
+           !Self.aggregateTypes.contains(detectedType(answer)) {
+            let row = field.tag
+            let text = field.stringValue
+            field.abortEditing()
+            field.isEditable = false
+            view.window?.makeFirstResponder(table)
+            DispatchQueue.main.async { self.presentMultilineEditor(row: row, text: text) }
+            return true
         }
         guard commandSelector == #selector(NSResponder.insertTab(_:)) else { return false }
         let row: Int

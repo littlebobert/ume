@@ -43,6 +43,17 @@ struct SavedAnswer: Identifiable {
     let id: String
     let label: String
     let value: String
+    /// The value as typed when it is plain text, which the app can edit; addresses,
+    /// contacts, and yes-or-no answers are shown but edited on the Mac.
+    let text: String?
+}
+
+/// An answer being added or edited in the sheet; a nil answerID means a new one.
+struct AnswerEdit: Identifiable {
+    let answerID: String?
+    let label: String
+    let value: String
+    var id: String { answerID ?? "new" }
 }
 
 enum AIProvider: String, CaseIterable, Identifiable {
@@ -101,7 +112,8 @@ final class SettingsModel: ObservableObject {
             SavedAnswer(
                 id: answer["answerID"] as? String ?? "answer-\(index)",
                 label: Self.label(of: answer, index: index),
-                value: Self.valueText(of: answer, label: Self.label(of: answer, index: index))
+                value: Self.valueText(of: answer, label: Self.label(of: answer, index: index)),
+                text: answer["value"] as? String
             )
         }
         syncEnabled = CloudSync.isEnabled
@@ -150,6 +162,25 @@ final class SettingsModel: ObservableObject {
         show("Key Deleted", "The saved API key was deleted.")
     }
 
+    /// Adds a text answer, or changes one's label and value. Returns a message when
+    /// it could not be saved, for the sheet to show.
+    func save(_ edit: AnswerEdit) async -> String? {
+        let label = edit.label.trimmingCharacters(in: .whitespacesAndNewlines)
+        let value = edit.value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !label.isEmpty, !value.isEmpty else { return "Enter both a label and a value." }
+        do {
+            if let id = edit.answerID {
+                try AnswerStore.update(id: id, userLabel: label, value: value)
+            } else {
+                try AnswerStore.add(userLabel: label, value: value)
+            }
+        } catch {
+            return error.localizedDescription
+        }
+        await load()
+        return nil
+    }
+
     func delete(at offsets: IndexSet) async {
         do {
             for index in offsets { try AnswerStore.delete(id: answers[index].id) }
@@ -195,7 +226,7 @@ final class SettingsModel: ObservableObject {
     }
 
     private static func label(of answer: [String: Any], index: Int) -> String {
-        for key in ["accessibleName", "label", "placeholder", "name", "autocomplete"] {
+        for key in ["userLabel", "accessibleName", "label", "placeholder", "name", "autocomplete"] {
             if let text = answer[key] as? String, !text.isEmpty { return text }
         }
         return "Saved answer \(index + 1)"
@@ -359,27 +390,32 @@ struct AIMatchingTab: View {
 struct SavedDataTab: View {
     @EnvironmentObject private var model: SettingsModel
     @State private var confirmsClear = false
+    @State private var editing: AnswerEdit?
 
     var body: some View {
         NavigationView {
             List {
                 Section {
                     if model.answers.isEmpty {
-                        Text("Use Remember my answers on a completed form in Safari to see answers here.")
+                        Text("Use Remember my answers on a completed form in Safari, or tap + to add an answer here.")
                             .foregroundColor(.secondary)
                     }
                     ForEach(model.answers) { answer in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(answer.label).font(.subheadline).foregroundColor(.secondary)
-                            Text(answer.value)
+                        if let text = answer.text {
+                            Button {
+                                editing = AnswerEdit(answerID: answer.id, label: answer.label, value: text)
+                            } label: {
+                                AnswerRow(answer: answer)
+                            }
+                            .accessibilityHint("Edits this answer")
+                        } else {
+                            AnswerRow(answer: answer)
                         }
-                        .padding(.vertical, 2)
-                        .accessibilityElement(children: .combine)
                     }
                     .onDelete { offsets in Task { await model.delete(at: offsets) } }
                 } footer: {
                     if !model.answers.isEmpty {
-                        Text(model.answers.count == 1 ? "1 saved answer, encrypted." : "\(model.answers.count) saved answers, encrypted.")
+                        Text(model.answers.count == 1 ? "1 saved answer, encrypted. Tap an answer to edit it." : "\(model.answers.count) saved answers, encrypted. Tap an answer to edit it.")
                     }
                 }
                 if !model.answers.isEmpty {
@@ -391,6 +427,16 @@ struct SavedDataTab: View {
                 }
             }
             .navigationTitle("Saved Data")
+            .toolbar {
+                Button {
+                    editing = AnswerEdit(answerID: nil, label: "", value: "")
+                } label: {
+                    Label("Add Answer", systemImage: "plus")
+                }
+            }
+            .sheet(item: $editing) { edit in
+                AnswerEditorSheet(edit: edit).environmentObject(model)
+            }
             .refreshable { await model.load() }
             .confirmationDialog(
                 model.syncEnabled ? "Delete every saved answer on all your devices?" : "Delete every saved answer on this device?",
@@ -403,6 +449,88 @@ struct SavedDataTab: View {
             }
         }
         .navigationViewStyle(.stack)
+    }
+}
+
+/// A saved answer's label over its value, as the list shows it.
+struct AnswerRow: View {
+    let answer: SavedAnswer
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(answer.label).font(.subheadline).foregroundColor(.secondary)
+            Text(answer.value).foregroundColor(.primary)
+        }
+        .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Adds or edits a text answer. The value is a text view, so a list, like
+/// medications, can go on several lines.
+struct AnswerEditorSheet: View {
+    @EnvironmentObject private var model: SettingsModel
+    @Environment(\.dismiss) private var dismiss
+    private let answerID: String?
+    @State private var label: String
+    @State private var value: String
+    @State private var problem: String?
+    @State private var isSaving = false
+
+    init(edit: AnswerEdit) {
+        answerID = edit.answerID
+        _label = State(initialValue: edit.label)
+        _value = State(initialValue: edit.value)
+    }
+
+    private var canSave: Bool {
+        !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section {
+                    TextField("Label", text: $label)
+                } header: {
+                    Text("Label")
+                } footer: {
+                    Text("What a form calls it, like Medications or Passport number.")
+                }
+                Section {
+                    TextEditor(text: $value)
+                        .frame(minHeight: 140)
+                } header: {
+                    Text("Value")
+                } footer: {
+                    Text("For a list, put each item on its own line.")
+                }
+                if let problem {
+                    Section { Text(problem).foregroundColor(.red) }
+                }
+            }
+            .navigationTitle(answerID == nil ? "New Answer" : "Edit Answer")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { Task { await save() } }
+                        .disabled(!canSave || isSaving)
+                }
+            }
+        }
+        .navigationViewStyle(.stack)
+    }
+
+    private func save() async {
+        isSaving = true
+        problem = await model.save(AnswerEdit(answerID: answerID, label: label, value: value))
+        isSaving = false
+        if problem == nil { dismiss() }
     }
 }
 
